@@ -95,6 +95,18 @@ build:darwin_arm64 --apple_platform_type=macos
 build:darwin_arm64 --macos_minimum_os=10.16
 build:darwin_arm64 --cpu=darwin_arm64
 
+#####################################################################
+# Coral configs																											#
+#		- see nullspaces/bazel-examples/cpp-tutorial/stage4							#
+#		- https://bazel.build/tutorials/ccp-toolchain-config						#
+#####################################################################
+
+build:coral_config --crosstool_top=//toolchain:coral_suite
+build:coral_config --cpu=aarch64
+build:coral_config --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
+
+# Coral configs END
+
 # This bazelrc file is meant to be written by a setup script.
 try-import %workspace%/.configure.bazelrc
 
