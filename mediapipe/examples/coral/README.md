@@ -1,5 +1,20 @@
 # Coral Support
 
+Pro kompilaci pro Coral
+* export BAZEL_CPU=aarch64  
+* v souboru /home/jiri/fork/mediapipe/bazel-mediapipe/external/com_google_absl/absl/copts/configure_copts.bzl zakomentuj
+
+`
+ABSL_DEFAULT_COPTS = select({
+    "//absl:msvc_compiler": ABSL_MSVC_FLAGS,
+    # "//absl:clang-cl_compiler": ABSL_CLANG_CL_FLAGS,
+    # "//absl:clang_compiler": ABSL_LLVM_FLAGS,
+    "//conditions:default": ABSL_GCC_FLAGS,
+})
+`
+
+
+
 ## Bazel Setup
 
 You can compile MediaPipe with enabled Edge TPU support to run
