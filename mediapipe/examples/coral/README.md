@@ -13,6 +13,8 @@ ABSL_DEFAULT_COPTS = select({
 })
 `
 
+* ERROR: Encountered unresolved custom op: edgetpu-custom-op. Znamená že nesedí verze (na úrovni commitu) Tensorflow aplikace vůči libedgetpu.
+
 
 
 ## Bazel Setup
