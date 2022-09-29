@@ -61,7 +61,14 @@ absl::Status RunMPPGraph() {
   if (load_video) {
     capture.open(absl::GetFlag(FLAGS_input_video_path));
   } else {
-    capture.open(0);
+    for(int i = 0; i < 10; i++){
+      LOG(INFO) << "Attempt to open video " << i;
+      capture.open(i, cv::CAP_V4L2);
+      if(capture.isOpened()){
+        LOG(INFO) << "Camera at index " << i << " initialized successully.";
+        break;
+      }
+    }
   }
   RET_CHECK(capture.isOpened());
 
@@ -77,7 +84,7 @@ absl::Status RunMPPGraph() {
                 capture.get(cv::CAP_PROP_FPS), test_frame.size());
     RET_CHECK(writer.isOpened());
   } else {
-    cv::namedWindow(kWindowName, /*flags=WINDOW_AUTOSIZE*/ 1);
+    // cv::namedWindow(kWindowName, /*flags=WINDOW_AUTOSIZE*/ 1);
     capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
     capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
     capture.set(cv::CAP_PROP_AUTOFOCUS, 0);
