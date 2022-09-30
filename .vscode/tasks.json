@@ -1,0 +1,14 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "cross_compile_face_detection_tpu",
+			"type": "shell",
+			"command": "${env:HOME}/fork/mediapipe/mediapipe/examples/coral/cross_compile_face_detection_tpu.sh",
+			"problemMatcher": []
+		}
+	]
+}
+// cross_compile_face_detection_tpu

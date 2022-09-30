@@ -38,8 +38,13 @@ cc_library(
         "-l:libopencv_imgproc.so",
         "-l:libopencv_video.so",
         "-l:libopencv_videoio.so",
+        "-l:librealsense2.so",
         "-l:libz.so",
-        "-L/home/jiri/coral/stage/lib"
+        "-l:libusb-1.0.so.0",
+        "-l:libudev.so",
+        "-L/home/jiri/coral/stage/lib",
+        "-L/home/jiri/coral/sysroot/lib/aarch64-linux-gnu",
+        # "-L/home/jiri/coral/sysroot/usr/lib/aarch64-linux-gnu"
     ],
     visibility = ["//visibility:public"],
 )

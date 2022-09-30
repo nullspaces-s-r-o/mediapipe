@@ -1,3 +1,4 @@
+load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 package(default_visibility = ["//visibility:public"])
 
 # filegroup(name = "coral_suite")
@@ -25,5 +26,4 @@ cc_toolchain(
 )
 
 # filegroup(name = "aarch64_toolchain_config")
-load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 cc_toolchain_config(name = "aarch64_toolchain_config")

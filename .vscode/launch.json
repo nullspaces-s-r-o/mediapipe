@@ -1,0 +1,90 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "cross_application_generic",
+			"request": "launch",
+			"type": "cppdbg",
+			"targetArchitecture": "arm",
+			"program": "${env:HOME}/fork/mediapipe/bazel-mediapipe/bazel-out/aarch64-dbg/bin/mediapipe/examples/coral/face_detection_tpu",
+			"cwd": "${env:HOME}/.cache/bazel/_bazel_jiri/a3e937187829dfa6217dda6990eb9a3b/execroot",
+			"args": [],
+			"externalConsole": false,
+			"stopAtEntry": true,
+			"MIMode": "gdb",
+			"preLaunchTask": "cross_compile_face_detection_tpu",
+			"logging": {
+				"engineLogging": true
+			},
+			"sourceFileMap": {
+				"${workspaceFolder}": {
+					"editorPath": "${workspaceFolder}",
+					"useForBreakpoints": "true"
+				}
+			},
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"text": "set sysroot ${env:HOME}/coral/sysroot"
+				},
+				{
+					"text": "python sys.path.append('${env:TOOLS}/../share/gcc-8.5.0/python')"
+				},
+				{
+					"text": "source ${env:SYSROOT}/lib/libstdc++.so.6.0.25-gdb.py"
+				}
+				// ,
+				// {
+				//     "text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
+				// }
+			],
+			"miDebuggerPath": "/usr/bin/gdb-multiarch",
+			"miDebuggerServerAddress": "${env:TARGETIP}:3000"
+		},
+		{
+			"name": "face_detection_tpu",
+			"request": "launch",
+			"type": "cppdbg",
+			"targetArchitecture": "arm",
+			"program": "face_detection_tpu",
+			"cwd": "${workspaceFolder}/bazel-bin/mediapipe/examples/coral/",
+			"args": [],
+			"externalConsole": false,
+			"stopAtEntry": false,
+			"MIMode": "gdb",
+			"preLaunchTask": "cross_compile_face_detection_tpu",
+			"sourceFileMap": {
+				"/proc/self/cwd": "${workspaceFolder}/bazel-mediapipe"
+			},
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"text": "set sysroot ${env:HOME}/coral/sysroot"
+				},
+				{
+					"text": "python sys.path.append('${env:TOOLS}/../share/gcc-8.5.0/python')"
+				},
+				{
+					"text": "source ${env:SYSROOT}/lib/libstdc++.so.6.0.25-gdb.py"
+				}
+				,
+				{
+				    "text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
+				}
+			],
+			"miDebuggerPath": "/usr/bin/gdb-multiarch",
+			"miDebuggerServerAddress": "${env:TARGETIP}:3000"
+		}
+	]
+}

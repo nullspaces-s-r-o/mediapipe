@@ -77,6 +77,7 @@ def _impl(ctx):
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/include",
+            "/home/jiri/coral/x-tools/aarch64-linux-gnu/lib/aarch64-linux-gnu",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/8.5.0/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/8.5.0/include-fixed",
         ],

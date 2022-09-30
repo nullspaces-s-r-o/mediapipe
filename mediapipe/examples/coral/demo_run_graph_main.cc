@@ -61,14 +61,15 @@ absl::Status RunMPPGraph() {
   if (load_video) {
     capture.open(absl::GetFlag(FLAGS_input_video_path));
   } else {
-    for(int i = 0; i < 10; i++){
-      LOG(INFO) << "Attempt to open video " << i;
-      capture.open(i, cv::CAP_V4L2);
-      if(capture.isOpened()){
-        LOG(INFO) << "Camera at index " << i << " initialized successully.";
-        break;
-      }
-    }
+    capture.open(cv::CAP_REALSENSE + 1);
+    // for(int i = 4; i < 10; i++){
+    //   LOG(INFO) << "Attempt to open video " << i;
+    //   capture.open(i, cv::CAP_V4L2);
+    //   if(capture.isOpened()){
+    //     LOG(INFO) << "Camera at index " << i << " initialized successully.";
+    //     break;
+    //   }
+    // }
   }
   RET_CHECK(capture.isOpened());
 
@@ -85,12 +86,18 @@ absl::Status RunMPPGraph() {
     RET_CHECK(writer.isOpened());
   } else {
     // cv::namedWindow(kWindowName, /*flags=WINDOW_AUTOSIZE*/ 1);
-    capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-    capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-    capture.set(cv::CAP_PROP_AUTOFOCUS, 0);
-    capture.set(cv::CAP_PROP_FOCUS, 1);
-    capture.set(cv::CAP_PROP_FPS, 30);
+    // capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+    // capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+    // capture.set(cv::CAP_PROP_AUTOFOCUS, 0);
+    // capture.set(cv::CAP_PROP_FOCUS, 1);
+    // capture.set(cv::CAP_PROP_FPS, 30);
   }
+
+  cv::Mat tmp;
+  capture >> tmp;
+
+  LOG(INFO) << "Image size is " << tmp.cols << "x" << tmp.rows;
+  
 
   LOG(INFO) << "Start running the calculator graph.";
   ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller,
@@ -135,9 +142,9 @@ absl::Status RunMPPGraph() {
     if (save_video) {
       writer.write(output_frame_mat);
     } else {
-      cv::imshow(kWindowName, output_frame_mat);
+      // cv::imshow(kWindowName, output_frame_mat);
       // Press any key to exit.
-      const int pressed_key = cv::waitKey(5);
+      const int pressed_key = 1; //cv::waitKey(5);
       if (pressed_key >= 0 && pressed_key != 255) grab_frames = false;
     }
   }
