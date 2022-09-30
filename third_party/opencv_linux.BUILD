@@ -19,7 +19,7 @@ cc_library(
         #"include/arm-linux-gnueabihf/opencv4/opencv2/cvconfig.h",
         #"include/x86_64-linux-gnu/opencv4/opencv2/cvconfig.h",
         "include/opencv4/opencv2/**/*.h*",
-        "include/opencv4/opencv2/cvconfig.h",
+        # "include/opencv4/opencv2/cvconfig.h",
     ]),
     includes = [
         # For OpenCV 4.x
@@ -38,13 +38,12 @@ cc_library(
         "-l:libopencv_imgproc.so",
         "-l:libopencv_video.so",
         "-l:libopencv_videoio.so",
-        "-l:librealsense2.so",
         "-l:libz.so",
-        "-l:libusb-1.0.so.0",
-        "-l:libudev.so",
-        "-L/home/jiri/coral/stage/lib",
+        # "-l:libgtk-3.so.0",
+        "-L/home/jiri/coral/sysroot/lib",
         "-L/home/jiri/coral/sysroot/lib/aarch64-linux-gnu",
-        # "-L/home/jiri/coral/sysroot/usr/lib/aarch64-linux-gnu"
+        # "-L/home/jiri/coral/sysroot/usr/lib/",
+        "-L/home/jiri/coral/sysroot/usr/local/lib/",
     ],
     visibility = ["//visibility:public"],
 )

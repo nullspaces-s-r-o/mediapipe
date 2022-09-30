@@ -27,6 +27,8 @@
 #include "mediapipe/framework/port/parse_text_proto.h"
 #include "mediapipe/framework/port/status.h"
 
+#include "rs.hpp"
+
 constexpr char kInputStream[] = "input_video";
 constexpr char kOutputStream[] = "output_video";
 constexpr char kWindowName[] = "MediaPipe";
@@ -39,6 +41,11 @@ ABSL_FLAG(std::string, input_video_path, "",
 ABSL_FLAG(std::string, output_video_path, "",
           "Full path of where to save result (.mp4 only). "
           "If not provided, show result in a window.");
+
+cv::Mat GetMat(rs2::pipeline& pipe){
+  auto color = pipe.wait_for_frames().get_color_frame();
+  return cv::Mat(color.get_height(), color.get_width(), CV_8UC3, (void*)color.get_data() ).clone();
+}
 
 absl::Status RunMPPGraph() {
   std::string calculator_graph_config_contents;
@@ -56,12 +63,31 @@ absl::Status RunMPPGraph() {
   MP_RETURN_IF_ERROR(graph.Initialize(config));
 
   LOG(INFO) << "Initialize the camera or load the video.";
-  cv::VideoCapture capture;
+
+  rs2::config rs_config;
+  rs_config.disable_all_streams();
+  rs_config.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1920, 1080,
+                      rs2_format::RS2_FORMAT_RGB8);
+
+  rs2::pipeline pipe;
+  pipe.start(rs_config);
+  auto color_sensor =
+      pipe.get_active_profile().get_device().first<rs2::color_sensor>();
+  color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+  rs2::roi_sensor roiSensor(color_sensor);
+
+  rs2::region_of_interest roi;
+  roi.min_x = roi.min_y = 0;
+  roi.max_x = 640 - 1;
+  roi.max_y = 480 - 1;
+  roiSensor.set_region_of_interest(roi);
+
+  // cv::VideoCapture capture;
   const bool load_video = !absl::GetFlag(FLAGS_input_video_path).empty();
   if (load_video) {
-    capture.open(absl::GetFlag(FLAGS_input_video_path));
+    // capture.open(absl::GetFlag(FLAGS_input_video_path));
   } else {
-    capture.open(cv::CAP_REALSENSE + 1);
+    // capture.open(cv::CAP_REALSENSE + 1);
     // for(int i = 4; i < 10; i++){
     //   LOG(INFO) << "Attempt to open video " << i;
     //   capture.open(i, cv::CAP_V4L2);
@@ -71,21 +97,21 @@ absl::Status RunMPPGraph() {
     //   }
     // }
   }
-  RET_CHECK(capture.isOpened());
+  // RET_CHECK(capture.isOpened());
 
   cv::VideoWriter writer;
   const bool save_video = !absl::GetFlag(FLAGS_output_video_path).empty();
   if (save_video) {
     LOG(INFO) << "Prepare video writer.";
     cv::Mat test_frame;
-    capture.read(test_frame);                    // Consume first frame.
-    capture.set(cv::CAP_PROP_POS_AVI_RATIO, 0);  // Rewind to beginning.
-    writer.open(absl::GetFlag(FLAGS_output_video_path),
-                mediapipe::fourcc('a', 'v', 'c', '1'),  // .mp4
-                capture.get(cv::CAP_PROP_FPS), test_frame.size());
+    // capture.read(test_frame);                    // Consume first frame.
+    // capture.set(cv::CAP_PROP_POS_AVI_RATIO, 0);  // Rewind to beginning.
+    // writer.open(absl::GetFlag(FLAGS_output_video_path),
+    //             mediapipe::fourcc('a', 'v', 'c', '1'),  // .mp4
+    //             capture.get(cv::CAP_PROP_FPS), test_frame.size());
     RET_CHECK(writer.isOpened());
   } else {
-    // cv::namedWindow(kWindowName, /*flags=WINDOW_AUTOSIZE*/ 1);
+    cv::namedWindow(kWindowName, /*flags=WINDOW_AUTOSIZE*/ 1);
     // capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
     // capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
     // capture.set(cv::CAP_PROP_AUTOFOCUS, 0);
@@ -93,12 +119,11 @@ absl::Status RunMPPGraph() {
     // capture.set(cv::CAP_PROP_FPS, 30);
   }
 
-  cv::Mat tmp;
-  capture >> tmp;
+  // capture >> tmp;
 
-  LOG(INFO) << "Image size is " << tmp.cols << "x" << tmp.rows;
+  // cv::Mat tmp = GetMat(pipe);
+  // LOG(INFO) << "Image size is " << tmp.cols << "x" << tmp.rows;
   
-
   LOG(INFO) << "Start running the calculator graph.";
   ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller,
                    graph.AddOutputStreamPoller(kOutputStream));
@@ -108,11 +133,11 @@ absl::Status RunMPPGraph() {
   bool grab_frames = true;
   while (grab_frames) {
     // Capture opencv camera or video frame.
-    cv::Mat camera_frame_raw;
-    capture >> camera_frame_raw;
+    cv::Mat camera_frame_raw = GetMat(pipe);
+    // capture >> camera_frame_raw;
     if (camera_frame_raw.empty()) break;  // End of video.
-    cv::Mat camera_frame;
-    cv::cvtColor(camera_frame_raw, camera_frame, cv::COLOR_BGR2RGB);
+    cv::Mat camera_frame; // = camera_frame_raw;
+    cv::resize(camera_frame_raw, camera_frame, { 640, 480});
     if (!load_video) {
       cv::flip(camera_frame, camera_frame, /*flipcode=HORIZONTAL*/ 1);
     }
@@ -142,9 +167,9 @@ absl::Status RunMPPGraph() {
     if (save_video) {
       writer.write(output_frame_mat);
     } else {
-      // cv::imshow(kWindowName, output_frame_mat);
+      cv::imshow(kWindowName, output_frame_mat);
       // Press any key to exit.
-      const int pressed_key = 1; //cv::waitKey(5);
+      const int pressed_key = cv::waitKey(5);
       if (pressed_key >= 0 && pressed_key != 255) grab_frames = false;
     }
   }

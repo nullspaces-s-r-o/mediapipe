@@ -68,7 +68,9 @@ def _impl(ctx):
         ),
     ]
 
-    return cc_common.create_cc_toolchain_config_info(
+
+
+    ci = cc_common.create_cc_toolchain_config_info(
         ctx = ctx,
         features = features,
         cxx_builtin_include_directories = [ # NEW
@@ -77,7 +79,6 @@ def _impl(ctx):
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/include",
-            "/home/jiri/coral/x-tools/aarch64-linux-gnu/lib/aarch64-linux-gnu",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/8.5.0/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/8.5.0/include-fixed",
         ],
@@ -90,10 +91,16 @@ def _impl(ctx):
         abi_version = "unknown",
         abi_libc_version = "unknown",
         tool_paths = tool_paths,
+        builtin_sysroot="/home/jiri/coral/sysroot"
     )
+
+    return ci
 
 cc_toolchain_config = rule(
     implementation = _impl,
     attrs = {},
     provides = [CcToolchainConfigInfo],
+
 )
+
+# cc_toolchain_config.builtin_sysroot="/home/jiri/coral/sysroot"

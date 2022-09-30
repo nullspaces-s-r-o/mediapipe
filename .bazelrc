@@ -104,6 +104,7 @@ build:darwin_arm64 --cpu=darwin_arm64
 build:coral_config --crosstool_top=//toolchain:coral_suite
 build:coral_config --cpu=aarch64
 build:coral_config --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
+
 # build:coral_config --compilation_mode dbg
 
 

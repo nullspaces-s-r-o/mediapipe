@@ -35,6 +35,7 @@ cc_library(
         "//mediapipe/framework/port:status",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
+        "@linux_realsense//:realsense2"
     ],
 )
 
@@ -62,3 +63,4 @@ cc_binary(
         "//mediapipe/graphs/face_detection:desktop_live_calculators",
     ],
 )
+

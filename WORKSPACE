@@ -248,6 +248,12 @@ new_local_repository(
 )
 
 new_local_repository(
+    name = "linux_realsense",
+    path = "/home/jiri/coral/sysroot/usr/local",
+    build_file = "@//third_party:linux_realsense.BUILD",
+)
+
+new_local_repository(
     name = "linux_ffmpeg",
     build_file = "@//third_party:ffmpeg_linux.BUILD",
     path = "/usr"
