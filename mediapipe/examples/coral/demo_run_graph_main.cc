@@ -42,9 +42,8 @@ ABSL_FLAG(std::string, output_video_path, "",
           "Full path of where to save result (.mp4 only). "
           "If not provided, show result in a window.");
 
-cv::Mat GetMat(rs2::pipeline& pipe){
-  auto color = pipe.wait_for_frames().get_color_frame();
-  return cv::Mat(color.get_height(), color.get_width(), CV_8UC2, (void*)color.get_data() ).clone();
+cv::Mat GetMat(rs2::video_frame color){
+  return cv::Mat(color.get_height(), color.get_width(), CV_8UC2, (void*)color.get_data() );
 }
 
 absl::Status RunMPPGraph() {
@@ -121,8 +120,8 @@ absl::Status RunMPPGraph() {
 
   // capture >> tmp;
 
-  // cv::Mat tmp = GetMat(pipe);
-  // LOG(INFO) << "Image size is " << tmp.cols << "x" << tmp.rows;
+  cv::Mat tmp = GetMat(pipe.wait_for_frames().get_color_frame());
+  LOG(INFO) << "Image size is " << tmp.cols << "x" << tmp.rows;
   
   LOG(INFO) << "Start running the calculator graph.";
   ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller,
@@ -130,18 +129,40 @@ absl::Status RunMPPGraph() {
   MP_RETURN_IF_ERROR(graph.StartRun({}));
 
   LOG(INFO) << "Start grabbing and processing frames.";
+
+  cv::Rect src_roi;
+  src_roi.height = tmp.rows;
+  src_roi.width = 4 * tmp.rows / 3;
+  src_roi.y = 0;
+  src_roi.x = (tmp.cols - src_roi.width) / 2;
+
+  LOG(INFO) << "src_roi: " << src_roi.x << ", " << src_roi.y << " - " << src_roi.width << "x" << src_roi.height;
+
+  double s = 640 / (double)src_roi.width;
+  double t = src_roi.x;
+  cv::Mat S = s * cv::Mat_<double>::eye(3, 3);
+  cv::Mat T = (cv::Mat_<double>(3, 3) <<
+    1.0, 0.0, -t,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0);
+
+  cv::Mat A = cv::Mat(S * T).rowRange(0, 2);
+
   bool grab_frames = true;
   while (grab_frames) {
     // Capture opencv camera or video frame.
-    cv::Mat camera_frame_raw = GetMat(pipe);
+    auto color = pipe.wait_for_frames().get_color_frame();
+    cv::Mat camera_frame_raw = GetMat(color);
     // capture >> camera_frame_raw;
     if (camera_frame_raw.empty()) break;  // End of video.
     static cv::Mat camera_frame; // = camera_frame_raw;
-    cv::resize(camera_frame_raw, camera_frame, { 640, 480});
-    cv::cvtColor(camera_frame, camera_frame, cv::COLOR_YUV2BGR_YUYV);
-    if (!load_video) {
-      cv::flip(camera_frame, camera_frame, /*flipcode=HORIZONTAL*/ 1);
-    }
+    // cv::resize(camera_frame_raw(src_roi), camera_frame, { 640, 480});
+    static cv::Mat crop;
+    cv::warpAffine(camera_frame_raw, crop, A, { 640, 480}, cv::INTER_NEAREST);
+    cv::cvtColor(crop, camera_frame, cv::COLOR_YUV2BGR_YUYV);
+    // if (!load_video) {
+    //   cv::flip(camera_frame, camera_frame, /*flipcode=HORIZONTAL*/ 1);
+    // }
 
     // Wrap Mat into an ImageFrame.
     auto input_frame = absl::make_unique<mediapipe::ImageFrame>(
@@ -164,14 +185,15 @@ absl::Status RunMPPGraph() {
 
     // Convert back to opencv for display or saving.
     cv::Mat output_frame_mat = mediapipe::formats::MatView(&output_frame);
-    cv::cvtColor(output_frame_mat, output_frame_mat, cv::COLOR_RGB2BGR);
+    static cv::Mat preview;
+    cv::cvtColor(output_frame_mat, preview, cv::COLOR_RGB2BGR);
     if (save_video) {
       writer.write(output_frame_mat);
     } else {
-      cv::imshow(kWindowName, output_frame_mat);
+      cv::imshow(kWindowName, preview);
       // Press any key to exit.
       const int pressed_key = cv::waitKey(5);
-      if (pressed_key >= 0 && pressed_key != 255) grab_frames = false;
+      if (pressed_key == 27) grab_frames = false;
     }
   }
 
