@@ -44,7 +44,7 @@ ABSL_FLAG(std::string, output_video_path, "",
 
 cv::Mat GetMat(rs2::pipeline& pipe){
   auto color = pipe.wait_for_frames().get_color_frame();
-  return cv::Mat(color.get_height(), color.get_width(), CV_8UC3, (void*)color.get_data() ).clone();
+  return cv::Mat(color.get_height(), color.get_width(), CV_8UC2, (void*)color.get_data() ).clone();
 }
 
 absl::Status RunMPPGraph() {
@@ -67,7 +67,7 @@ absl::Status RunMPPGraph() {
   rs2::config rs_config;
   rs_config.disable_all_streams();
   rs_config.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1920, 1080,
-                      rs2_format::RS2_FORMAT_RGB8);
+                      rs2_format::RS2_FORMAT_YUYV);
 
   rs2::pipeline pipe;
   pipe.start(rs_config);
@@ -136,8 +136,9 @@ absl::Status RunMPPGraph() {
     cv::Mat camera_frame_raw = GetMat(pipe);
     // capture >> camera_frame_raw;
     if (camera_frame_raw.empty()) break;  // End of video.
-    cv::Mat camera_frame; // = camera_frame_raw;
+    static cv::Mat camera_frame; // = camera_frame_raw;
     cv::resize(camera_frame_raw, camera_frame, { 640, 480});
+    cv::cvtColor(camera_frame, camera_frame, cv::COLOR_YUV2BGR_YUYV);
     if (!load_video) {
       cv::flip(camera_frame, camera_frame, /*flipcode=HORIZONTAL*/ 1);
     }
