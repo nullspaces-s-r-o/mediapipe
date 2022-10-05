@@ -20,8 +20,9 @@ cc_binary(
     name = "face_mesh_tflite",
     data = ["//mediapipe/modules/face_landmark:face_landmark_with_attention.tflite"],
     deps = [
-        "//mediapipe/examples/desktop:simple_run_graph_main",
+        "//mediapipe/examples/coral:demo_run_graph_main",
         "//mediapipe/graphs/face_mesh:desktop_calculators",
+        "//mediapipe/calculators/core:flow_limiter_calculator",
     ],
 )
 

@@ -41,6 +41,7 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/tflite:tflite_model_calculator",
         "//mediapipe/calculators/util:local_file_contents_calculator",
         "//mediapipe/framework/tool:switch_container",
+        "//mediapipe/calculators/tflite:tflite_inference_calculator",
     ],
 )
 
@@ -61,6 +62,10 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/util:landmark_projection_calculator",
         "//mediapipe/calculators/util:thresholding_calculator",
         "//mediapipe/calculators/util:world_landmark_projection_calculator",
+        "//mediapipe/calculators/tflite:tflite_converter_calculator",
+        "//mediapipe/calculators/image:image_transformation_calculator",
+        "//mediapipe/calculators/tensorflow:tensor_to_image_frame_calculator",
+
     ],
 )
 

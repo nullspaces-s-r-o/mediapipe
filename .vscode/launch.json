@@ -85,6 +85,44 @@
 			],
 			"miDebuggerPath": "/usr/bin/gdb-multiarch",
 			"miDebuggerServerAddress": "${env:TARGETIP}:3000"
+		},
+		{
+			"name": "hand_tracking",
+			"request": "launch",
+			"type": "cppdbg",
+			"targetArchitecture": "arm",
+			"program": "hand_tracking_tpu",
+			"cwd": "${workspaceFolder}/bazel-bin/mediapipe/examples/coral",
+			"args": [],
+			"externalConsole": false,
+			"stopAtEntry": false,
+			"MIMode": "gdb",
+			"preLaunchTask": "cross_compile_hand_tracking_tflite",
+			"sourceFileMap": {
+				"/proc/self/cwd": "${workspaceFolder}/bazel-mediapipe"
+			},
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"text": "set sysroot ${env:HOME}/coral/sysroot"
+				},
+				{
+					"text": "python sys.path.append('${env:TOOLS}/../share/gcc-8.5.0/python')"
+				},
+				{
+					"text": "source ${env:SYSROOT}/lib/libstdc++.so.6.0.25-gdb.py"
+				}
+				// ,
+				// {
+				//     "text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
+				// }
+			],
+			"miDebuggerPath": "/usr/bin/gdb-multiarch",
+			"miDebuggerServerAddress": "${env:TARGETIP}:3000"
 		}
 	]
 }

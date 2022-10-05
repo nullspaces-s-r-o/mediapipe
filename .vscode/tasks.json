@@ -8,7 +8,12 @@
 			"type": "shell",
 			"command": "${env:HOME}/fork/mediapipe/mediapipe/examples/coral/cross_compile_face_detection_tpu.sh",
 			"problemMatcher": []
-		}
-	]
+		},
+		{
+			"label": "cross_compile_hand_tracking_tflite",
+			"type": "shell",
+			"command": "${env:HOME}/fork/mediapipe/mediapipe/examples/coral/cross_compile_hand_tracking_tflite.sh",
+			"problemMatcher": []
+		}	]
 }
 // cross_compile_face_detection_tpu

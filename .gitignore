@@ -4,3 +4,9 @@ mediapipe/MediaPipe.tulsiproj/*.tulsiconf-user
 mediapipe/provisioning_profile.mobileprovision
 .configure.bazelrc
 .user.bazelrc
+nullspaces_hand_landmarks_edgetpu.log
+nullspaces_hand_landmarks_edgetpu.tflite
+nullspaces_hand_landmarks_quant_edgetpu.log
+nullspaces_hand_landmarks_quant_edgetpu.tflite
+nullspaces_hand_landmarks_quant.tflite
+nullspaces_hand_landmarks.tflite

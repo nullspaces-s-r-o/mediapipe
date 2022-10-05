@@ -29,6 +29,8 @@
 
 #include "rs.hpp"
 
+// #define WITH_UI
+
 constexpr char kInputStream[] = "input_video";
 constexpr char kOutputStream[] = "output_video";
 constexpr char kWindowName[] = "MediaPipe";
@@ -43,7 +45,7 @@ ABSL_FLAG(std::string, output_video_path, "",
           "If not provided, show result in a window.");
 
 cv::Mat GetMat(rs2::video_frame color){
-  return cv::Mat(color.get_height(), color.get_width(), CV_8UC2, (void*)color.get_data() );
+  return cv::Mat(color.get_height(), color.get_width(), CV_8UC3, (void*)color.get_data() );
 }
 
 absl::Status RunMPPGraph() {
@@ -66,7 +68,7 @@ absl::Status RunMPPGraph() {
   rs2::config rs_config;
   rs_config.disable_all_streams();
   rs_config.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1920, 1080,
-                      rs2_format::RS2_FORMAT_YUYV);
+                      rs2_format::RS2_FORMAT_RGB8);
 
   rs2::pipeline pipe;
   pipe.start(rs_config);
@@ -79,7 +81,15 @@ absl::Status RunMPPGraph() {
   roi.min_x = roi.min_y = 0;
   roi.max_x = 640 - 1;
   roi.max_y = 480 - 1;
-  roiSensor.set_region_of_interest(roi);
+
+  // https://github.com/IntelRealSense/librealsense/issues/8004#issuecomment-746525472
+  for (int itrial = 0; itrial < 5; itrial++) {
+    try {
+      roiSensor.set_region_of_interest(roi);
+    } catch (const rs2::invalid_value_error& ive) {
+      std::cerr << ive.what() << std::endl;
+    }
+  }
 
   // cv::VideoCapture capture;
   const bool load_video = !absl::GetFlag(FLAGS_input_video_path).empty();
@@ -110,12 +120,14 @@ absl::Status RunMPPGraph() {
     //             capture.get(cv::CAP_PROP_FPS), test_frame.size());
     RET_CHECK(writer.isOpened());
   } else {
+#if defined(WITH_UI)
     cv::namedWindow(kWindowName, /*flags=WINDOW_AUTOSIZE*/ 1);
     // capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
     // capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
     // capture.set(cv::CAP_PROP_AUTOFOCUS, 0);
     // capture.set(cv::CAP_PROP_FOCUS, 1);
     // capture.set(cv::CAP_PROP_FPS, 30);
+#endif
   }
 
   // capture >> tmp;
@@ -151,15 +163,15 @@ absl::Status RunMPPGraph() {
   bool grab_frames = true;
   while (grab_frames) {
     // Capture opencv camera or video frame.
-    auto color = pipe.wait_for_frames().get_color_frame();
+    auto color = pipe.wait_for_frames(-1).get_color_frame();
     cv::Mat camera_frame_raw = GetMat(color);
     // capture >> camera_frame_raw;
-    if (camera_frame_raw.empty()) break;  // End of video.
+    // if (camera_frame_raw.empty()) break;  // End of video.
     static cv::Mat camera_frame; // = camera_frame_raw;
     // cv::resize(camera_frame_raw(src_roi), camera_frame, { 640, 480});
-    static cv::Mat crop;
-    cv::warpAffine(camera_frame_raw, crop, A, { 640, 480}, cv::INTER_NEAREST);
-    cv::cvtColor(crop, camera_frame, cv::COLOR_YUV2BGR_YUYV);
+    // static cv::Mat crop;
+    cv::warpAffine(camera_frame_raw, camera_frame, A, { 640, 480}, cv::INTER_NEAREST);
+    // cv::cvtColor(crop, camera_frame, cv::COLOR_YUV2BGR_YUYV);
     // if (!load_video) {
     //   cv::flip(camera_frame, camera_frame, /*flipcode=HORIZONTAL*/ 1);
     // }
@@ -190,12 +202,17 @@ absl::Status RunMPPGraph() {
     if (save_video) {
       writer.write(output_frame_mat);
     } else {
+#if defined(WITH_UI)
+
       cv::imshow(kWindowName, preview);
       // Press any key to exit.
       const int pressed_key = cv::waitKey(5);
       if (pressed_key == 27) grab_frames = false;
+#endif
     }
   }
+
+  pipe.stop();
 
   LOG(INFO) << "Shutting down.";
   if (writer.isOpened()) writer.release();

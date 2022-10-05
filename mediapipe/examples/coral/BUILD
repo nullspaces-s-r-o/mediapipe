@@ -53,7 +53,6 @@ cc_binary(
 cc_binary(
     name = "face_detection_tpu",
     deps = [
-        "//mediapipe/calculators/image:image_transformation_calculator",
         "//mediapipe/calculators/tflite:tflite_converter_calculator",
         "//mediapipe/calculators/tflite:tflite_inference_calculator",
         "//mediapipe/calculators/tflite:tflite_tensors_to_detections_calculator",
@@ -64,3 +63,38 @@ cc_binary(
     ],
 )
 
+# Vychází z hand_tracking_tflite (mediapipe/examples/desktop/hand_tracking/BUILD)
+cc_binary(
+    name = "hand_tracking_tpu",
+    deps = [
+        "//mediapipe/examples/desktop:simple_run_graph_main",
+        "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators",
+        "//mediapipe/calculators/image:image_transformation_calculator",
+        # "//mediapipe/calculators/image:image_transformation_calculator",
+        # "//mediapipe/calculators/tflite:tflite_converter_calculator",
+        # "//mediapipe/calculators/tflite:tflite_inference_calculator",
+        # "//mediapipe/examples/coral:demo_run_graph_main",
+        # "//mediapipe/modules/hand_landmark:hand_landmark_cpu",
+        # "//mediapipe/calculators/tflite:tflite_tensors_to_detections_calculator",
+        # "//mediapipe/calculators/util:detection_label_id_to_text_calculator",
+        # "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
+        # "//mediapipe/graphs/face_detection:desktop_live_calculators",
+    ],
+)
+
+# cc_binary(
+#     name = "hand_tracking_tpu",
+#     deps = [
+#         "//mediapipe/calculators/image:image_transformation_calculator",
+#         "//mediapipe/calculators/tflite:tflite_converter_calculator",
+#         "//mediapipe/calculators/tflite:tflite_inference_calculator",
+#         "//mediapipe/examples/coral:demo_run_graph_main",
+#         "//mediapipe/examples/desktop:simple_run_graph_main",
+#         "//mediapipe/modules/hand_landmark:hand_landmark_cpu",
+#         "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators",
+#         "//mediapipe/calculators/tflite:tflite_tensors_to_detections_calculator",
+#         "//mediapipe/calculators/util:detection_label_id_to_text_calculator",
+#         "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
+#         "//mediapipe/graphs/face_detection:desktop_live_calculators",
+#     ],
+# )
