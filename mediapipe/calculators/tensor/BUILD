@@ -708,6 +708,44 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+cc_library(
+    name = "image_to_tflitetensor_calculator",
+    srcs = ["image_to_tflitetensor_calculator.cc"],
+    copts = select({
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
+    features = ["-layering_check"],  # allow depending on image_to_tensor_calculator_gpu_deps
+    visibility = ["//visibility:public"],
+    deps = [
+        ":image_to_tensor_calculator_cc_proto",
+        ":image_to_tensor_converter",
+        ":image_to_tensor_utils",
+        ":loose_headers",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/formats:image",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:rect_cc_proto",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/framework/port:statusor",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:port",
+        "//mediapipe/gpu:gpu_origin_cc_proto",
+        "@org_tensorflow//tensorflow/lite:framework",
+    ] + select({
+        "//mediapipe/gpu:disable_gpu": [],
+        "//conditions:default": [":image_to_tensor_calculator_gpu_deps"],
+    }) + select({
+        "//mediapipe/framework/port:disable_opencv": [],
+        "//conditions:default": [":image_to_tensor_converter_opencv"],
+    }),
+    alwayslink = 1,
+)
 
 cc_library(
     name = "image_to_tensor_calculator",

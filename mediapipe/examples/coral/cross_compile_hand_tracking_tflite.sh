@@ -22,7 +22,6 @@ rsync -az --info=progress2 \
 	$APP \
 	$TARGET:/home/mendel
 
-
 # Run executable on target
 ssh -n -f $TARGET \
   "sh -c 'cd /home/mendel; \

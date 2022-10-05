@@ -37,10 +37,10 @@ output_stream: "HANDEDNESS:handedness"
 # Transforms a region of image into a 224x224 tensor while keeping the aspect
 # ratio, and therefore may result in potential letterboxing.
 node {
-  calculator: "ImageToTensorCalculator"
+  calculator: "ImageToTfLiteTensorCalculator"
   input_stream: "IMAGE:image"
   input_stream: "NORM_RECT:hand_rect"
-  output_stream: "TENSORS:mediapipe_tensor"
+  output_stream: "TENSORS:tflite_tensor"
   output_stream: "LETTERBOX_PADDING:letterbox_padding"
   options: {
     [mediapipe.ImageToTensorCalculatorOptions.ext] {
@@ -51,42 +51,6 @@ node {
         min: 0.0
         max: 1.0
       }
-    }
-  }
-}
-
-node {
-  calculator: "TensorToImageFrameCalculator"
-  input_stream: "TENSORS:mediapipe_tensor"
-  output_stream: "IMAGE:image_frame"
-  options {
-    [mediapipe.TensorToImageFrameCalculatorOptions.ext] {
-      scale_factor: 1.0  # set to 255.0 for [0,1] -> [0,255] scaling
-    }
-  }
-}
-
-node {
-  calculator: "ImageTransformationCalculator"
-  input_stream: "IMAGE:image_frame"
-  output_stream: "IMAGE:palm_crop"
-  output_stream: "LETTERBOX_PADDING:letterbox_padding"
-  options: {
-    [mediapipe.ImageTransformationCalculatorOptions.ext] {
-      output_width: 224
-      output_height: 224
-    }
-  }
-}
-# Converts the transformed input image on CPU into an image tensor stored as a
-# TfLiteTensor.
-node {
-  calculator: "TfLiteConverterCalculator"
-  input_stream: "IMAGE:palm_crop"
-  output_stream: "TENSORS:tflite_tensor"
-  options: {
-    [mediapipe.TfLiteConverterCalculatorOptions.ext] {
-      use_quantized_tensors: true
     }
   }
 }
@@ -118,7 +82,7 @@ node {
 # Splits a vector of tensors to multiple vectors according to the ranges
 # specified in option.
 node {
-  calculator: "SplitTensorVectorCalculator"
+  calculator: "SplitTfLiteTensorVectorCalculator"
   input_stream: "output_tensors"
   output_stream: "landmark_tensors"
   output_stream: "hand_flag_tensor"
@@ -137,7 +101,7 @@ node {
 # Converts the hand-flag tensor into a float that represents the confidence
 # score of hand presence.
 node {
-  calculator: "TensorsToFloatsCalculator"
+  calculator: "TfLiteTensorsToFloatsCalculator"
   input_stream: "TENSORS:hand_flag_tensor"
   output_stream: "FLOAT:hand_presence_score"
 }
@@ -166,11 +130,11 @@ node {
 # Converts the handedness tensor into a float that represents the classification
 # score of handedness.
 node {
-  calculator: "TensorsToClassificationCalculator"
+  calculator: "TfLiteTensorsToClassificationCalculator"
   input_stream: "TENSORS:ensured_handedness_tensor"
   output_stream: "CLASSIFICATIONS:handedness"
   options: {
-    [mediapipe.TensorsToClassificationCalculatorOptions.ext] {
+    [mediapipe.TfLiteTensorsToClassificationCalculatorOptions.ext] {
       top_k: 1
       label_map_path: "mediapipe/modules/hand_landmark/handedness.txt"
       binary_classification: true
@@ -189,11 +153,11 @@ node {
 # Decodes the landmark tensors into a list of landmarks, where the landmark
 # coordinates are normalized by the size of the input image to the model.
 node {
-  calculator: "TensorsToLandmarksCalculator"
+  calculator: "TfLiteTensorsToLandmarksCalculator"
   input_stream: "TENSORS:ensured_landmark_tensors"
   output_stream: "NORM_LANDMARKS:landmarks"
   options: {
-    [mediapipe.TensorsToLandmarksCalculatorOptions.ext] {
+    [mediapipe.TfLiteTensorsToLandmarksCalculatorOptions.ext] {
       num_landmarks: 21
       input_image_width: 224
       input_image_height: 224
@@ -235,11 +199,11 @@ node {
 # Decodes the landmark tensors into a list of landmarks, where the landmark
 # coordinates are normalized by the size of the input image to the model.
 node {
-  calculator: "TensorsToLandmarksCalculator"
+  calculator: "TfLiteTensorsToLandmarksCalculator"
   input_stream: "TENSORS:ensured_world_landmark_tensor"
   output_stream: "LANDMARKS:unprojected_world_landmarks"
   options: {
-    [mediapipe.TensorsToLandmarksCalculatorOptions.ext] {
+    [mediapipe.TfLiteTensorsToLandmarksCalculatorOptions.ext] {
       num_landmarks: 21
     }
   }

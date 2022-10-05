@@ -53,7 +53,7 @@ mediapipe_simple_subgraph(
         ":hand_landmark_model_loader",
         "//mediapipe/calculators/core:gate_calculator",
         "//mediapipe/calculators/core:split_vector_calculator",
-        "//mediapipe/calculators/tensor:image_to_tensor_calculator",
+        "//mediapipe/calculators/tensor:image_to_tflitetensor_calculator",
         "//mediapipe/calculators/tensor:inference_calculator",
         "//mediapipe/calculators/tensor:tensors_to_classification_calculator",
         "//mediapipe/calculators/tensor:tensors_to_floats_calculator",
@@ -62,11 +62,10 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/util:landmark_projection_calculator",
         "//mediapipe/calculators/util:thresholding_calculator",
         "//mediapipe/calculators/util:world_landmark_projection_calculator",
-        "//mediapipe/calculators/tflite:tflite_converter_calculator",
-        "//mediapipe/calculators/image:image_transformation_calculator",
-        "//mediapipe/calculators/tensorflow:tensor_to_image_frame_calculator",
-
-    ],
+        "//mediapipe/calculators/tflite:tflite_tensors_to_floats_calculator",
+         "//mediapipe/calculators/tflite:tflite_tensors_to_classification_calculator",
+         "//mediapipe/calculators/tflite:tflite_tensors_to_landmarks_calculator",
+   ],
 )
 
 mediapipe_simple_subgraph(
