@@ -55,8 +55,8 @@ node {
   output_stream: "LETTERBOX_PADDING:letterbox_padding"
   options: {
     [mediapipe.ImageTransformationCalculatorOptions.ext] {
-      output_width: 64
-      output_height: 64
+      output_width: 224
+      output_height: 224
       scale_mode: FIT
       }
     }
@@ -71,6 +71,7 @@ node {
   options: {
     [mediapipe.TfLiteConverterCalculatorOptions.ext] {
       zero_center: false
+      use_quantized_tensors: true
     }
   }
 }
