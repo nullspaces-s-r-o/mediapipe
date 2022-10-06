@@ -441,7 +441,10 @@ cc_library(
 
 cc_library(
     name = "tflite_tensors_to_classification_calculator",
-    srcs = ["tflite_tensors_to_classification_calculator.cc"],
+    srcs = [
+        "tflite_tensors_to_classification_calculator.cc",
+        "tflite_tensors_to_classification_calculator_u8.cc"
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":tflite_tensors_to_classification_calculator_cc_proto",

@@ -150,7 +150,7 @@ node {
 # Converts the handedness tensor into a float that represents the classification
 # score of handedness.
 node {
-  calculator: "TfLiteTensorsToClassificationCalculator"
+  calculator: "TfLiteTensorsToClassificationCalculatorU8"
   input_stream: "TENSORS:ensured_handedness_tensor"
   output_stream: "CLASSIFICATIONS:handedness"
   options: {
