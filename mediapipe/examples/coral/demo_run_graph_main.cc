@@ -67,7 +67,7 @@ absl::Status RunMPPGraph() {
 
   rs2::config rs_config;
   rs_config.disable_all_streams();
-  rs_config.enable_stream(rs2_stream::RS2_STREAM_COLOR, 640, 480,
+  rs_config.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1920, 1080,
                       rs2_format::RS2_FORMAT_RGB8);
 
   rs2::pipeline pipe;
@@ -170,8 +170,8 @@ absl::Status RunMPPGraph() {
     static cv::Mat camera_frame; // = camera_frame_raw;
     // cv::resize(camera_frame_raw(src_roi), camera_frame, { 640, 480});
     // static cv::Mat crop;
-    // cv::warpAffine(camera_frame_raw, camera_frame, A, { 640, 480}, cv::INTER_NEAREST);
-    camera_frame = camera_frame_raw;
+    cv::warpAffine(camera_frame_raw, camera_frame, A, { 640, 480}, cv::INTER_NEAREST);
+    // camera_frame = camera_frame_raw;
     // cv::cvtColor(crop, camera_frame, cv::COLOR_YUV2BGR_YUYV);
     // if (!load_video) {
     //   cv::flip(camera_frame, camera_frame, /*flipcode=HORIZONTAL*/ 1);
