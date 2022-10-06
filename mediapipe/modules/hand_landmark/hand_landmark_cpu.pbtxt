@@ -90,12 +90,12 @@ node {
   calculator: "TfLiteInferenceCalculator"
   input_side_packet: "MODEL:model"
   input_stream: "TENSORS:image_tensor"
-  output_stream: "TENSORS:output_tensors"
+  output_stream: "TENSORS:output_tensors_quantized"
   options: {
     [mediapipe.TfLiteInferenceCalculatorOptions.ext] {
       delegate {
-        # xnnpack {}
-        tflite{}
+        xnnpack {}
+        # tflite{} TODO: don't know what settings to use
       }
     }
   }
@@ -105,7 +105,7 @@ node {
 # specified in option.
 node {
   calculator: "SplitTfLiteTensorVectorCalculator"
-  input_stream: "output_tensors"
+  input_stream: "output_tensors_quantized"
   output_stream: "hand_flag_tensor"
   output_stream: "landmark_tensors"
   output_stream: "handedness_tensor"
@@ -134,7 +134,7 @@ node {
   output_stream: "FLAG:hand_presence"
   options: {
     [mediapipe.ThresholdingCalculatorOptions.ext] {
-      threshold: 0.5
+      threshold: 0.0
     }
   }
 }
@@ -167,14 +167,14 @@ node {
   calculator: "GateCalculator"
   input_stream: "landmark_tensors"
   input_stream: "ALLOW:hand_presence"
-  output_stream: "ensured_landmark_tensors"
+  output_stream: "ensured_landmark_tensors_u8"
 }
 
 # Decodes the landmark tensors into a list of landmarks, where the landmark
 # coordinates are normalized by the size of the input image to the model.
 node {
-  calculator: "TfLiteTensorsToLandmarksCalculator"
-  input_stream: "TENSORS:ensured_landmark_tensors"
+  calculator: "TfLiteTensorsToLandmarksCalculatorU8"
+  input_stream: "TENSORS:ensured_landmark_tensors_u8"
   output_stream: "NORM_LANDMARKS:landmarks"
   options: {
     [mediapipe.TfLiteTensorsToLandmarksCalculatorOptions.ext] {

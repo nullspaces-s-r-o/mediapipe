@@ -116,10 +116,10 @@
 				{
 					"text": "source ${env:SYSROOT}/lib/libstdc++.so.6.0.25-gdb.py"
 				}
-				// ,
-				// {
-				//     "text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
-				// }
+				,
+				{
+				    "text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
+				}
 			],
 			"miDebuggerPath": "/usr/bin/gdb-multiarch",
 			"miDebuggerServerAddress": "${env:TARGETIP}:3000"

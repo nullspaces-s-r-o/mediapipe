@@ -473,7 +473,10 @@ cc_library(
 
 cc_library(
     name = "tflite_tensors_to_landmarks_calculator",
-    srcs = ["tflite_tensors_to_landmarks_calculator.cc"],
+    srcs = [
+        "tflite_tensors_to_landmarks_calculator.cc", 
+        "tflite_tensors_to_landmarks_calculator_u8.cc"
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":tflite_tensors_to_landmarks_calculator_cc_proto",

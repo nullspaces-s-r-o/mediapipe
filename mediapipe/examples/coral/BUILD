@@ -67,7 +67,7 @@ cc_binary(
 cc_binary(
     name = "hand_tracking_tpu",
     deps = [
-        "//mediapipe/examples/desktop:simple_run_graph_main",
+        "//mediapipe/examples/coral:demo_run_graph_main",
         "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators",
         "//mediapipe/calculators/image:image_transformation_calculator",
         # "//mediapipe/calculators/image:image_transformation_calculator",
