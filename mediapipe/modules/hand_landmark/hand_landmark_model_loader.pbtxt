@@ -34,7 +34,7 @@ node {
         options: {
           [mediapipe.ConstantSidePacketCalculatorOptions.ext]: {
             packet {
-              string_value: "mediapipe/modules/hand_landmark/hand_landmark_full.tflite.ns"
+              string_value: "mediapipe/modules/hand_landmark/hand_landmark_full.tflite"
             }
           }
         }

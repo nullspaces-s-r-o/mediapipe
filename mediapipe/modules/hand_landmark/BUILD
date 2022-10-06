@@ -65,7 +65,11 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/tflite:tflite_tensors_to_floats_calculator",
          "//mediapipe/calculators/tflite:tflite_tensors_to_classification_calculator",
          "//mediapipe/calculators/tflite:tflite_tensors_to_landmarks_calculator",
-   ],
+        "//mediapipe/calculators/image:image_cropping_calculator",
+        "//mediapipe/calculators/image:image_transformation_calculator",
+        "//mediapipe/calculators/tflite:tflite_converter_calculator",
+
+],
 )
 
 mediapipe_simple_subgraph(

@@ -41,7 +41,7 @@ output_stream: "LANDMARKS:multi_hand_landmarks"
 # LANDMARKS provides coordinates (in pixels) of a 3D object projected onto the
 # 2D image surface, while WORLD_LANDMARKS provides coordinates (in meters) of
 # the 3D object itself.
-output_stream: "WORLD_LANDMARKS:multi_hand_world_landmarks"
+# output_stream: "WORLD_LANDMARKS:multi_hand_world_landmarks"
 
 # Collection of handedness of the detected hands (i.e. is hand left or right),
 # each represented as a ClassificationList proto with a single Classification
@@ -201,7 +201,7 @@ node {
   input_stream: "IMAGE:image_for_landmarks"
   input_stream: "ROI:single_hand_rect"
   output_stream: "LANDMARKS:single_hand_landmarks"
-  output_stream: "WORLD_LANDMARKS:single_hand_world_landmarks"
+  # output_stream: "WORLD_LANDMARKS:single_hand_world_landmarks"
   output_stream: "HANDEDNESS:single_handedness"
 }
 
@@ -237,12 +237,12 @@ node {
 # Collects a set of world landmarks for each hand into a vector. Upon receiving
 # the BATCH_END timestamp, outputs the vector of landmarks at the BATCH_END
 # timestamp.
-node {
-  calculator: "EndLoopLandmarkListVectorCalculator"
-  input_stream: "ITEM:single_hand_world_landmarks"
-  input_stream: "BATCH_END:hand_rects_timestamp"
-  output_stream: "ITERABLE:multi_hand_world_landmarks"
-}
+# node {
+#   calculator: "EndLoopLandmarkListVectorCalculator"
+#   input_stream: "ITEM:single_hand_world_landmarks"
+#   input_stream: "BATCH_END:hand_rects_timestamp"
+#   output_stream: "ITERABLE:multi_hand_world_landmarks"
+# }
 
 # Collects a NormalizedRect for each hand into a vector. Upon receiving the
 # BATCH_END timestamp, outputs the vector of NormalizedRect at the BATCH_END
