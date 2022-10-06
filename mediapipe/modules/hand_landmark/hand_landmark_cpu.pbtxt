@@ -121,7 +121,7 @@ node {
 # Converts the hand-flag tensor into a float that represents the confidence
 # score of hand presence.
 node {
-  calculator: "TfLiteTensorsToFloatsCalculator"
+  calculator: "TfLiteTensorsToFloatsCalculatorU8"
   input_stream: "TENSORS:hand_flag_tensor"
   output_stream: "FLOAT:hand_presence_score"
 }
@@ -134,7 +134,7 @@ node {
   output_stream: "FLAG:hand_presence"
   options: {
     [mediapipe.ThresholdingCalculatorOptions.ext] {
-      threshold: 0.0
+      threshold: 0.5
     }
   }
 }

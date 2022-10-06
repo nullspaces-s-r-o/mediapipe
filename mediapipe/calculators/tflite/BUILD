@@ -490,7 +490,10 @@ cc_library(
 
 cc_library(
     name = "tflite_tensors_to_floats_calculator",
-    srcs = ["tflite_tensors_to_floats_calculator.cc"],
+    srcs = [
+        "tflite_tensors_to_floats_calculator.cc",
+        "tflite_tensors_to_floats_calculator_u8.cc"
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_framework",
