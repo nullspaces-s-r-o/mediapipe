@@ -86,6 +86,7 @@ absl::Status RunMPPGraph() {
   for (int itrial = 0; itrial < 5; itrial++) {
     try {
       roiSensor.set_region_of_interest(roi);
+      break;
     } catch (const rs2::invalid_value_error& ive) {
       std::cerr << ive.what() << std::endl;
     }
