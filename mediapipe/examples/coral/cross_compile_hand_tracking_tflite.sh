@@ -28,5 +28,6 @@ rsync -az --info=progress2 \
 ssh -n -f $TARGET \
   "sh -c 'cd /home/mendel; \
 	export DISPLAY=:0.0; \
+	GLOG_logtostderr=1; \
   nohup gdbserver localhost:3000 \
-  hand_tracking_tpu --calculator_graph_config_file hand_tracking_desktop_live.pbtxt > output.log 2>&1 &'"
+  hand_tracking_tpu --calculator_graph_config_file hand_tracking_tpu.pbtxt > output.log 2>&1 &'"

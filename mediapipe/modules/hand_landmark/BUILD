@@ -73,6 +73,33 @@ mediapipe_simple_subgraph(
 )
 
 mediapipe_simple_subgraph(
+    name = "hand_landmark_tpu",
+    graph = "hand_landmark_tpu.pbtxt",
+    register_as = "HandLandmarkTpu",
+    deps = [
+        ":hand_landmark_model_loader",
+        "//mediapipe/calculators/core:dequantize_byte_array_calculator",
+        "//mediapipe/calculators/core:gate_calculator",
+        "//mediapipe/calculators/core:split_vector_calculator",
+        "//mediapipe/calculators/image:image_cropping_calculator",
+        "//mediapipe/calculators/image:image_transformation_calculator",
+        "//mediapipe/calculators/tensor:image_to_tflitetensor_calculator",
+        "//mediapipe/calculators/tensor:inference_calculator",
+        "//mediapipe/calculators/tensor:tensors_to_classification_calculator",
+        "//mediapipe/calculators/tensor:tensors_to_floats_calculator",
+        "//mediapipe/calculators/tensor:tensors_to_landmarks_calculator",
+        "//mediapipe/calculators/tflite:tflite_converter_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_classification_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_floats_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_landmarks_calculator",
+        "//mediapipe/calculators/util:landmark_letterbox_removal_calculator",
+        "//mediapipe/calculators/util:landmark_projection_calculator",
+        "//mediapipe/calculators/util:thresholding_calculator",
+        "//mediapipe/calculators/util:world_landmark_projection_calculator",
+],
+)
+
+mediapipe_simple_subgraph(
     name = "hand_landmark_gpu",
     graph = "hand_landmark_gpu.pbtxt",
     register_as = "HandLandmarkGpu",
@@ -145,6 +172,29 @@ mediapipe_simple_subgraph(
     register_as = "HandLandmarkTrackingCpu",
     deps = [
         ":hand_landmark_cpu",
+        ":hand_landmark_landmarks_to_roi",
+        ":palm_detection_detection_to_roi",
+        "//mediapipe/calculators/core:begin_loop_calculator",
+        "//mediapipe/calculators/core:clip_vector_size_calculator",
+        "//mediapipe/calculators/core:constant_side_packet_calculator",
+        "//mediapipe/calculators/core:end_loop_calculator",
+        "//mediapipe/calculators/core:flow_limiter_calculator",
+        "//mediapipe/calculators/core:gate_calculator",
+        "//mediapipe/calculators/core:previous_loopback_calculator",
+        "//mediapipe/calculators/image:image_properties_calculator",
+        "//mediapipe/calculators/util:association_norm_rect_calculator",
+        "//mediapipe/calculators/util:collection_has_min_size_calculator",
+        "//mediapipe/calculators/util:filter_collection_calculator",
+        "//mediapipe/modules/palm_detection:palm_detection_cpu",
+    ],
+)
+
+mediapipe_simple_subgraph(
+    name = "hand_landmark_tracking_tpu",
+    graph = "hand_landmark_tracking_tpu.pbtxt",
+    register_as = "HandLandmarkTrackingTpu",
+    deps = [
+        ":hand_landmark_tpu",
         ":hand_landmark_landmarks_to_roi",
         ":palm_detection_detection_to_roi",
         "//mediapipe/calculators/core:begin_loop_calculator",

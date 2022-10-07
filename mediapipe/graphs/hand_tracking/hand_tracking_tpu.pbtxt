@@ -15,14 +15,14 @@ node {
   output_side_packet: "PACKET:num_hands"
   node_options: {
     [type.googleapis.com/mediapipe.ConstantSidePacketCalculatorOptions]: {
-      packet { int_value: 2 }
+      packet { int_value: 1 }
     }
   }
 }
 
 # Detects/tracks hand landmarks.
 node {
-  calculator: "HandLandmarkTrackingCpu"
+  calculator: "HandLandmarkTrackingTpu"
   input_stream: "IMAGE:input_video"
   input_side_packet: "NUM_HANDS:num_hands"
   output_stream: "LANDMARKS:landmarks"
