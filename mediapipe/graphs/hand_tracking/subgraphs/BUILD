@@ -56,3 +56,22 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/util:rect_to_render_data_calculator",
     ],
 )
+
+mediapipe_simple_subgraph(
+    name = "hand_data_exporter",
+    graph = "hand_data_exporter.pbtxt",
+    register_as = "HandDataExporterSubgraph",
+    deps = [
+        "//mediapipe/calculators/core:begin_loop_calculator",
+        "//mediapipe/calculators/core:end_loop_calculator",
+        "//mediapipe/calculators/core:gate_calculator",
+        "//mediapipe/calculators/core:split_vector_calculator",
+        "//mediapipe/calculators/util:annotation_overlay_calculator",
+        "//mediapipe/calculators/util:collection_has_min_size_calculator",
+        "//mediapipe/calculators/util:detections_to_render_data_calculator",
+        "//mediapipe/calculators/util:labels_to_render_data_calculator",
+        "//mediapipe/calculators/util:landmarks_to_render_data_calculator",
+        "//mediapipe/calculators/util:rect_to_render_data_calculator",
+        "//mediapipe/graphs/hand_tracking/calculators:detections_to_train_data_calculator",
+    ],
+)

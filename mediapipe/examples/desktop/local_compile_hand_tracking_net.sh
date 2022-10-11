@@ -3,7 +3,7 @@ set -ex
 # Build executable
 bazel build \
 	--define MEDIAPIPE_DISABLE_GPU=1 \
-	--compilation_mode opt \
+	--compilation_mode dbg \
 	mediapipe/examples/desktop/hand_tracking:hand_tracking_net
 	# --copt=-g \
 	# --cxxopt='-std=c++17' \

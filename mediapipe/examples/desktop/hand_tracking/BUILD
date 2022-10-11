@@ -49,6 +49,7 @@ cc_binary(
     deps = [
         "//mediapipe/examples/desktop:demo_run_graph_main_network",
         "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators",
+        "//mediapipe/graphs/hand_tracking/subgraphs:hand_data_exporter",
     ],
 )
 

@@ -54,7 +54,7 @@ cc_library(
         "//mediapipe/calculators/util:thresholding_calculator_cc_proto",
         "//mediapipe/calculators/util:world_landmark_projection_calculator",
         "//mediapipe/framework/api2:builder",
-        "//mediapipe/framework/api2:port",
+        "//mediapipe/framework/api2 :port",
         "//mediapipe/framework/formats:classification_cc_proto",
         "//mediapipe/framework/formats:image",
         "//mediapipe/framework/formats:landmark_cc_proto",

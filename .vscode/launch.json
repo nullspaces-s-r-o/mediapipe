@@ -131,7 +131,7 @@
 			"targetArchitecture": "x64",
 			"program": "${workspaceFolder}/bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_net",
 			"cwd": "${workspaceFolder}",
-			"args": ["--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_live.pbtxt"],
+			"args": ["--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_dataset.pbtxt"],
 			"externalConsole": false,
 			"stopAtEntry": false,
 			"MIMode": "gdb",
