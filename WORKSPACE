@@ -244,6 +244,12 @@ http_archive(
 new_local_repository(
     name = "linux_opencv",
     build_file = "@//third_party:opencv_linux.BUILD",
+    path = "/usr/local",
+)
+
+new_local_repository(
+    name = "linux_opencv_aarch64",
+    build_file = "@//third_party:opencv_linux_aarch64.BUILD",
     path = "/home/jiri/coral/sysroot/usr/local",
 )
 
@@ -251,6 +257,18 @@ new_local_repository(
     name = "linux_realsense",
     path = "/home/jiri/coral/sysroot/usr/local",
     build_file = "@//third_party:linux_realsense.BUILD",
+)
+
+new_local_repository(
+    name = "network_camera",
+    path = "/home/jiri/DigitalAssistant/headless-calibration/ImageProviders",
+    build_file = "@//third_party:network_camera.BUILD",
+)
+
+new_local_repository(
+    name = "imagestreamer_project",
+    path = "/home/jiri/DigitalAssistant/",
+    build_file = "@//third_party:imagestreamer.BUILD",
 )
 
 new_local_repository(

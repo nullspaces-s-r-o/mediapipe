@@ -10,9 +10,12 @@ bazel build \
 	--define MEDIAPIPE_EDGE_TPU=pci \
 	--compilation_mode dbg \
 	--copt=-g \
-	mediapipe/examples/coral/hand_tracking_$VER
+	--cpu=aarch64 \
+	mediapipe/examples/coral:hand_tracking_$VER
 	# --define tflite_with_xnnpack=false \
 	# --cxxopt='-std=c++17' \
+
+exit 0
 
 # Copy to target
 APP=$HOME/fork/mediapipe/bazel-bin/mediapipe/examples/coral/hand_tracking_$VER

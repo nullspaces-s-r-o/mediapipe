@@ -123,6 +123,22 @@
 			],
 			"miDebuggerPath": "/usr/bin/gdb-multiarch",
 			"miDebuggerServerAddress": "${env:TARGETIP}:3000"
+		},
+		{
+			"name": "hand_tracking_net",
+			"request": "launch",
+			"type": "cppdbg",
+			"targetArchitecture": "x64",
+			"program": "${workspaceFolder}/bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_net",
+			"cwd": "${workspaceFolder}",
+			"args": ["--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_live.pbtxt"],
+			"externalConsole": false,
+			"stopAtEntry": false,
+			"MIMode": "gdb",
+			"preLaunchTask": "local_compile_hand_tracking_net",
+			"sourceFileMap": {
+				"/proc/self/cwd": "${workspaceFolder}/bazel-mediapipe"
+			}
 		}
 	]
 }

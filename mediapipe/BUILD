@@ -68,6 +68,15 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "coral_aarch64",
+    values = {
+        # "crosstool_top": "//toolchain:coral_suite",
+        "cpu": "aarch64",
+    },
+    visibility = ["//visibility:public"],
+)
+
 # Note: this cannot just match "apple_platform_type": "macos" because that option
 # defaults to "macos" even when building on Linux!
 alias(

@@ -14,6 +14,13 @@
 			"type": "shell",
 			"command": "${env:HOME}/fork/mediapipe/mediapipe/examples/coral/cross_compile_hand_tracking_tflite.sh",
 			"problemMatcher": []
-		}	]
+		},
+		{
+			"label": "local_compile_hand_tracking_net",
+			"type": "shell",
+			"command": "${env:HOME}/fork/mediapipe/mediapipe/examples/desktop/local_compile_hand_tracking_net.sh",
+			"problemMatcher": []
+		}
+	]
 }
 // cross_compile_face_detection_tpu
