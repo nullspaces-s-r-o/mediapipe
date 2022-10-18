@@ -67,6 +67,17 @@ node {
   }
 }
 
+node {
+  calculator: "InferenceCaptureCalculator"
+  input_stream: "TENSORS_NETINPUT:input_tensor"
+  input_stream: "TENSORS_NETOUTPUT:detection_tensors"
+  # options: {
+  #   [mediapipe.InferenceCalculatorOptions.ext] {
+  #     delegate { xnnpack {} }
+  #   }
+  # }
+}
+
 # Generates a single side packet containing a vector of SSD anchors based on
 # the specification in the options.
 node {

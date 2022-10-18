@@ -52,3 +52,28 @@ cc_library(
     alwayslink = 1,
 )
 
+cc_library(
+    name = "inference_capture_calculator",
+    srcs = ["inference_capture_calculator.cc"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":detections_to_train_data_calculator_cc_proto",
+        "//mediapipe/calculators/util:detections_to_render_data_calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:calculator_options_cc_proto",
+        "//mediapipe/framework/formats:detection_cc_proto",
+        "//mediapipe/framework/formats:location_data_cc_proto",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/formats:video_stream_header",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:opencv_core",
+        "//mediapipe/framework/port:opencv_imgproc",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/util:color_cc_proto",
+        "//mediapipe/util:render_data_cc_proto",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+    ],
+    alwayslink = 1,
+)

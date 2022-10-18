@@ -55,6 +55,7 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/tflite:tflite_custom_op_resolver_calculator",
         "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
         "//mediapipe/calculators/util:non_max_suppression_calculator",
+        "//mediapipe/graphs/hand_tracking/calculators:inference_capture_calculator",
     ],
 )
 
