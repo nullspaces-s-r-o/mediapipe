@@ -72,7 +72,7 @@ absl::Status RunMPPGraph() {
   // nc.GetImage(img);
 
 
-  ImageStreamer::SetServerAddress("192.168.137.51:50052");
+  ImageStreamer::SetServerAddress("172.29.48.1:50052");
 
   struct Sink : IImageStreamer{
     virtual void OnImageStreamer(image::Frame & frame){

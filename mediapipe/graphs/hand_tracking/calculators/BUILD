@@ -11,16 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+load("//mediapipe/framework/port:build_config.bzl", "mediapipe_proto_library")
 
 licenses(["notice"])
 
 package(default_visibility = ["//visibility:public"])
+
+mediapipe_proto_library(
+    name = "detections_to_train_data_calculator_proto",
+    srcs = ["detections_to_train_data_calculator.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//mediapipe/framework:calculator_options_proto",
+        "//mediapipe/framework:calculator_proto",
+    ],
+)
 
 cc_library(
     name = "detections_to_train_data_calculator",
     srcs = ["detections_to_train_data_calculator.cc"],
     visibility = ["//visibility:public"],
     deps = [
+        ":detections_to_train_data_calculator_cc_proto",
         "//mediapipe/calculators/util:detections_to_render_data_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:calculator_options_cc_proto",
@@ -39,3 +51,4 @@ cc_library(
     ],
     alwayslink = 1,
 )
+

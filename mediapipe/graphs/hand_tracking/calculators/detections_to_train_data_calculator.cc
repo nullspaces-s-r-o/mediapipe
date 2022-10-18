@@ -16,6 +16,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "mediapipe/calculators/util/detections_to_render_data_calculator.pb.h"
+#include "mediapipe/graphs/hand_tracking/calculators/detections_to_train_data_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/calculator_options.pb.h"
 #include "mediapipe/framework/formats/image_frame.h"
@@ -157,7 +158,9 @@ absl::Status DetectionsToTrainDataCalculator::Open(CalculatorContext* cc) {
 }
 
 absl::Status DetectionsToTrainDataCalculator::Process(CalculatorContext* cc) {
+  const auto& data_options = cc->Options<DetectionsToTrainDataCalculatorOptions>();
   const auto& options = cc->Options<DetectionsToRenderDataCalculatorOptions>();
+
   const bool has_detection_from_list =
       cc->Inputs().HasTag(kDetectionListTag) && !cc->Inputs()
                                                      .Tag(kDetectionListTag)
@@ -171,8 +174,10 @@ absl::Status DetectionsToTrainDataCalculator::Process(CalculatorContext* cc) {
   const bool has_detection_from_vector =
       cc->Inputs().HasTag(kDetectionsTag) && !cc->Inputs().Tag(kDetectionsTag).IsEmpty() &&
       !cc->Inputs().Tag(kDetectionsTag).Get<std::vector<Detection>>().empty();
+
   const bool has_single_detection = cc->Inputs().HasTag(kDetectionTag) &&
                                     !cc->Inputs().Tag(kDetectionTag).IsEmpty();
+
   if (!options.produce_empty_packet() && !has_detection_from_list &&
       !has_detection_from_vector && !has_single_detection) {
     return absl::OkStatus();
