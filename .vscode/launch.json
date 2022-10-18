@@ -77,10 +77,9 @@
 				},
 				{
 					"text": "source ${env:SYSROOT}/lib/libstdc++.so.6.0.25-gdb.py"
-				}
-				,
+				},
 				{
-				    "text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
+					"text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
 				}
 			],
 			"miDebuggerPath": "/usr/bin/gdb-multiarch",
@@ -131,14 +130,23 @@
 			"targetArchitecture": "x64",
 			"program": "${workspaceFolder}/bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_net",
 			"cwd": "${workspaceFolder}",
-			"args": ["--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_dataset.pbtxt"],
+			"args": [
+				"--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_dataset.pbtxt"
+			],
 			"externalConsole": false,
 			"stopAtEntry": false,
 			"MIMode": "gdb",
 			"preLaunchTask": "local_compile_hand_tracking_net",
 			"sourceFileMap": {
 				"/proc/self/cwd": "${workspaceFolder}/bazel-mediapipe"
-			}
+			},
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				}
+			]
 		}
 	]
 }
