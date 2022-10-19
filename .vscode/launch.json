@@ -145,6 +145,9 @@
 					"description": "Enable pretty-printing for gdb",
 					"text": "-enable-pretty-printing",
 					"ignoreFailures": true
+				},
+				{
+					"text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
 				}
 			]
 		}

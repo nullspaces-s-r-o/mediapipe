@@ -52,11 +52,22 @@ cc_library(
     alwayslink = 1,
 )
 
+mediapipe_proto_library(
+    name = "inference_capture_calculator_proto",
+    srcs = ["inference_capture_calculator.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//mediapipe/framework:calculator_options_proto",
+        "//mediapipe/framework:calculator_proto",
+    ],
+)
+
 cc_library(
     name = "inference_capture_calculator",
     srcs = ["inference_capture_calculator.cc"],
     visibility = ["//visibility:public"],
     deps = [
+        ":inference_capture_calculator_cc_proto",
         ":detections_to_train_data_calculator_cc_proto",
         "//mediapipe/calculators/util:detections_to_render_data_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",

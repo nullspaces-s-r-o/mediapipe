@@ -71,11 +71,11 @@ node {
   calculator: "InferenceCaptureCalculator"
   input_stream: "TENSORS_NETINPUT:input_tensor"
   input_stream: "TENSORS_NETOUTPUT:detection_tensors"
-  # options: {
-  #   [mediapipe.InferenceCalculatorOptions.ext] {
-  #     delegate { xnnpack {} }
-  #   }
-  # }
+  options: {
+    [mediapipe.InferenceCaptureCalculatorOptions.ext] {
+      export_path: "/tmp/palm_detection"
+    }
+  }
 }
 
 # Generates a single side packet containing a vector of SSD anchors based on
