@@ -15,12 +15,17 @@
 #ifndef MEDIAPIPE_UTIL_TFLITE_TFLITE_MODEL_LOADER_H_
 #define MEDIAPIPE_UTIL_TFLITE_TFLITE_MODEL_LOADER_H_
 
+#include <functional>
+#include <memory>
+#include <string>
+
 #include "mediapipe/framework/api2/packet.h"
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/port/statusor.h"
 #include "tensorflow/lite/model.h"
 
 namespace mediapipe {
+
 // Represents a TfLite model as a FlatBuffer.
 using TfLiteModelPtr =
     std::unique_ptr<tflite::FlatBufferModel,

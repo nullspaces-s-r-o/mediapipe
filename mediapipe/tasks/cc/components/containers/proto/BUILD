@@ -1,4 +1,4 @@
-# Copyright 2022 The MediaPipe Authors. All Rights Reserved.
+# Copyright 2022 The MediaPipe Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,19 @@ load("//mediapipe/framework/port:build_config.bzl", "mediapipe_proto_library")
 package(default_visibility = ["//mediapipe/tasks:internal"])
 
 licenses(["notice"])
+
+mediapipe_proto_library(
+    name = "classifications_proto",
+    srcs = ["classifications.proto"],
+    deps = [
+        "//mediapipe/framework/formats:classification_proto",
+    ],
+)
+
+mediapipe_proto_library(
+    name = "embeddings_proto",
+    srcs = ["embeddings.proto"],
+)
 
 mediapipe_proto_library(
     name = "landmarks_detection_result_proto",

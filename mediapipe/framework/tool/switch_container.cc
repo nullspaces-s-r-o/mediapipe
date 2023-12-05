@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/log/absl_check.h"
 #include "absl/strings/str_cat.h"
 #include "mediapipe/framework/calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
@@ -105,10 +106,10 @@ CalculatorGraphConfig::Node* BuildMuxNode(
 
 // Returns a PacketSequencerCalculator node.
 CalculatorGraphConfig::Node* BuildTimestampNode(CalculatorGraphConfig* config,
-                                                bool synchronize_io) {
+                                                bool async_selection) {
   CalculatorGraphConfig::Node* result = config->add_node();
   *result->mutable_calculator() = "PacketSequencerCalculator";
-  if (synchronize_io) {
+  if (!async_selection) {
     *result->mutable_input_stream_handler()->mutable_input_stream_handler() =
         "DefaultInputStreamHandler";
   }
@@ -148,7 +149,7 @@ void ClearContainerOptions(CalculatorGraphConfig::Node* dest) {
 
 // Returns an unused name similar to a specified name.
 std::string UniqueName(std::string name, std::set<std::string>* names) {
-  CHECK(names != nullptr);
+  ABSL_CHECK(names != nullptr);
   std::string result = name;
   int suffix = 2;
   while (names->count(result) > 0) {
@@ -161,7 +162,7 @@ std::string UniqueName(std::string name, std::set<std::string>* names) {
 // Parses tag, index, and name from a list of stream identifiers.
 void ParseTags(const proto_ns::RepeatedPtrField<std::string>& streams,
                std::map<TagIndex, std::string>* result) {
-  CHECK(result != nullptr);
+  ABSL_CHECK(result != nullptr);
   std::set<std::string> used_names;
   int used_index = -1;
   for (const std::string& stream : streams) {
@@ -177,14 +178,14 @@ void ParseTags(const proto_ns::RepeatedPtrField<std::string>& streams,
 // Removes the entry for a tag and index from a map.
 void EraseTag(const std::string& stream,
               std::map<TagIndex, std::string>* streams) {
-  CHECK(streams != nullptr);
+  ABSL_CHECK(streams != nullptr);
   streams->erase(ParseTagIndexFromStream(absl::StrCat(stream, ":u")));
 }
 
 // Removes the entry for a tag and index from a list.
 void EraseTag(const std::string& stream,
               proto_ns::RepeatedPtrField<std::string>* streams) {
-  CHECK(streams != nullptr);
+  ABSL_CHECK(streams != nullptr);
   TagIndex stream_tag = ParseTagIndexFromStream(absl::StrCat(stream, ":u"));
   for (int i = streams->size() - 1; i >= 0; --i) {
     TagIndex tag = ParseTagIndexFromStream(streams->at(i));
@@ -197,7 +198,7 @@ void EraseTag(const std::string& stream,
 // Returns the stream names for the container node.
 void GetContainerNodeStreams(const CalculatorGraphConfig::Node& node,
                              CalculatorGraphConfig::Node* result) {
-  CHECK(result != nullptr);
+  ABSL_CHECK(result != nullptr);
   *result->mutable_input_stream() = node.input_stream();
   *result->mutable_output_stream() = node.output_stream();
   *result->mutable_input_side_packet() = node.input_side_packet();
@@ -239,6 +240,15 @@ bool HasTag(const proto_ns::RepeatedPtrField<std::string>& streams,
   return tags.count({tag, 0}) > 0;
 }
 
+// Returns true if a set of "TAG::index" includes a TagIndex.
+bool ContainsTag(const proto_ns::RepeatedPtrField<std::string>& tags,
+                 TagIndex item) {
+  for (const std::string& t : tags) {
+    if (ParseTagIndex(t) == item) return true;
+  }
+  return false;
+}
+
 absl::StatusOr<CalculatorGraphConfig> SwitchContainer::GetConfig(
     const Subgraph::SubgraphOptions& options) {
   CalculatorGraphConfig config;
@@ -263,17 +273,17 @@ absl::StatusOr<CalculatorGraphConfig> SwitchContainer::GetConfig(
   std::string enable_stream = "ENABLE:gate_enable";
 
   // Add a PacketSequencerCalculator node for "SELECT" or "ENABLE" streams.
-  bool synchronize_io =
-      Subgraph::GetOptions<mediapipe::SwitchContainerOptions>(options)
-          .synchronize_io();
+  const auto& switch_options =
+      Subgraph::GetOptions<mediapipe::SwitchContainerOptions>(options);
+  bool async_selection = switch_options.async_selection();
   if (HasTag(container_node.input_stream(), "SELECT")) {
-    select_node = BuildTimestampNode(&config, synchronize_io);
+    select_node = BuildTimestampNode(&config, async_selection);
     select_node->add_input_stream("INPUT:gate_select");
     select_node->add_output_stream("OUTPUT:gate_select_timed");
     select_stream = "SELECT:gate_select_timed";
   }
   if (HasTag(container_node.input_stream(), "ENABLE")) {
-    enable_node = BuildTimestampNode(&config, synchronize_io);
+    enable_node = BuildTimestampNode(&config, async_selection);
     enable_node->add_input_stream("INPUT:gate_enable");
     enable_node->add_output_stream("OUTPUT:gate_enable_timed");
     enable_stream = "ENABLE:gate_enable_timed";
@@ -296,7 +306,7 @@ absl::StatusOr<CalculatorGraphConfig> SwitchContainer::GetConfig(
   mux->add_input_side_packet("SELECT:gate_select");
   mux->add_input_side_packet("ENABLE:gate_enable");
 
-  // Add input streams for graph and demux and the timestamper.
+  // Add input streams for graph and demux.
   config.add_input_stream("SELECT:gate_select");
   config.add_input_stream("ENABLE:gate_enable");
   config.add_input_side_packet("SELECT:gate_select");
@@ -306,6 +316,12 @@ absl::StatusOr<CalculatorGraphConfig> SwitchContainer::GetConfig(
     std::string stream = CatStream(p.first, p.second);
     config.add_input_stream(stream);
     demux->add_input_stream(stream);
+  }
+
+  // Add input streams for the timestamper.
+  auto& tick_streams = switch_options.tick_input_stream();
+  for (const auto& p : input_tags) {
+    if (!tick_streams.empty() && !ContainsTag(tick_streams, p.first)) continue;
     TagIndex tick_tag{"TICK", tick_index++};
     if (select_node) {
       select_node->add_input_stream(CatStream(tick_tag, p.second));

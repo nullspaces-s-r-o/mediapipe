@@ -102,30 +102,33 @@ cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
-        ":profiler_resource_util",
         ":graph_tracer",
-        ":trace_buffer",
+        ":profiler_resource_util",
         ":sharded_map",
+        ":trace_buffer",
+        ":web_performance_profiling",
         "//mediapipe/framework:calculator_cc_proto",
-        "//mediapipe/framework:calculator_profile_cc_proto",
-        "//mediapipe/framework/port:integral_types",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/types:optional",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/time",
-        "//mediapipe/framework/deps:clock",
         "//mediapipe/framework:calculator_context",
+        "//mediapipe/framework:calculator_profile_cc_proto",
         "//mediapipe/framework:executor",
         "//mediapipe/framework:validated_graph_config",
-        "//mediapipe/framework/tool:tag_map",
-        "//mediapipe/framework/tool:validate_name",
-        "//mediapipe/framework/port:logging",
+        "//mediapipe/framework/deps:clock",
+        "//mediapipe/framework/port:advanced_proto_lite",
+        "//mediapipe/framework/port:file_helpers",
+        "//mediapipe/framework/port:integral_types",
         "//mediapipe/framework/port:re2",
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
-        "//mediapipe/framework/port:advanced_proto_lite",
         "//mediapipe/framework/tool:name_util",
+        "//mediapipe/framework/tool:tag_map",
+        "//mediapipe/framework/tool:validate_name",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:optional",
     ] + select({
         "//conditions:default": [],
     }) + select({
@@ -139,7 +142,7 @@ cc_library(
     name = "circular_buffer",
     hdrs = ["circular_buffer.h"],
     visibility = [
-        "//visibility:public",
+        "//mediapipe:__subpackages__",
     ],
     deps = [
         "//mediapipe/framework/port:integral_types",
@@ -150,7 +153,6 @@ cc_test(
     name = "circular_buffer_test",
     size = "small",
     srcs = ["circular_buffer_test.cc"],
-    visibility = ["//visibility:public"],
     deps = [
         ":circular_buffer",
         "//mediapipe/framework/port:gtest_main",
@@ -163,7 +165,7 @@ cc_library(
     name = "trace_buffer",
     srcs = ["trace_buffer.h"],
     hdrs = ["trace_buffer.h"],
-    visibility = ["//visibility:public"],
+    visibility = ["//mediapipe/framework/profiler:__subpackages__"],
     deps = [
         ":circular_buffer",
         "//mediapipe/framework:calculator_profile_cc_proto",
@@ -217,11 +219,11 @@ cc_library(
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:calculator_options_cc_proto",
         "//mediapipe/framework:mediapipe_options_cc_proto",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/port:statusor",
         "//mediapipe/framework/tool:tag_map",
         "//mediapipe/framework/tool:tag_map_helper",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/memory",
     ],
 )
@@ -256,6 +258,7 @@ cc_test(
         "//mediapipe/framework/tool:simulation_clock_executor",
         "//mediapipe/framework/tool:status_util",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/time",
     ],
 )
@@ -267,12 +270,31 @@ cc_test(
         ":sharded_map",
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/framework/port:integral_types",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:threadpool",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
     ],
+)
+
+config_setting(
+    name = "mediapipe_web_profiling_enabled",
+    values = {
+        "define": "MEDIAPIPE_WEB_PROFILING=1",
+    },
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "web_performance_profiling",
+    hdrs = ["web_performance_profiling.h"],
+    defines = select({
+        ":mediapipe_web_profiling_enabled": ["MEDIAPIPE_WEB_PROFILING_ENABLED"],
+        "//conditions:default": [],
+    }),
+    visibility = ["//mediapipe:__subpackages__"],
+    deps = ["@com_google_absl//absl/strings"],
 )
 
 cc_library(
@@ -284,6 +306,7 @@ cc_library(
         "//mediapipe:ios": ["profiler_resource_util_ios.cc"],
     }),
     hdrs = ["profiler_resource_util.h"],
+
     # We use Objective-C++ on iOS.
     copts = select({
         "//conditions:default": [],
@@ -291,16 +314,14 @@ cc_library(
             "-ObjC++",
         ],
     }),
-    visibility = [
-        "//mediapipe/framework:mediapipe_internal",
-    ],
+    visibility = ["//visibility:private"],
     deps = [
-        "@com_google_absl//absl/flags:flag",
+        "//mediapipe/framework/deps:file_path",
         "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:ret_check",
-        "//mediapipe/framework/port:statusor",
         "//mediapipe/framework/port:status",
-        "//mediapipe/framework/deps:file_path",
+        "//mediapipe/framework/port:statusor",
+        "@com_google_absl//absl/flags:flag",
     ] + select({
         "//conditions:default": [
             "//mediapipe/framework/port:file_helpers",
@@ -309,8 +330,8 @@ cc_library(
             "//mediapipe/framework/port:file_helpers",
         ],
         "//mediapipe:android": [
-            "//mediapipe/java/com/google/mediapipe/framework/jni:jni_util",
             "//mediapipe/framework/port:file_helpers",
+            "//mediapipe/java/com/google/mediapipe/framework/jni:jni_util",
         ],
         "//mediapipe:apple": [
             "//mediapipe/framework/port:file_helpers",
@@ -333,6 +354,10 @@ cc_library(
         "graph_profiler_stub.h",
     ],
     visibility = ["//mediapipe/framework:__pkg__"],
+    deps = [
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework:calculator_profile_cc_proto",
+    ],
 )
 
 cc_test(
@@ -351,6 +376,7 @@ cc_test(
         "//mediapipe/framework/port:parse_text_proto",
         "//mediapipe/framework/profiler/reporter:reporter_lib",
         "//mediapipe/framework/tool:test_util",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],

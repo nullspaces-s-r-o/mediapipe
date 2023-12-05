@@ -26,10 +26,12 @@
 #include <utility>
 #include <vector>
 
-#include "absl/base/macros.h"
-#include "absl/container/fixed_array.h"
+#include "absl/base/attributes.h"
+#include "absl/base/thread_annotations.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "mediapipe/framework/calculator.pb.h"
 #include "mediapipe/framework/calculator_base.h"
@@ -41,18 +43,17 @@
 #include "mediapipe/framework/graph_service_manager.h"
 #include "mediapipe/framework/mediapipe_profiling.h"
 #include "mediapipe/framework/output_side_packet_impl.h"
-#include "mediapipe/framework/output_stream.h"
 #include "mediapipe/framework/output_stream_manager.h"
 #include "mediapipe/framework/output_stream_poller.h"
 #include "mediapipe/framework/output_stream_shard.h"
 #include "mediapipe/framework/packet.h"
-#include "mediapipe/framework/packet_generator.pb.h"
 #include "mediapipe/framework/packet_generator_graph.h"
-#include "mediapipe/framework/port.h"
-#include "mediapipe/framework/port/integral_types.h"
-#include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/scheduler.h"
+#include "mediapipe/framework/scheduler_shared.h"
+#include "mediapipe/framework/subgraph.h"
 #include "mediapipe/framework/thread_pool_executor.pb.h"
+#include "mediapipe/framework/timestamp.h"
+#include "mediapipe/framework/validated_graph_config.h"
 
 namespace mediapipe {
 
@@ -151,7 +152,9 @@ class CalculatorGraph {
 
   // Observes the named output stream. packet_callback will be invoked on every
   // packet emitted by the output stream. Can only be called before Run() or
-  // StartRun().
+  // StartRun(). It is possible for packet_callback to be called until the
+  // object is destroyed, even if e.g. Cancel() or WaitUntilDone() have already
+  // been called. After this object is destroyed so is packet_callback.
   // TODO: Rename to AddOutputStreamCallback.
   absl::Status ObserveOutputStream(
       const std::string& stream_name,
@@ -183,13 +186,14 @@ class CalculatorGraph {
   // Run the graph without adding any input side packets.
   absl::Status Run() { return Run({}); }
 
-  // Start a run of the graph.  StartRun, WaitUntilDone, HasError,
+  // Start a run of the graph.  StartRun, WaitUntilDone, Cancel, HasError,
   // AddPacketToInputStream, and CloseInputStream allow more control over
   // the execution of the graph run.  You can insert packets directly into
   // a stream while the graph is running. Once StartRun has been called,
-  // the graph will continue to run until WaitUntilDone() is called.
-  // If StartRun returns an error, then the graph is not started and a
-  // subsequent call to StartRun can be attempted.
+  // the graph will continue to run until all work is either done or canceled,
+  // meaning that either WaitUntilDone() or Cancel() has been called and has
+  // completed. If StartRun returns an error, then the graph is not started and
+  // a subsequent call to StartRun can be attempted.
   //
   // Example:
   //   MP_RETURN_IF_ERROR(graph.StartRun(...));
@@ -216,14 +220,21 @@ class CalculatorGraph {
   // Wait for the current run to finish (block the current thread
   // until all source calculators have returned StatusStop(), all
   // graph_input_streams_ have been closed, and no more calculators can
-  // be run). This function can be called only after StartRun().
+  // be run). This function can be called only after StartRun(). If you want to
+  // stop the run quickly, without waiting for all the work in progress to
+  // finish, see Cancel(). The graph cannot be destroyed until all work is
+  // either done or canceled, meaning that either WaitUntilDone() or Cancel()
+  // has been called and completed.
   absl::Status WaitUntilDone();
 
   // Wait until the running graph is in the idle mode, which is when nothing can
   // be scheduled and nothing is running in the worker threads. This function
   // can be called only after StartRun().
+  //
   // NOTE: The graph must not have any source nodes because source nodes prevent
   // the running graph from becoming idle until the source nodes are done.
+  // Currently, `WaitUntilIdle` cannot be used reliably on graphs with any
+  // source nodes.
   absl::Status WaitUntilIdle();
 
   // Wait until a packet is emitted on one of the observed output streams.
@@ -256,6 +267,10 @@ class CalculatorGraph {
   // may try adding the packet again later.
   absl::Status AddPacketToInputStream(const std::string& stream_name,
                                       Packet&& packet);
+
+  // Indicates that input will arrive no earlier than a certain timestamp.
+  absl::Status SetInputStreamTimestampBound(const std::string& stream_name,
+                                            Timestamp timestamp);
 
   // Sets the queue size of a graph input stream, overriding the graph default.
   absl::Status SetInputStreamMaxQueueSize(const std::string& stream_name,
@@ -318,7 +333,12 @@ class CalculatorGraph {
   // Set the mode for adding packets to an input stream.
   void SetGraphInputStreamAddMode(GraphInputStreamAddMode mode);
 
-  // Aborts the scheduler if the graph is not terminated; no-op otherwise.
+  // Aborts the scheduler if the graph is not terminated; no-op otherwise. Does
+  // not wait for all work in progress to finish. To stop the run and wait for
+  // work in progress to finish, see CloseAllInputStreams() and WaitUntilDone().
+  // The graph cannot be destroyed until all work is either done or canceled,
+  // meaning that either WaitUntilDone() or Cancel() has been called and
+  // completed.
   void Cancel();
 
   // Pauses the scheduler. Only used by calculator graph testing.
@@ -371,6 +391,12 @@ class CalculatorGraph {
   absl::Status SetGpuResources(std::shared_ptr<GpuResources> resources);
 #endif  // !MEDIAPIPE_DISABLE_GPU
 
+  // Sets a service object, essentially a graph-level singleton, which can be
+  // accessed by calculators and subgraphs without requiring an explicit
+  // connection.
+  //
+  // NOTE: must be called before `Initialize`, so subgraphs can access services
+  // as well, as graph expansion happens during initialization.
   template <typename T>
   absl::Status SetServiceObject(const GraphService<T>& service,
                                 std::shared_ptr<T> object) {
@@ -383,6 +409,41 @@ class CalculatorGraph {
     return service_manager_.GetServiceObject(service);
   }
 
+  // Disallows/disables default initialization of MediaPipe graph services.
+  //
+  // IMPORTANT: MediaPipe graph serices, essentially a graph-level singletons,
+  // are designed in the way, so they may provide default initialization. For
+  // example, this allows to run OpenGL processing wihtin the graph without
+  // provinging a praticular OpenGL context as it can be provided by
+  // default-initializable `kGpuService`. (One caveat here, you may still need
+  // to initialize it manually to share graph context with external context.)
+  //
+  // Even if calculators require some service optionally
+  // (`calculator_contract->UseService(kSomeService).Optional()`), it will be
+  // still initialized if it allows default initialization.
+  //
+  // So far, in rare cases, this may be unwanted and strict control of what
+  // services are allowed in the graph can be achieved by calling this method,
+  // following `SetServiceObject` call for services which are allowed in the
+  // graph.
+  //
+  // Recommendation: do not use unless you have to (for example, default
+  // initialization has side effects)
+  //
+  // NOTE: must be called before `StartRun`/`Run`, where services are checked
+  // and can be default-initialized.
+  absl::Status DisallowServiceDefaultInitialization() {
+    allow_service_default_initialization_ = false;
+    return absl::OkStatus();
+  }
+
+  // Sets a service object, essentially a graph-level singleton, which can be
+  // accessed by calculators and subgraphs without requiring an explicit
+  // connection.
+  //
+  // NOTE: must be called before `Initialize`, so subgraphs can access services
+  // as well, as graph expansion happens during initialization.
+  //
   // Only the Java API should call this directly.
   absl::Status SetServicePacket(const GraphServiceBase& service, Packet p) {
     // TODO: check that the graph has not been started!
@@ -424,6 +485,8 @@ class CalculatorGraph {
     void AddPacket(const Packet& packet) { shard_.AddPacket(packet); }
 
     void AddPacket(Packet&& packet) { shard_.AddPacket(std::move(packet)); }
+
+    void SetNextTimestampBound(Timestamp timestamp);
 
     void PropagateUpdatesToMirrors();
 
@@ -535,6 +598,12 @@ class CalculatorGraph {
   // status before taking any action.
   void UpdateThrottledNodes(InputStreamManager* stream, bool* stream_was_full);
 
+  // Returns a comma-separated list of source nodes.
+  std::string ListSourceNodes() const;
+
+  // Returns a parent node name for the given input stream.
+  std::string GetParentNodeDebugName(InputStreamManager* stream) const;
+
 #if !MEDIAPIPE_DISABLE_GPU
   // Owns the legacy GpuSharedData if we need to create one for backwards
   // compatibility.
@@ -590,6 +659,9 @@ class CalculatorGraph {
   std::vector<absl::flat_hash_set<InputStreamManager*>> full_input_streams_
       ABSL_GUARDED_BY(full_input_streams_mutex_);
 
+  // Input stream to index within `input_stream_managers_` mapping.
+  absl::flat_hash_map<InputStreamManager*, int> input_stream_to_index_;
+
   // Maps stream names to graph input stream objects.
   absl::flat_hash_map<std::string, std::unique_ptr<GraphInputStream>>
       graph_input_streams_;
@@ -612,6 +684,9 @@ class CalculatorGraph {
 
   // Object to manage graph services.
   GraphServiceManager service_manager_;
+
+  // Indicates whether service default initialization is allowed.
+  bool allow_service_default_initialization_ = true;
 
   // Vector of errors encountered while running graph. Always use RecordError()
   // to add an error to this vector.

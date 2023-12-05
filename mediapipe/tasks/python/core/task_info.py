@@ -1,4 +1,4 @@
-# Copyright 2022 The MediaPipe Authors. All Rights Reserved.
+# Copyright 2022 The MediaPipe Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ from typing import Any, List
 from mediapipe.calculators.core import flow_limiter_calculator_pb2
 from mediapipe.framework import calculator_options_pb2
 from mediapipe.framework import calculator_pb2
+from mediapipe.tasks.python.core.optional_dependencies import doc_controls
 
 
+@doc_controls.do_not_generate_docs
 @dataclasses.dataclass
 class TaskInfo:
   """Specifications of a MediaPipe task graph.

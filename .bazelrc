@@ -87,6 +87,9 @@ build:ios_fat --config=ios
 build:ios_fat --ios_multi_cpus=armv7,arm64
 build:ios_fat --watchos_cpus=armv7k
 
+build:ios_sim_fat --config=ios
+build:ios_sim_fat --ios_multi_cpus=x86_64,sim_arm64
+
 build:darwin_x86_64 --apple_platform_type=macos
 build:darwin_x86_64 --macos_minimum_os=10.12
 build:darwin_x86_64 --cpu=darwin_x86_64
@@ -96,9 +99,9 @@ build:darwin_arm64 --macos_minimum_os=10.16
 build:darwin_arm64 --cpu=darwin_arm64
 
 #####################################################################
-# Coral configs																											#
-#		- see nullspaces/bazel-examples/cpp-tutorial/stage4							#
-#		- https://bazel.build/tutorials/ccp-toolchain-config						#
+# Coral configs														#
+#		- see nullspaces/bazel-examples/cpp-tutorial/stage4			#
+#		- https://bazel.build/tutorials/ccp-toolchain-config		#
 #####################################################################
 
 build:coral_config --crosstool_top=//toolchain:coral_suite
@@ -109,6 +112,8 @@ build:coral_config --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
 
 
 # Coral configs END
+# Turn off maximum stdout size
+build --experimental_ui_max_stdouterr_bytes=-1
 
 # This bazelrc file is meant to be written by a setup script.
 try-import %workspace%/.configure.bazelrc

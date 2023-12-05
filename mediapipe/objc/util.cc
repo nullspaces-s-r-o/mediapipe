@@ -15,6 +15,8 @@
 #include "mediapipe/objc/util.h"
 
 #include "absl/base/macros.h"
+#include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -313,8 +315,8 @@ absl::Status CreateCVPixelBufferForImageFramePacket(
   auto image_frame = std::const_pointer_cast<mediapipe::ImageFrame>(
       mediapipe::SharedPtrWithPacket<mediapipe::ImageFrame>(
           image_frame_packet));
-  ASSIGN_OR_RETURN(*out_buffer, CreateCVPixelBufferForImageFrame(
-                                    image_frame, can_overwrite));
+  MP_ASSIGN_OR_RETURN(*out_buffer, CreateCVPixelBufferForImageFrame(
+                                       image_frame, can_overwrite));
   return absl::OkStatus();
 }
 
@@ -337,9 +339,9 @@ absl::StatusOr<CFHolder<CVPixelBufferRef>> CreateCVPixelBufferForImageFrame(
       if (can_overwrite) {
         v_dest = v_image;
       } else {
-        ASSIGN_OR_RETURN(pixel_buffer,
-                         CreateCVPixelBufferWithoutPool(
-                             frame.Width(), frame.Height(), pixel_format));
+        MP_ASSIGN_OR_RETURN(pixel_buffer,
+                            CreateCVPixelBufferWithoutPool(
+                                frame.Width(), frame.Height(), pixel_format));
         status = CVPixelBufferLockBaseAddress(*pixel_buffer,
                                               kCVPixelBufferLock_ReadOnly);
         RET_CHECK(status == kCVReturnSuccess)
@@ -363,6 +365,10 @@ absl::StatusOr<CFHolder<CVPixelBufferRef>> CreateCVPixelBufferForImageFrame(
 
     case mediapipe::ImageFormat::VEC32F2:
       pixel_format = kCVPixelFormatType_TwoComponent32Float;
+      break;
+
+    case mediapipe::ImageFormat::VEC32F4:
+      pixel_format = kCVPixelFormatType_128RGBAFloat;
       break;
 
     default:
@@ -440,15 +446,19 @@ absl::StatusOr<CFHolder<CVPixelBufferRef>> CreateCVPixelBufferCopyingImageFrame(
       pixel_format = kCVPixelFormatType_TwoComponent32Float;
       break;
 
+    case mediapipe::ImageFormat::VEC32F4:
+      pixel_format = kCVPixelFormatType_128RGBAFloat;
+      break;
+
     default:
       return ::mediapipe::UnknownErrorBuilder(MEDIAPIPE_LOC)
              << "unsupported ImageFrame format: " << image_format;
   }
 
   CVReturn cv_err;
-  ASSIGN_OR_RETURN(pixel_buffer, CreateCVPixelBufferWithoutPool(
-                                     image_frame.Width(), image_frame.Height(),
-                                     pixel_format));
+  MP_ASSIGN_OR_RETURN(pixel_buffer, CreateCVPixelBufferWithoutPool(
+                                        image_frame.Width(),
+                                        image_frame.Height(), pixel_format));
   cv_err =
       CVPixelBufferLockBaseAddress(*pixel_buffer, kCVPixelBufferLock_ReadOnly);
   RET_CHECK(cv_err == kCVReturnSuccess)
@@ -496,7 +506,7 @@ absl::Status CreateCGImageFromCVPixelBuffer(CVPixelBufferRef image_buffer,
       break;
 
     default:
-      LOG(FATAL) << "Unsupported pixelFormat " << pixel_format;
+      ABSL_LOG(FATAL) << "Unsupported pixelFormat " << pixel_format;
       break;
   }
 
@@ -563,7 +573,7 @@ std::unique_ptr<mediapipe::ImageFrame> CreateImageFrameForCVPixelBuffer(
     CVPixelBufferRef image_buffer, bool can_overwrite, bool bgr_as_rgb) {
   CVReturn status =
       CVPixelBufferLockBaseAddress(image_buffer, kCVPixelBufferLock_ReadOnly);
-  CHECK_EQ(status, kCVReturnSuccess)
+  ABSL_CHECK_EQ(status, kCVReturnSuccess)
       << "CVPixelBufferLockBaseAddress failed: " << status;
 
   void* base_address = CVPixelBufferGetBaseAddress(image_buffer);
@@ -593,7 +603,7 @@ std::unique_ptr<mediapipe::ImageFrame> CreateImageFrameForCVPixelBuffer(
         const uint8_t permute_map[4] = {2, 1, 0, 3};
         vImage_Error vError = vImagePermuteChannels_ARGB8888(
             &v_image, &v_dest, permute_map, kvImageNoFlags);
-        CHECK(vError == kvImageNoError)
+        ABSL_CHECK(vError == kvImageNoError)
             << "vImagePermuteChannels failed: " << vError;
       }
     } break;
@@ -615,7 +625,7 @@ std::unique_ptr<mediapipe::ImageFrame> CreateImageFrameForCVPixelBuffer(
                             static_cast<char>(pixel_format >> 16 & 0xFF),
                             static_cast<char>(pixel_format >> 8 & 0xFF),
                             static_cast<char>(pixel_format & 0xFF), 0};
-      LOG(FATAL) << "unsupported pixel format: " << format_str;
+      ABSL_LOG(FATAL) << "unsupported pixel format: " << format_str;
     } break;
   }
 
@@ -623,7 +633,7 @@ std::unique_ptr<mediapipe::ImageFrame> CreateImageFrameForCVPixelBuffer(
     // We have already created a new frame that does not reference the buffer.
     status = CVPixelBufferUnlockBaseAddress(image_buffer,
                                             kCVPixelBufferLock_ReadOnly);
-    CHECK_EQ(status, kCVReturnSuccess)
+    ABSL_CHECK_EQ(status, kCVReturnSuccess)
         << "CVPixelBufferUnlockBaseAddress failed: " << status;
     CVPixelBufferRelease(image_buffer);
   } else {

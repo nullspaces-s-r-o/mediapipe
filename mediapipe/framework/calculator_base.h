@@ -17,14 +17,16 @@
 #ifndef MEDIAPIPE_FRAMEWORK_CALCULATOR_BASE_H_
 #define MEDIAPIPE_FRAMEWORK_CALCULATOR_BASE_H_
 
+#include <memory>
+#include <string>
 #include <type_traits>
 
 #include "absl/memory/memory.h"
+#include "absl/status/status.h"
 #include "mediapipe/framework/calculator_context.h"
 #include "mediapipe/framework/calculator_contract.h"
 #include "mediapipe/framework/deps/registration.h"
 #include "mediapipe/framework/port.h"
-#include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/timestamp.h"
 
 namespace mediapipe {
@@ -150,8 +152,9 @@ class CalculatorBase {
   // Packets may be output during a call to Close().  However, output packets
   // are silently discarded if Close() is called after a graph run has ended.
   //
-  // NOTE: If Close() needs to perform an action only when processing is
-  // complete, Close() must check if cc->GraphStatus() is OK.
+  // NOTE: Do not call cc->GraphStatus() in Close() if you need to check if the
+  // processing is complete. Please, see CalculatorContext::GraphStatus
+  // documentation for the suggested solution.
   virtual absl::Status Close(CalculatorContext* cc) { return absl::OkStatus(); }
 
   // Returns a value according to which the framework selects
@@ -185,7 +188,7 @@ class CalculatorBaseFactory {
 // Functions for checking that the calculator has the required GetContract.
 template <class T>
 constexpr bool CalculatorHasGetContract(decltype(&T::GetContract) /*unused*/) {
-  typedef absl::Status (*GetContractType)(CalculatorContract * cc);
+  typedef absl::Status (*GetContractType)(CalculatorContract* cc);
   return std::is_same<decltype(&T::GetContract), GetContractType>::value;
 }
 template <class T>

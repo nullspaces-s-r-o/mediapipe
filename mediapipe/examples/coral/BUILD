@@ -36,6 +36,7 @@ cc_library(
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
         "@linux_realsense//:realsense2"
+        "@com_google_absl//absl/log:absl_log",
     ],
 )
 

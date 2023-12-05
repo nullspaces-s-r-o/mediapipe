@@ -13,24 +13,24 @@
 # limitations under the License.
 #
 
-load("//mediapipe/framework/port:build_config.bzl", "mediapipe_cc_proto_library")
+load("//mediapipe/framework/port:build_config.bzl", "mediapipe_proto_library")
 
 licenses(["notice"])
 
 package(default_visibility = ["//visibility:public"])
 
-proto_library(
+mediapipe_proto_library(
     name = "tone_models_proto",
     srcs = ["tone_models.proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "tone_estimation_proto",
     srcs = ["tone_estimation.proto"],
     deps = [":tone_models_proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "region_flow_computation_proto",
     srcs = ["region_flow_computation.proto"],
     deps = [
@@ -38,17 +38,17 @@ proto_library(
     ],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "motion_saliency_proto",
     srcs = ["motion_saliency.proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "motion_estimation_proto",
     srcs = ["motion_estimation.proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "motion_analysis_proto",
     srcs = ["motion_analysis.proto"],
     deps = [
@@ -58,33 +58,33 @@ proto_library(
     ],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "region_flow_proto",
     srcs = ["region_flow.proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "motion_models_proto",
     srcs = ["motion_models.proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "camera_motion_proto",
     srcs = ["camera_motion.proto"],
     deps = [":motion_models_proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "push_pull_filtering_proto",
     srcs = ["push_pull_filtering.proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "frame_selection_solution_evaluator_proto",
     srcs = ["frame_selection_solution_evaluator.proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "frame_selection_proto",
     srcs = ["frame_selection.proto"],
     deps = [
@@ -94,7 +94,7 @@ proto_library(
     ],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "flow_packager_proto",
     srcs = ["flow_packager.proto"],
     deps = [
@@ -103,7 +103,7 @@ proto_library(
     ],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "tracking_proto",
     srcs = ["tracking.proto"],
     deps = [
@@ -111,170 +111,24 @@ proto_library(
     ],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "box_tracker_proto",
     srcs = ["box_tracker.proto"],
     deps = [":tracking_proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "tracked_detection_manager_config_proto",
     srcs = ["tracked_detection_manager_config.proto"],
 )
 
-proto_library(
+mediapipe_proto_library(
     name = "box_detector_proto",
     srcs = ["box_detector.proto"],
     deps = [
         ":box_tracker_proto",
         ":region_flow_proto",
     ],
-)
-
-mediapipe_cc_proto_library(
-    name = "tone_models_cc_proto",
-    srcs = ["tone_models.proto"],
-    visibility = ["//visibility:public"],
-    deps = [":tone_models_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "tone_estimation_cc_proto",
-    srcs = ["tone_estimation.proto"],
-    cc_deps = [":tone_models_cc_proto"],
-    visibility = ["//visibility:public"],
-    deps = [":tone_estimation_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "region_flow_computation_cc_proto",
-    srcs = ["region_flow_computation.proto"],
-    cc_deps = [
-        ":tone_estimation_cc_proto",
-        ":tone_models_cc_proto",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [":region_flow_computation_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "motion_saliency_cc_proto",
-    srcs = ["motion_saliency.proto"],
-    visibility = ["//visibility:public"],
-    deps = [":motion_saliency_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "motion_estimation_cc_proto",
-    srcs = ["motion_estimation.proto"],
-    visibility = ["//visibility:public"],
-    deps = [":motion_estimation_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "motion_analysis_cc_proto",
-    srcs = ["motion_analysis.proto"],
-    cc_deps = [
-        ":motion_estimation_cc_proto",
-        ":motion_saliency_cc_proto",
-        ":region_flow_computation_cc_proto",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [":motion_analysis_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "region_flow_cc_proto",
-    srcs = ["region_flow.proto"],
-    cc_deps = [":motion_models_cc_proto"],
-    visibility = ["//visibility:public"],
-    deps = [":region_flow_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "motion_models_cc_proto",
-    srcs = ["motion_models.proto"],
-    visibility = ["//visibility:public"],
-    deps = [":motion_models_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "camera_motion_cc_proto",
-    srcs = ["camera_motion.proto"],
-    cc_deps = [":motion_models_cc_proto"],
-    visibility = ["//visibility:public"],
-    deps = [":camera_motion_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "push_pull_filtering_cc_proto",
-    srcs = ["push_pull_filtering.proto"],
-    visibility = ["//visibility:public"],
-    deps = [":push_pull_filtering_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "frame_selection_solution_evaluator_cc_proto",
-    srcs = ["frame_selection_solution_evaluator.proto"],
-    visibility = ["//visibility:public"],
-    deps = [":frame_selection_solution_evaluator_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "frame_selection_cc_proto",
-    srcs = ["frame_selection.proto"],
-    cc_deps = [
-        ":camera_motion_cc_proto",
-        ":frame_selection_solution_evaluator_cc_proto",
-        ":region_flow_cc_proto",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [":frame_selection_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "flow_packager_cc_proto",
-    srcs = ["flow_packager.proto"],
-    cc_deps = [
-        ":motion_models_cc_proto",
-        ":region_flow_cc_proto",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [":flow_packager_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "tracking_cc_proto",
-    srcs = ["tracking.proto"],
-    cc_deps = [":motion_models_cc_proto"],
-    visibility = ["//visibility:public"],
-    deps = [":tracking_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "box_tracker_cc_proto",
-    srcs = ["box_tracker.proto"],
-    cc_deps = [":tracking_cc_proto"],
-    visibility = ["//visibility:public"],
-    deps = [":box_tracker_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "tracked_detection_manager_config_cc_proto",
-    srcs = ["tracked_detection_manager_config.proto"],
-    visibility = ["//visibility:public"],
-    deps = [":tracked_detection_manager_config_proto"],
-)
-
-mediapipe_cc_proto_library(
-    name = "box_detector_cc_proto",
-    srcs = ["box_detector.proto"],
-    cc_deps = [
-        ":box_tracker_cc_proto",
-        ":region_flow_cc_proto",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [":box_detector_proto"],
 )
 
 cc_library(
@@ -289,6 +143,8 @@ cc_library(
         "//mediapipe/framework/port:singleton",
         "//mediapipe/framework/port:vector",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings:str_format",
         "@eigen_archive//:eigen3",
     ],
@@ -299,10 +155,10 @@ cc_library(
     srcs = ["motion_models_cv.cc"],
     hdrs = ["motion_models_cv.h"],
     deps = [
-        ":camera_motion_cc_proto",
         ":motion_models",
         ":motion_models_cc_proto",
         "//mediapipe/framework/port:opencv_core",
+        "@com_google_absl//absl/log:absl_check",
     ],
 )
 
@@ -316,10 +172,11 @@ cc_library(
         ":parallel_invoker",
         ":region_flow_cc_proto",
         "//mediapipe/framework/port:integral_types",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:vector",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -333,6 +190,8 @@ cc_library(
         ":motion_models",
         ":region_flow",
         ":region_flow_cc_proto",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
@@ -351,7 +210,8 @@ cc_library(
     hdrs = ["measure_time.h"],
     deps = [
         "//mediapipe/framework/port:integral_types",
-        "//mediapipe/framework/port:logging",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
@@ -366,8 +226,9 @@ cc_library(
     linkopts = PARALLEL_LINKOPTS,
     deps = [
         ":parallel_invoker_forbid_mixed_active",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:threadpool",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/synchronization",
     ],
 )
@@ -388,10 +249,11 @@ cc_library(
         ":motion_models_cc_proto",
         ":region_flow",
         ":region_flow_cc_proto",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:opencv_core",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:vector",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
     ],
 )
 
@@ -400,9 +262,10 @@ cc_library(
     srcs = ["streaming_buffer.cc"],
     hdrs = ["streaming_buffer.h"],
     deps = [
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/tool:type_util",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/types:any",
     ],
@@ -425,10 +288,11 @@ cc_library(
         ":region_flow",
         ":region_flow_cc_proto",
         "//mediapipe/framework/port:integral_types",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:vector",
         "@com_google_absl//absl/container:node_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@eigen_archive//:eigen3",
     ],
@@ -444,8 +308,9 @@ cc_library(
         ":motion_saliency_cc_proto",
         ":region_flow",
         ":region_flow_cc_proto",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:vector",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
     ],
 )
 
@@ -456,9 +321,9 @@ cc_library(
         ":image_util",
         ":push_pull_filtering_cc_proto",
         "//mediapipe/framework/port:integral_types",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:opencv_core",
-        "//mediapipe/framework/port:opencv_highgui",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
     ],
 )
 
@@ -469,9 +334,10 @@ cc_library(
     deps = [
         ":tone_models_cc_proto",
         "//mediapipe/framework/port:integral_types",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:opencv_core",
         "//mediapipe/framework/port:vector",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
@@ -492,6 +358,8 @@ cc_library(
         "//mediapipe/framework/port:opencv_core",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:vector",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
     ],
 )
 
@@ -526,6 +394,8 @@ cc_library(
         "//mediapipe/framework/port:vector",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:node_hash_set",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/memory",
         "@eigen_archive//:eigen3",
     ],
@@ -546,6 +416,7 @@ cc_library(
         "//mediapipe/framework/port:opencv_core",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:vector",
+        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -572,10 +443,11 @@ cc_library(
         ":region_flow_visualization",
         ":streaming_buffer",
         "//mediapipe/framework/port:integral_types",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:opencv_core",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:vector",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
@@ -598,6 +470,8 @@ cc_library(
         "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:vector",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -624,6 +498,8 @@ cc_library(
         "//mediapipe/framework/port:vector",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/memory",
         "@eigen_archive//:eigen3",
     ],
@@ -643,6 +519,8 @@ cc_library(
         "//mediapipe/framework/port:integral_types",
         "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:threadpool",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/synchronization",
@@ -667,6 +545,8 @@ cc_library(
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:opencv_video",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/synchronization",
     ],
@@ -684,6 +564,8 @@ cc_library(
         ":tracking_cc_proto",
         "//mediapipe/framework/port:opencv_core",
         "//mediapipe/framework/port:opencv_imgproc",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
@@ -737,13 +619,14 @@ cc_test(
         "//mediapipe/framework/deps:file_path",
         "//mediapipe/framework/port:file_helpers",
         "//mediapipe/framework/port:gtest_main",
-        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:opencv_core",
-        "//mediapipe/framework/port:opencv_highgui",
+        "//mediapipe/framework/port:opencv_imgcodecs",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/port:vector",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/time",
     ],
 )

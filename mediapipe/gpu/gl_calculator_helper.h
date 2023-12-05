@@ -17,6 +17,7 @@
 
 #include <memory>
 
+#include "absl/base/attributes.h"
 #include "absl/memory/memory.h"
 #include "mediapipe/framework/calculator_context.h"
 #include "mediapipe/framework/calculator_contract.h"
@@ -33,7 +34,6 @@
 
 namespace mediapipe {
 
-class GlCalculatorHelperImpl;
 class GlTexture;
 class GpuResources;
 struct GpuSharedData;
@@ -62,14 +62,17 @@ class GlCalculatorHelper {
   // Can be used to initialize the helper outside of a calculator. Useful for
   // testing.
   void InitializeForTest(GpuResources* gpu_resources);
+  ABSL_DEPRECATED("Use InitializeForTest(GpuResources)")
   void InitializeForTest(GpuSharedData* gpu_shared);
 
   // This method can be called from GetContract to set up the needed GPU
   // resources.
-  static absl::Status UpdateContract(CalculatorContract* cc);
+  static absl::Status UpdateContract(CalculatorContract* cc,
+                                     bool request_gpu_as_optional = false);
 
   // This method can be called from FillExpectations to set the correct types
   // for the shared GL input side packet(s).
+  ABSL_DEPRECATED("Use UpdateContract")
   static absl::Status SetupInputSidePackets(PacketTypeSet* input_side_packets);
 
   // Execute the provided function within the helper's GL context. On some
@@ -133,6 +136,12 @@ class GlCalculatorHelper {
   // This is deprecated because: 1) it encourages the use of GlTexture as a
   // long-lived object; 2) it requires copying the ImageFrame's contents,
   // which may not always be necessary.
+  //
+  // WARNING: do NOT use as a destination texture which will be sent to
+  // downstream calculators as it may lead to synchronization issues. The result
+  // is meant to be a short-lived object, local to a single calculator and
+  // single GL thread. Use `CreateDestinationTexture` instead, if you need a
+  // destination texture.
   ABSL_DEPRECATED("Use `GpuBufferWithImageFrame`.")
   GlTexture CreateSourceTexture(const ImageFrame& image_frame);
 
@@ -154,6 +163,17 @@ class GlCalculatorHelper {
       int output_width, int output_height,
       GpuBufferFormat format = GpuBufferFormat::kBGRA32);
 
+  // Allows user provided buffers to be used as rendering destinations.
+  GlTexture CreateDestinationTexture(GpuBuffer& buffer);
+
+  // Creates a destination texture copying and uploading passed image frame.
+  //
+  // WARNING: mind that this functions creates a new texture every time and
+  // doesn't use MediaPipe's gpu buffer pool.
+  // TODO: ensure buffer pool is used when creating textures out of
+  // ImageFrame.
+  GlTexture CreateDestinationTexture(const ImageFrame& image_frame);
+
   // The OpenGL name of the output framebuffer.
   GLuint framebuffer() const;
 
@@ -161,15 +181,30 @@ class GlCalculatorHelper {
   // TODO: do we need an unbind method too?
   void BindFramebuffer(const GlTexture& dst);
 
-  GlContext& GetGlContext() const;
+  GlContext& GetGlContext() const { return *gl_context_; }
 
-  GlVersion GetGlVersion() const;
+  GlVersion GetGlVersion() const { return gl_context_->GetGlVersion(); }
 
   // Check if the calculator helper has been previously initialized.
-  bool Initialized() { return impl_ != nullptr; }
+  bool Initialized() { return gpu_resources_ != nullptr; }
 
  private:
-  std::unique_ptr<GlCalculatorHelperImpl> impl_;
+  void InitializeInternal(CalculatorContext* cc, GpuResources* gpu_resources);
+
+  absl::Status RunInGlContext(std::function<absl::Status(void)> gl_func,
+                              CalculatorContext* calculator_context);
+
+  // Makes a GpuBuffer accessible as a texture in the GL context.
+  GlTexture MapGpuBuffer(const GpuBuffer& gpu_buffer, GlTextureView view);
+
+  // Create the framebuffer for rendering.
+  void CreateFramebuffer();
+
+  std::shared_ptr<GlContext> gl_context_;
+
+  GLuint framebuffer_ = 0;
+
+  GpuResources* gpu_resources_ = nullptr;
 };
 
 // Represents an OpenGL texture, and is a 'view' into the memory pool.
@@ -179,7 +214,7 @@ class GlCalculatorHelper {
 // This class should be the main way to interface with GL memory within a single
 // calculator. This is the preferred way to utilize the memory pool inside of
 // the helper, because GlTexture manages efficiently releasing memory back into
-// the pool. A GPU backed Image can be extracted from the unerlying
+// the pool. A GPU backed Image can be extracted from the underlying
 // memory.
 class GlTexture {
  public:
@@ -201,9 +236,13 @@ class GlTexture {
   void Release() { view_ = std::make_shared<GlTextureView>(); }
 
  private:
-  explicit GlTexture(GlTextureView view)
-      : view_(std::make_shared<GlTextureView>(std::move(view))) {}
-  friend class GlCalculatorHelperImpl;
+  explicit GlTexture(GlTextureView view, GpuBuffer gpu_buffer)
+      : gpu_buffer_(std::move(gpu_buffer)),
+        view_(std::make_shared<GlTextureView>(std::move(view))) {}
+  friend class GlCalculatorHelper;
+  // We store the GpuBuffer to support GetFrame, and to ensure that the storage
+  // outlives the view.
+  GpuBuffer gpu_buffer_;
   std::shared_ptr<GlTextureView> view_;
 };
 
@@ -217,12 +256,14 @@ class GlTexture {
 // it is better to keep const-safety and accept having two versions of the
 // same thing.
 template <typename T>
+ABSL_DEPRECATED("Only for legacy calculators")
 auto TagOrIndex(const T& collection, const std::string& tag, int index)
     -> decltype(collection.Tag(tag)) {
   return collection.UsesTags() ? collection.Tag(tag) : collection.Index(index);
 }
 
 template <typename T>
+ABSL_DEPRECATED("Only for legacy calculators")
 auto TagOrIndex(T* collection, const std::string& tag, int index)
     -> decltype(collection->Tag(tag)) {
   return collection->UsesTags() ? collection->Tag(tag)
@@ -230,12 +271,14 @@ auto TagOrIndex(T* collection, const std::string& tag, int index)
 }
 
 template <typename T>
+ABSL_DEPRECATED("Only for legacy calculators")
 bool HasTagOrIndex(const T& collection, const std::string& tag, int index) {
   return collection.UsesTags() ? collection.HasTag(tag)
                                : index < collection.NumEntries();
 }
 
 template <typename T>
+ABSL_DEPRECATED("Only for legacy calculators")
 bool HasTagOrIndex(T* collection, const std::string& tag, int index) {
   return collection->UsesTags() ? collection->HasTag(tag)
                                 : index < collection->NumEntries();

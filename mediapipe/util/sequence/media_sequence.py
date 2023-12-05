@@ -188,6 +188,10 @@ CLIP_LABEL_INDEX_KEY = "clip/label/index"
 CLIP_LABEL_STRING_KEY = "clip/label/string"
 # A list of label confidences for this clip.
 CLIP_LABEL_CONFIDENCE_KEY = "clip/label/confidence"
+# A list of label start timestamps for this clip.
+CLIP_LABEL_START_TIMESTAMP_KEY = "clip/label/start/timestamp"
+# A list of label end timestamps for this clip.
+CLIP_LABEL_END_TIMESTAMP_KEY = "clip/label/end/timestamp"
 msu.create_bytes_context_feature(
     "example_id", EXAMPLE_ID_KEY, module_dict=globals())
 msu.create_bytes_context_feature(
@@ -218,6 +222,14 @@ msu.create_int_list_context_feature(
     "clip_label_index", CLIP_LABEL_INDEX_KEY, module_dict=globals())
 msu.create_float_list_context_feature(
     "clip_label_confidence", CLIP_LABEL_CONFIDENCE_KEY, module_dict=globals())
+msu.create_int_list_context_feature(
+    "clip_label_start_timestamp",
+    CLIP_LABEL_START_TIMESTAMP_KEY,
+    module_dict=globals())
+msu.create_int_list_context_feature(
+    "clip_label_end_timestamp",
+    CLIP_LABEL_END_TIMESTAMP_KEY,
+    module_dict=globals())
 
 ##################################  SEGMENTS  #################################
 # A list of segment start times in microseconds.
@@ -589,6 +601,10 @@ _create_image_with_prefix("instance_segmentation", INSTANCE_SEGMENTATION_PREFIX)
 TEXT_LANGUAGE_KEY = "text/language"
 # A large block of text that applies to the media.
 TEXT_CONTEXT_CONTENT_KEY = "text/context/content"
+# A large block of text that applies to the media as token ids.
+TEXT_CONTEXT_TOKEN_ID_KEY = "text/context/token_id"
+# A large block of text that applies to the media as embeddings.
+TEXT_CONTEXT_EMBEDDING_KEY = "text/context/embedding"
 
 # The text contents for a given time.
 TEXT_CONTENT_KEY = "text/content"
@@ -607,6 +623,10 @@ msu.create_bytes_context_feature(
     "text_language", TEXT_LANGUAGE_KEY, module_dict=globals())
 msu.create_bytes_context_feature(
     "text_context_content", TEXT_CONTEXT_CONTENT_KEY, module_dict=globals())
+msu.create_int_list_context_feature(
+    "text_context_token_id", TEXT_CONTEXT_TOKEN_ID_KEY, module_dict=globals())
+msu.create_float_list_context_feature(
+    "text_context_embedding", TEXT_CONTEXT_EMBEDDING_KEY, module_dict=globals())
 msu.create_bytes_feature_list(
     "text_content", TEXT_CONTENT_KEY, module_dict=globals())
 msu.create_int_feature_list(

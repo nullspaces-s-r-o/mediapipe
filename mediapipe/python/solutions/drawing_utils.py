@@ -11,20 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """MediaPipe solution drawing utils."""
 
+import dataclasses
 import math
 from typing import List, Mapping, Optional, Tuple, Union
 
 import cv2
-import dataclasses
 import matplotlib.pyplot as plt
 import numpy as np
 
 from mediapipe.framework.formats import detection_pb2
-from mediapipe.framework.formats import location_data_pb2
 from mediapipe.framework.formats import landmark_pb2
+from mediapipe.framework.formats import location_data_pb2
 
 _PRESENCE_THRESHOLD = 0.5
 _VISIBILITY_THRESHOLD = 0.5
@@ -126,7 +125,8 @@ def draw_landmarks(
                                      color=RED_COLOR),
     connection_drawing_spec: Union[DrawingSpec,
                                    Mapping[Tuple[int, int],
-                                           DrawingSpec]] = DrawingSpec()):
+                                           DrawingSpec]] = DrawingSpec(),
+    is_drawing_landmarks: bool = True):
   """Draws the landmarks and the connections on the image.
 
   Args:
@@ -135,15 +135,16 @@ def draw_landmarks(
       the image.
     connections: A list of landmark index tuples that specifies how landmarks to
       be connected in the drawing.
-    landmark_drawing_spec: Either a DrawingSpec object or a mapping from
-      hand landmarks to the DrawingSpecs that specifies the landmarks' drawing
-      settings such as color, line thickness, and circle radius.
-      If this argument is explicitly set to None, no landmarks will be drawn.
-    connection_drawing_spec: Either a DrawingSpec object or a mapping from
-      hand connections to the DrawingSpecs that specifies the
-      connections' drawing settings such as color and line thickness.
-      If this argument is explicitly set to None, no landmark connections will
-      be drawn.
+    landmark_drawing_spec: Either a DrawingSpec object or a mapping from hand
+      landmarks to the DrawingSpecs that specifies the landmarks' drawing
+      settings such as color, line thickness, and circle radius. If this
+      argument is explicitly set to None, no landmarks will be drawn.
+    connection_drawing_spec: Either a DrawingSpec object or a mapping from hand
+      connections to the DrawingSpecs that specifies the connections' drawing
+      settings such as color and line thickness. If this argument is explicitly
+      set to None, no landmark connections will be drawn.
+    is_drawing_landmarks: Whether to draw landmarks. If set false, skip drawing
+      landmarks, only contours will be drawed.
 
   Raises:
     ValueError: If one of the followings:
@@ -183,7 +184,7 @@ def draw_landmarks(
                  drawing_spec.thickness)
   # Draws landmark points after finishing the connection lines, which is
   # aesthetically better.
-  if landmark_drawing_spec:
+  if is_drawing_landmarks and landmark_drawing_spec:
     for idx, landmark_px in idx_to_coordinates.items():
       drawing_spec = landmark_drawing_spec[idx] if isinstance(
           landmark_drawing_spec, Mapping) else landmark_drawing_spec
@@ -197,14 +198,13 @@ def draw_landmarks(
                  drawing_spec.color, drawing_spec.thickness)
 
 
-def draw_axis(
-    image: np.ndarray,
-    rotation: np.ndarray,
-    translation: np.ndarray,
-    focal_length: Tuple[float, float] = (1.0, 1.0),
-    principal_point: Tuple[float, float] = (0.0, 0.0),
-    axis_length: float = 0.1,
-    axis_drawing_spec: DrawingSpec = DrawingSpec()):
+def draw_axis(image: np.ndarray,
+              rotation: np.ndarray,
+              translation: np.ndarray,
+              focal_length: Tuple[float, float] = (1.0, 1.0),
+              principal_point: Tuple[float, float] = (0.0, 0.0),
+              axis_length: float = 0.1,
+              axis_drawing_spec: DrawingSpec = DrawingSpec()):
   """Draws the 3D axis on the image.
 
   Args:
@@ -214,8 +214,8 @@ def draw_axis(
     focal_length: camera focal length along x and y directions.
     principal_point: camera principal point in x and y.
     axis_length: length of the axis in the drawing.
-    axis_drawing_spec: A DrawingSpec object that specifies the xyz axis
-      drawing settings such as line thickness.
+    axis_drawing_spec: A DrawingSpec object that specifies the xyz axis drawing
+      settings such as line thickness.
 
   Raises:
     ValueError: If one of the followings:
@@ -226,7 +226,7 @@ def draw_axis(
   image_rows, image_cols, _ = image.shape
   # Create axis points in camera coordinate frame.
   axis_world = np.float32([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]])
-  axis_cam = np.matmul(rotation, axis_length*axis_world.T).T + translation
+  axis_cam = np.matmul(rotation, axis_length * axis_world.T).T + translation
   x = axis_cam[..., 0]
   y = axis_cam[..., 1]
   z = axis_cam[..., 2]
@@ -274,8 +274,9 @@ def plot_landmarks(landmark_list: landmark_pb2.NormalizedLandmarkList,
       connections' drawing settings such as color and line thickness.
     elevation: The elevation from which to view the plot.
     azimuth: the azimuth angle to rotate the plot.
+
   Raises:
-    ValueError: If any connetions contain invalid landmark index.
+    ValueError: If any connection contains an invalid landmark index.
   """
   if not landmark_list:
     return

@@ -1,5 +1,6 @@
 ---
-layout: default
+layout: forward
+target: https://developers.google.com/mediapipe/framework/getting_started/hello_world_ios
 title: Hello World! on iOS
 parent: MediaPipe on iOS
 grand_parent: Getting Started
@@ -12,6 +13,12 @@ nav_order: 1
 1. TOC
 {:toc}
 ---
+
+**Attention:** *Thanks for your interest in MediaPipe! We have moved to
+[https://developers.google.com/mediapipe](https://developers.google.com/mediapipe)
+as the primary developer documentation site for MediaPipe as of April 3, 2023.*
+
+----
 
 ## Introduction
 
@@ -131,7 +138,7 @@ Create a `BUILD` file in the `$APPLICATION_PATH` and add the following build
 rules:
 
 ```
-MIN_IOS_VERSION = "11.0"
+MIN_IOS_VERSION = "12.0"
 
 load(
     "@build_bazel_rules_apple//apple:ios.bzl",

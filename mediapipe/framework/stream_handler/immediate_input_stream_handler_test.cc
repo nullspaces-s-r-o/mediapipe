@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/base/macros.h"
+#include "absl/log/absl_check.h"
 #include "absl/memory/memory.h"
 #include "mediapipe/framework/calculator_context.h"
 #include "mediapipe/framework/calculator_context_manager.h"
@@ -104,7 +105,7 @@ class ImmediateInputStreamHandlerTest : public ::testing::Test {
   void NotifyNoOp() {}
 
   void Schedule(CalculatorContext* cc) {
-    CHECK(cc);
+    ABSL_CHECK(cc);
     cc_ = cc;
   }
 
@@ -132,7 +133,7 @@ class ImmediateInputStreamHandlerTest : public ::testing::Test {
   }
 
   const InputStream& Input(const CollectionItemId& id) {
-    CHECK(cc_);
+    ABSL_CHECK(cc_);
     return cc_->Inputs().Get(id);
   }
 
@@ -225,6 +226,43 @@ TEST_F(ImmediateInputStreamHandlerTest, StreamDoneReady) {
   EXPECT_TRUE(input_stream_handler_->ScheduleInvocations(
       /*max_allowance=*/1, &min_stream_timestamp));
   ExpectPackets(cc_->Inputs(), {});
+  input_stream_handler_->FinalizeInputSet(cc_->InputTimestamp(),
+                                          &cc_->Inputs());
+  input_stream_handler_->ClearCurrentInputs(cc_);
+}
+
+// This test checks that the state is ReadyForClose after all streams reach
+// Timestamp::Max.
+TEST_F(ImmediateInputStreamHandlerTest, ReadyForCloseAfterTimestampMax) {
+  Timestamp min_stream_timestamp;
+  std::list<Packet> packets;
+
+  // One packet arrives, ready for process.
+  packets.push_back(Adopt(new std::string("packet 1")).At(Timestamp(10)));
+  input_stream_handler_->AddPackets(name_to_id_["input_a"], packets);
+  EXPECT_TRUE(input_stream_handler_->ScheduleInvocations(
+      /*max_allowance=*/1, &min_stream_timestamp));
+  EXPECT_EQ(Timestamp(10), cc_->InputTimestamp());
+  input_stream_handler_->FinalizeInputSet(cc_->InputTimestamp(),
+                                          &cc_->Inputs());
+  input_stream_handler_->ClearCurrentInputs(cc_);
+
+  // No packets arrive, not ready.
+  EXPECT_FALSE(input_stream_handler_->ScheduleInvocations(
+      /*max_allowance=*/1, &min_stream_timestamp));
+  EXPECT_EQ(Timestamp::Unset(), cc_->InputTimestamp());
+
+  // Timestamp::Max arrives, ready for close.
+  input_stream_handler_->SetNextTimestampBound(
+      name_to_id_["input_a"], Timestamp::Max().NextAllowedInStream());
+  input_stream_handler_->SetNextTimestampBound(
+      name_to_id_["input_b"], Timestamp::Max().NextAllowedInStream());
+  input_stream_handler_->SetNextTimestampBound(
+      name_to_id_["input_c"], Timestamp::Max().NextAllowedInStream());
+
+  EXPECT_TRUE(input_stream_handler_->ScheduleInvocations(
+      /*max_allowance=*/1, &min_stream_timestamp));
+  EXPECT_EQ(Timestamp::Done(), cc_->InputTimestamp());
   input_stream_handler_->FinalizeInputSet(cc_->InputTimestamp(),
                                           &cc_->Inputs());
   input_stream_handler_->ClearCurrentInputs(cc_);

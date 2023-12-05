@@ -22,6 +22,7 @@
 #include <memory>
 #include <vector>
 
+#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "mediapipe/calculators/tensor/image_to_tensor_converter.h"
 #include "mediapipe/calculators/tensor/image_to_tensor_converter_gl_utils.h"
@@ -68,8 +69,8 @@ class GlProcessor : public ImageToTensorConverter {
 
       constexpr GLchar kExtractSubRectVertexShader[] = R"(
             in vec4 position;
-            in mediump vec4 texture_coordinate;
-            out mediump vec2 sample_coordinate;
+            in highp vec4 texture_coordinate;
+            out highp vec2 sample_coordinate;
             uniform mat4 transform_matrix;
 
             void main() {
@@ -86,7 +87,7 @@ class GlProcessor : public ImageToTensorConverter {
           )";
 
       constexpr GLchar kExtractSubRectFragBody[] = R"(
-            DEFAULT_PRECISION(mediump, float)
+            DEFAULT_PRECISION(highp, float)
 
             // Provided by kExtractSubRectVertexShader.
             in vec2 sample_coordinate;
@@ -168,55 +169,57 @@ class GlProcessor : public ImageToTensorConverter {
     });
   }
 
-  absl::StatusOr<Tensor> Convert(const mediapipe::Image& input,
-                                 const RotatedRect& roi,
-                                 const Size& output_dims, float range_min,
-                                 float range_max) override {
+  absl::Status Convert(const mediapipe::Image& input, const RotatedRect& roi,
+                       float range_min, float range_max,
+                       int tensor_buffer_offset,
+                       Tensor& output_tensor) override {
     if (input.format() != mediapipe::GpuBufferFormat::kBGRA32 &&
         input.format() != mediapipe::GpuBufferFormat::kRGBAHalf64 &&
-        input.format() != mediapipe::GpuBufferFormat::kRGBAFloat128) {
+        input.format() != mediapipe::GpuBufferFormat::kRGBAFloat128 &&
+        input.format() != mediapipe::GpuBufferFormat::kRGB24) {
       return InvalidArgumentError(absl::StrCat(
-          "Only 4-channel texture input formats are supported, passed format: ",
-          static_cast<uint32_t>(input.format())));
+          "Unsupported format: ", static_cast<uint32_t>(input.format())));
     }
+    // TODO: support tensor_buffer_offset > 0 scenario.
+    RET_CHECK_EQ(tensor_buffer_offset, 0)
+        << "The non-zero tensor_buffer_offset input is not supported yet.";
+    const auto& output_shape = output_tensor.shape();
+    MP_RETURN_IF_ERROR(ValidateTensorShape(output_shape));
 
-    constexpr int kNumChannels = 3;
-    Tensor tensor(
-        Tensor::ElementType::kFloat32,
-        Tensor::Shape{1, output_dims.height, output_dims.width, kNumChannels});
-
-    MP_RETURN_IF_ERROR(
-        gl_helper_.RunInGlContext([this, &tensor, &input, &roi, &output_dims,
-                                   range_min, range_max]() -> absl::Status {
+    MP_RETURN_IF_ERROR(gl_helper_.RunInGlContext(
+        [this, &output_tensor, &input, &roi, &output_shape, range_min,
+         range_max]() -> absl::Status {
           auto input_texture = gl_helper_.CreateSourceTexture(input);
 
           constexpr float kInputImageRangeMin = 0.0f;
           constexpr float kInputImageRangeMax = 1.0f;
-          ASSIGN_OR_RETURN(auto transform,
-                           GetValueRangeTransformation(kInputImageRangeMin,
-                                                       kInputImageRangeMax,
-                                                       range_min, range_max));
-          auto tensor_view = tensor.GetOpenGlTexture2dWriteView();
+          MP_ASSIGN_OR_RETURN(auto transform,
+                              GetValueRangeTransformation(
+                                  kInputImageRangeMin, kInputImageRangeMax,
+                                  range_min, range_max));
+          auto tensor_view = output_tensor.GetOpenGlTexture2dWriteView();
           MP_RETURN_IF_ERROR(ExtractSubRect(input_texture, roi,
-                                            /*flip_horizontaly=*/false,
+                                            /*flip_horizontally=*/false,
                                             transform.scale, transform.offset,
-                                            output_dims, &tensor_view));
+                                            output_shape, &tensor_view));
           return absl::OkStatus();
         }));
 
-    return tensor;
+    return absl::OkStatus();
   }
 
   absl::Status ExtractSubRect(const mediapipe::GlTexture& texture,
                               const RotatedRect& sub_rect,
-                              bool flip_horizontaly, float alpha, float beta,
-                              const Size& output_dims,
+                              bool flip_horizontally, float alpha, float beta,
+                              const Tensor::Shape& output_shape,
                               Tensor::OpenGlTexture2dView* output) {
+    const int output_height = output_shape.dims[1];
+    const int output_width = output_shape.dims[2];
     std::array<float, 16> transform_mat;
 
     glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_);
-    glViewport(0, 0, output_dims.width, output_dims.height);
+    glViewport(0, 0, output_width, output_height);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, output->name());
@@ -257,16 +260,16 @@ class GlProcessor : public ImageToTensorConverter {
     // error. So in that case, we'll grab the transpose of our original matrix
     // and send that instead.
     const auto gl_context = mediapipe::GlContext::GetCurrent();
-    LOG_IF(FATAL, !gl_context) << "GlContext is not bound to the thread.";
+    ABSL_LOG_IF(FATAL, !gl_context) << "GlContext is not bound to the thread.";
     if (gl_context->GetGlVersion() == mediapipe::GlVersion::kGLES2) {
       GetTransposedRotatedSubRectToRectTransformMatrix(
-          sub_rect, texture.width(), texture.height(), flip_horizontaly,
+          sub_rect, texture.width(), texture.height(), flip_horizontally,
           &transform_mat);
       glUniformMatrix4fv(matrix_id_, 1, GL_FALSE, transform_mat.data());
     } else {
       GetRotatedSubRectToRectTransformMatrix(sub_rect, texture.width(),
-                                             texture.height(), flip_horizontaly,
-                                             &transform_mat);
+                                             texture.height(),
+                                             flip_horizontally, &transform_mat);
       glUniformMatrix4fv(matrix_id_, 1, GL_TRUE, transform_mat.data());
     }
 
@@ -301,6 +304,7 @@ class GlProcessor : public ImageToTensorConverter {
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
+    glFlush();
 
     return absl::OkStatus();
   }
@@ -316,6 +320,17 @@ class GlProcessor : public ImageToTensorConverter {
   }
 
  private:
+  absl::Status ValidateTensorShape(const Tensor::Shape& output_shape) {
+    RET_CHECK_EQ(output_shape.dims.size(), 4)
+        << "Wrong output dims size: " << output_shape.dims.size();
+    RET_CHECK_EQ(output_shape.dims[0], 1)
+        << "Handling batch dimension not equal to 1 is not implemented in this "
+           "converter.";
+    RET_CHECK_EQ(output_shape.dims[3], 3)
+        << "Wrong output channel: " << output_shape.dims[3];
+    return absl::OkStatus();
+  }
+
   mediapipe::GlCalculatorHelper gl_helper_;
   bool use_custom_zero_border_ = false;
   BorderMode border_mode_ = BorderMode::kReplicate;

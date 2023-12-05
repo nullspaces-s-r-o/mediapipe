@@ -1,4 +1,4 @@
-# Copyright 2022 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2022 The MediaPipe Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,12 @@
 """Category data class."""
 
 import dataclasses
-from typing import Any
+from typing import Any, Optional
 
-from mediapipe.tasks.cc.components.containers import category_pb2
+from mediapipe.framework.formats import classification_pb2
 from mediapipe.tasks.python.core.optional_dependencies import doc_controls
 
-_CategoryProto = category_pb2.Category
+_ClassificationProto = classification_pb2.Classification
 
 
 @dataclasses.dataclass
@@ -39,29 +39,29 @@ class Category:
     category_name: The label of this category object.
   """
 
-  index: int
-  score: float
-  display_name: str
-  category_name: str
+  index: Optional[int] = None
+  score: Optional[float] = None
+  display_name: Optional[str] = None
+  category_name: Optional[str] = None
 
   @doc_controls.do_not_generate_docs
-  def to_pb2(self) -> _CategoryProto:
+  def to_pb2(self) -> _ClassificationProto:
     """Generates a Category protobuf object."""
-    return _CategoryProto(
+    return _ClassificationProto(
         index=self.index,
         score=self.score,
-        display_name=self.display_name,
-        category_name=self.category_name)
+        label=self.category_name,
+        display_name=self.display_name)
 
   @classmethod
   @doc_controls.do_not_generate_docs
-  def create_from_pb2(cls, pb2_obj: _CategoryProto) -> 'Category':
+  def create_from_pb2(cls, pb2_obj: _ClassificationProto) -> 'Category':
     """Creates a `Category` object from the given protobuf object."""
     return Category(
         index=pb2_obj.index,
         score=pb2_obj.score,
         display_name=pb2_obj.display_name,
-        category_name=pb2_obj.category_name)
+        category_name=pb2_obj.label)
 
   def __eq__(self, other: Any) -> bool:
     """Checks if this object is equal to the given object.

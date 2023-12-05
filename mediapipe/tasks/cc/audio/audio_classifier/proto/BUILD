@@ -1,4 +1,4 @@
-# Copyright 2022 The MediaPipe Authors. All Rights Reserved.
+# Copyright 2022 The MediaPipe Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,12 +19,12 @@ package(default_visibility = ["//mediapipe/tasks:internal"])
 licenses(["notice"])
 
 mediapipe_proto_library(
-    name = "audio_classifier_options_proto",
-    srcs = ["audio_classifier_options.proto"],
+    name = "audio_classifier_graph_options_proto",
+    srcs = ["audio_classifier_graph_options.proto"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
-        "//mediapipe/tasks/cc/components:classifier_options_proto",
+        "//mediapipe/tasks/cc/components/processors/proto:classifier_options_proto",
         "//mediapipe/tasks/cc/core/proto:base_options_proto",
     ],
 )

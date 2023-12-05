@@ -1,5 +1,6 @@
 ---
-layout: default
+layout: forward
+target: https://developers.google.com/mediapipe/framework/getting_started/hello_world_cpp
 title: Hello World! in C++
 parent: MediaPipe in C++
 grand_parent: Getting Started
@@ -12,6 +13,12 @@ nav_order: 1
 1. TOC
 {:toc}
 ---
+
+**Attention:** *Thanks for your interest in MediaPipe! We have moved to
+[https://developers.google.com/mediapipe](https://developers.google.com/mediapipe)
+as the primary developer documentation site for MediaPipe as of April 3, 2023.*
+
+----
 
 1.  Ensure you have a working version of MediaPipe. See
     [installation instructions](./install.md).
@@ -43,7 +50,7 @@ nav_order: 1
 3.  The [`hello world`] example uses a simple MediaPipe graph in the
     `PrintHelloWorld()` function, defined in a [`CalculatorGraphConfig`] proto.
 
-    ```C++
+    ```c++
     absl::Status PrintHelloWorld() {
       // Configures a simple graph, which concatenates 2 PassThroughCalculators.
       CalculatorGraphConfig config = ParseTextProtoOrDie<CalculatorGraphConfig>(R"(
@@ -119,7 +126,7 @@ nav_order: 1
     ```c++
     mediapipe::Packet packet;
     while (poller.Next(&packet)) {
-      LOG(INFO) << packet.Get<string>();
+      ABSL_LOG(INFO) << packet.Get<string>();
     }
     ```
 

@@ -12,25 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+#include "absl/strings/str_format.h"
+#include "absl/strings/substitute.h"
+#include "absl/types/optional.h"
 #include "mediapipe/calculators/tensor/tensor_converter_calculator.pb.h"
+#include "mediapipe/calculators/tensor/tensor_converter_cpu.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/formats/image_frame.h"
 #include "mediapipe/framework/formats/matrix.h"
 #include "mediapipe/framework/formats/tensor.h"
 #include "mediapipe/framework/port.h"
 #include "mediapipe/framework/port/ret_check.h"
-#include "mediapipe/util/resource_util.h"
+#include "mediapipe/framework/port/status_macros.h"
+#include "mediapipe/gpu/gpu_buffer_format.h"
+#include "mediapipe/gpu/gpu_origin.pb.h"
 
 #if !MEDIAPIPE_DISABLE_GPU
+#include "mediapipe/gpu/gl_base.h"
 #include "mediapipe/gpu/gpu_buffer.h"
 #if MEDIAPIPE_METAL_ENABLED
 #import <CoreVideo/CoreVideo.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 
+#include "mediapipe/framework/formats/tensor_mtl_buffer_view.h"
 #import "mediapipe/gpu/MPPMetalHelper.h"
 #elif MEDIAPIPE_OPENGL_ES_VERSION >= MEDIAPIPE_OPENGL_ES_30
 #include "mediapipe/gpu/gl_calculator_helper.h"
@@ -42,21 +56,57 @@
 #endif  // !MEDIAPIPE_DISABLE_GPU
 
 namespace {
+
 constexpr int kWorkgroupSize = 8;  // Block size for GPU shader.
 // Commonly used to compute the number of blocks to launch in a kernel.
 int NumGroups(const int size, const int group_size) {  // NOLINT
   return (size + group_size - 1) / group_size;
 }
 
-typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-    RowMajorMatrixXf;
-typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>
-    ColMajorMatrixXf;
+absl::StatusOr<bool> ShouldFlipVertically(
+    const mediapipe::TensorConverterCalculatorOptions& options, bool use_gpu) {
+  if (options.has_flip_vertically() && options.has_gpu_origin()) {
+    return absl::FailedPreconditionError(absl::StrFormat(
+        "Cannot specify both flip_vertically and gpu_origin options"));
+  }
+
+  if (!options.has_gpu_origin()) {
+    // Fall back to flip_vertically.
+    return options.flip_vertically();
+  }
+
+  // Warn if gpu_origin is specified with a CPU input image.
+  // Those are always TOP_LEFT, so no flipping is necessary.
+  if (!use_gpu) {
+    ABSL_LOG(WARNING)
+        << "Ignoring gpu_origin option since IMAGE_GPU input is not specified";
+    return false;
+  }
+
+  switch (options.gpu_origin()) {
+    case mediapipe::GpuOrigin::TOP_LEFT:
+      return false;
+    case mediapipe::GpuOrigin::DEFAULT:
+    case mediapipe::GpuOrigin::CONVENTIONAL:
+      // TOP_LEFT on Metal, BOTTOM_LEFT on OpenGL.
+#ifdef __APPLE__
+      return false;
+#else
+      return true;
+#endif
+    default:
+      return absl::InvalidArgumentError(
+          absl::StrFormat("Unhandled GPU origin %i", options.gpu_origin()));
+  }
+}
 
 constexpr char kImageFrameTag[] = "IMAGE";
 constexpr char kGpuBufferTag[] = "IMAGE_GPU";
 constexpr char kTensorsTag[] = "TENSORS";
 constexpr char kMatrixTag[] = "MATRIX";
+
+constexpr std::pair<float, float> kDefaultOutputRange = {0.0f, 1.0f};
+
 }  // namespace
 
 namespace mediapipe {
@@ -108,11 +158,7 @@ class TensorConverterCalculator : public CalculatorBase {
 
  private:
   absl::Status InitGpu(CalculatorContext* cc);
-  absl::Status LoadOptions(CalculatorContext* cc);
-  template <class T>
-  absl::Status NormalizeImage(const ImageFrame& image_frame,
-                              bool flip_vertically, float* tensor_ptr);
-  absl::Status CopyMatrixToTensor(const Matrix& matrix, float* tensor_ptr);
+  absl::Status LoadOptions(CalculatorContext* cc, bool use_gpu);
   absl::Status ProcessCPU(CalculatorContext* cc);
   absl::Status ProcessGPU(CalculatorContext* cc);
 
@@ -144,7 +190,8 @@ absl::Status TensorConverterCalculator::GetContract(CalculatorContract* cc) {
   RET_CHECK(static_cast<int>(cc->Inputs().HasTag(kImageFrameTag)) +
                 static_cast<int>(cc->Inputs().HasTag(kGpuBufferTag)) +
                 static_cast<int>(cc->Inputs().HasTag(kMatrixTag)) ==
-            1);
+            1)
+      << "Only one input tag of {IMAGE, IMAGE_GPU, MATRIX} may be specified";
 
   if (cc->Inputs().HasTag(kImageFrameTag)) {
     cc->Inputs().Tag(kImageFrameTag).Set<ImageFrame>();
@@ -172,8 +219,6 @@ absl::Status TensorConverterCalculator::GetContract(CalculatorContract* cc) {
 absl::Status TensorConverterCalculator::Open(CalculatorContext* cc) {
   cc->SetOffset(TimestampDiff(0));
 
-  MP_RETURN_IF_ERROR(LoadOptions(cc));
-
 #if !MEDIAPIPE_DISABLE_GPU
   if (cc->Inputs().HasTag(kGpuBufferTag)) {
     use_gpu_ = true;
@@ -185,6 +230,8 @@ absl::Status TensorConverterCalculator::Open(CalculatorContext* cc) {
 #endif  // MEDIAPIPE_METAL_ENABLED
   }
 #endif  // !MEDIAPIPE_DISABLE_GPU
+
+  MP_RETURN_IF_ERROR(LoadOptions(cc, use_gpu_));
 
   return absl::OkStatus();
 }
@@ -231,46 +278,21 @@ absl::Status TensorConverterCalculator::ProcessCPU(CalculatorContext* cc) {
     }
     const auto& image_frame =
         cc->Inputs().Tag(kImageFrameTag).Get<ImageFrame>();
-    const int height = image_frame.Height();
-    const int width = image_frame.Width();
-    const int channels = image_frame.NumberOfChannels();
-    const int channels_preserved = std::min(channels, max_num_channels_);
-    const mediapipe::ImageFormat::Format format = image_frame.Format();
-
-    if (!(format == mediapipe::ImageFormat::SRGBA ||
-          format == mediapipe::ImageFormat::SRGB ||
-          format == mediapipe::ImageFormat::GRAY8 ||
-          format == mediapipe::ImageFormat::VEC32F1))
-      RET_CHECK_FAIL() << "Unsupported CPU input format.";
-
-    output_tensors->emplace_back(
-        Tensor::ElementType::kFloat32,
-        Tensor::Shape{1, height, width, channels_preserved});
-    auto cpu_view = output_tensors->back().GetCpuWriteView();
-
-    // Copy image data into tensor.
-    if (image_frame.ByteDepth() == 1) {
-      MP_RETURN_IF_ERROR(NormalizeImage<uint8>(image_frame, flip_vertically_,
-                                               cpu_view.buffer<float>()));
-    } else if (image_frame.ByteDepth() == 4) {
-      MP_RETURN_IF_ERROR(NormalizeImage<float>(image_frame, flip_vertically_,
-                                               cpu_view.buffer<float>()));
-    } else {
-      return absl::InternalError(
-          "Only byte-based (8 bit) and float (32 bit) images supported.");
-    }
+    MP_ASSIGN_OR_RETURN(Tensor output,
+                        ConvertImageFrameToTensorOnCpu(
+                            image_frame,
+                            output_range_.has_value() ? output_range_.value()
+                                                      : kDefaultOutputRange,
+                            flip_vertically_, max_num_channels_));
+    output_tensors->emplace_back(std::move(output));
   } else if (cc->Inputs().HasTag(kMatrixTag)) {
     if (cc->Inputs().Tag(kMatrixTag).IsEmpty()) {
       return absl::OkStatus();
     }
     const auto& matrix = cc->Inputs().Tag(kMatrixTag).Get<Matrix>();
-    const int height = matrix.rows();
-    const int width = matrix.cols();
-    const int channels = 1;
-    output_tensors->emplace_back(Tensor::ElementType::kFloat32,
-                                 Tensor::Shape{1, height, width, channels});
-    MP_RETURN_IF_ERROR(CopyMatrixToTensor(
-        matrix, output_tensors->back().GetCpuWriteView().buffer<float>()));
+    MP_ASSIGN_OR_RETURN(Tensor output,
+                        ConvertMatrixToTensorOnCpu(matrix, row_major_matrix_));
+    output_tensors->emplace_back(std::move(output));
   } else {
     return absl::OkStatus();
   }
@@ -296,7 +318,6 @@ absl::Status TensorConverterCalculator::ProcessGPU(CalculatorContext* cc) {
   output_tensors->emplace_back(Tensor::ElementType::kFloat32,
                                Tensor::Shape{1, height, width, channels});
 #if MEDIAPIPE_METAL_ENABLED
-  id<MTLDevice> device = gpu_helper_.mtlDevice;
   id<MTLCommandBuffer> command_buffer = [gpu_helper_ commandBuffer];
   command_buffer.label = @"TensorConverterCalculatorConvert";
   id<MTLComputeCommandEncoder> compute_encoder =
@@ -305,7 +326,7 @@ absl::Status TensorConverterCalculator::ProcessGPU(CalculatorContext* cc) {
   id<MTLTexture> src_texture = [gpu_helper_ metalTextureWithGpuBuffer:input];
   [compute_encoder setTexture:src_texture atIndex:0];
   auto output_view =
-      output_tensors->at(0).GetMtlBufferWriteView(command_buffer);
+      MtlBufferView::GetWriteView(output_tensors->at(0), command_buffer);
   [compute_encoder setBuffer:output_view.buffer() offset:0 atIndex:1];
   MTLSize threads_per_group = MTLSizeMake(kWorkgroupSize, kWorkgroupSize, 1);
   MTLSize threadgroups =
@@ -359,6 +380,7 @@ absl::Status TensorConverterCalculator::ProcessGPU(CalculatorContext* cc) {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, 0);
 #endif  // MEDIAPIPE_OPENGL_ES_VERSION >= MEDIAPIPE_OPENGL_ES_31
+        glFlush();
         src.Release();
         return absl::OkStatus();
       }));
@@ -378,23 +400,34 @@ absl::Status TensorConverterCalculator::InitGpu(CalculatorContext* cc) {
   // Get input image sizes.
   const auto& input =
       cc->Inputs().Tag(kGpuBufferTag).Get<mediapipe::GpuBuffer>();
-  mediapipe::ImageFormat::Format format =
-      mediapipe::ImageFormatForGpuBufferFormat(input.format());
+  mediapipe::GpuBufferFormat format = input.format();
   const bool include_alpha = (max_num_channels_ == 4);
   const bool single_channel = (max_num_channels_ == 1);
-  if (!(format == mediapipe::ImageFormat::GRAY8 ||
-        format == mediapipe::ImageFormat::SRGB ||
-        format == mediapipe::ImageFormat::SRGBA))
-    RET_CHECK_FAIL() << "Unsupported GPU input format.";
-  if (include_alpha && (format != mediapipe::ImageFormat::SRGBA))
-    RET_CHECK_FAIL() << "Num input channels is less than desired output.";
+
+  RET_CHECK(format == mediapipe::GpuBufferFormat::kBGRA32 ||
+            format == mediapipe::GpuBufferFormat::kRGB24 ||
+            format == mediapipe::GpuBufferFormat::kRGBA32 ||
+            format == mediapipe::GpuBufferFormat::kRGBAFloat128 ||
+            format == mediapipe::GpuBufferFormat::kRGBAHalf64 ||
+            format == mediapipe::GpuBufferFormat::kGrayFloat32 ||
+            format == mediapipe::GpuBufferFormat::kGrayHalf16 ||
+            format == mediapipe::GpuBufferFormat::kOneComponent8)
+      << "Unsupported GPU input format: " << static_cast<uint32_t>(format);
+  if (include_alpha) {
+    RET_CHECK(format == mediapipe::GpuBufferFormat::kBGRA32 ||
+              format == mediapipe::GpuBufferFormat::kRGBA32 ||
+              format == mediapipe::GpuBufferFormat::kRGBAFloat128 ||
+              format == mediapipe::GpuBufferFormat::kRGBAHalf64)
+        << "Num input channels is less than desired output, input format: "
+        << static_cast<uint32_t>(format);
+  }
 
 #if MEDIAPIPE_METAL_ENABLED
   id<MTLDevice> device = gpu_helper_.mtlDevice;
   // Shader to convert GL Texture to Metal Buffer,
   // with normalization to either: [0,1] or [-1,1].
   const std::string shader_source = absl::Substitute(
-      R"(
+      R"glsl(
   #include <metal_stdlib>
 
   using namespace metal;
@@ -413,7 +446,7 @@ absl::Status TensorConverterCalculator::InitGpu(CalculatorContext* cc) {
     $3  // g & b channels
     $4  // alpha channel
   }
-      )",
+      )glsl",
       /*$0=*/
       output_range_.has_value()
           ? absl::Substitute("pixel = pixel * half($0) + half($1);",
@@ -423,8 +456,8 @@ absl::Status TensorConverterCalculator::InitGpu(CalculatorContext* cc) {
       /*$1=*/max_num_channels_,
       /*$2=*/flip_vertically_ ? "(in_tex.get_height() - 1 - gid.y)" : "gid.y",
       /*$3=*/
-      single_channel ? "" : R"(out_buf[linear_index + 1] = pixel.y;
-               out_buf[linear_index + 2] = pixel.z;)",
+      single_channel ? "" : R"glsl(out_buf[linear_index + 1] = pixel.y;
+                                   out_buf[linear_index + 2] = pixel.z;)glsl",
       /*$4=*/include_alpha ? "out_buf[linear_index + 3] = pixel.w;" : "");
 
   NSString* library_source =
@@ -442,17 +475,17 @@ absl::Status TensorConverterCalculator::InitGpu(CalculatorContext* cc) {
   RET_CHECK(to_buffer_program_ != nil) << "Couldn't create pipeline state " <<
       [[error localizedDescription] UTF8String];
 #elif MEDIAPIPE_OPENGL_ES_VERSION >= MEDIAPIPE_OPENGL_ES_30
-  MP_RETURN_IF_ERROR(gpu_helper_.RunInGlContext([this, &include_alpha,
+  MP_RETURN_IF_ERROR(
+      gpu_helper_.RunInGlContext([this, &include_alpha,
 #if MEDIAPIPE_OPENGL_ES_VERSION >= MEDIAPIPE_OPENGL_ES_31
-                                                 &input,
+                                  &input,
 #endif  // MEDIAPIPE_OPENGL_ES_VERSION >= MEDIAPIPE_OPENGL_ES_31
-                                                 &single_channel]()
-                                                    -> absl::Status {
+                                  &single_channel]() -> absl::Status {
 #if MEDIAPIPE_OPENGL_ES_VERSION >= MEDIAPIPE_OPENGL_ES_31
-    // Shader to convert GL Texture to Shader Storage Buffer Object (SSBO),
-    // with normalization to either: [0,1] or [-1,1].
-    const std::string shader_source = absl::Substitute(
-        R"( #version 310 es
+        // Shader to convert GL Texture to Shader Storage Buffer Object (SSBO),
+        // with normalization to either: [0,1] or [-1,1].
+        const std::string shader_source = absl::Substitute(
+            R"glsl( #version 310 es
           layout(local_size_x = $0, local_size_y = $0) in;
           layout(binding = 0) uniform sampler2D input_texture;
           layout(std430, binding = 1) buffer Output {float elements[];} output_data;
@@ -466,38 +499,40 @@ absl::Status TensorConverterCalculator::InitGpu(CalculatorContext* cc) {
             output_data.elements[linear_index + 0] = pixel.x;  // r channel
             $5  // g & b channels
             $6  // alpha channel
-          })",
-        /*$0=*/kWorkgroupSize, /*$1=*/input.width(), /*$2=*/input.height(),
-        /*$3=*/
-        output_range_.has_value()
-            ? absl::Substitute("pixel = pixel * float($0) + float($1);",
-                               (output_range_->second - output_range_->first),
-                               output_range_->first)
-            : "",
-        /*$4=*/flip_vertically_ ? "(width_height.y - 1 - gid.y)" : "gid.y",
-        /*$5=*/
-        single_channel ? ""
-                       : R"(output_data.elements[linear_index + 1] = pixel.y;
-                            output_data.elements[linear_index + 2] = pixel.z;)",
-        /*$6=*/
-        include_alpha ? "output_data.elements[linear_index + 3] = pixel.w;"
-                      : "",
-        /*$7=*/max_num_channels_);
-    GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
-    const GLchar* sources[] = {shader_source.c_str()};
-    glShaderSource(shader, 1, sources, NULL);
-    glCompileShader(shader);
-    GLint compiled = GL_FALSE;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-    RET_CHECK(compiled == GL_TRUE);
-    to_buffer_program_ = glCreateProgram();
-    glAttachShader(to_buffer_program_, shader);
-    glDeleteShader(shader);
-    glLinkProgram(to_buffer_program_);
+          })glsl",
+            /*$0=*/kWorkgroupSize, /*$1=*/input.width(), /*$2=*/input.height(),
+            /*$3=*/
+            output_range_.has_value()
+                ? absl::Substitute(
+                      "pixel = pixel * float($0) + float($1);",
+                      (output_range_->second - output_range_->first),
+                      output_range_->first)
+                : "",
+            /*$4=*/flip_vertically_ ? "(width_height.y - 1 - gid.y)" : "gid.y",
+            /*$5=*/
+            single_channel
+                ? ""
+                : R"glsl(output_data.elements[linear_index + 1] = pixel.y;
+                     output_data.elements[linear_index + 2] = pixel.z;)glsl",
+            /*$6=*/
+            include_alpha ? "output_data.elements[linear_index + 3] = pixel.w;"
+                          : "",
+            /*$7=*/max_num_channels_);
+        GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
+        const GLchar* sources[] = {shader_source.c_str()};
+        glShaderSource(shader, 1, sources, NULL);
+        glCompileShader(shader);
+        GLint compiled = GL_FALSE;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+        RET_CHECK(compiled == GL_TRUE);
+        to_buffer_program_ = glCreateProgram();
+        glAttachShader(to_buffer_program_, shader);
+        glDeleteShader(shader);
+        glLinkProgram(to_buffer_program_);
 #else
-    // OpenGL ES 3.0 fragment shader Texture2d -> Texture2d conversion.
-    const std::string shader_source = absl::Substitute(
-        R"(
+        // OpenGL ES 3.0 fragment shader Texture2d -> Texture2d conversion.
+        const std::string shader_source = absl::Substitute(
+            R"glsl(
         #if __VERSION__ < 130
           #define in varying
         #endif  // __VERSION__ < 130
@@ -523,49 +558,51 @@ absl::Status TensorConverterCalculator::InitGpu(CalculatorContext* cc) {
             fragColor.r = pixel.r;  // r channel
             $3  // g & b channels
             $4  // alpha channel
-          })",
-        /*$0=*/single_channel ? "vec1" : "vec4",
-        /*$1=*/
-        flip_vertically_
-            ? "vec2(sample_coordinate.x, 1.0 - sample_coordinate.y);"
-            : "sample_coordinate;",
-        /*$2=*/output_range_.has_value()
-            ? absl::Substitute("pixel = pixel * float($0) + float($1);",
-                               (output_range_->second - output_range_->first),
-                               output_range_->first)
-            : "",
-        /*$3=*/single_channel ? "" : R"(fragColor.g = pixel.g;
-                            fragColor.b = pixel.b;)",
-        /*$4=*/
-        include_alpha ? "fragColor.a = pixel.a;"
-                      : (single_channel ? "" : "fragColor.a = 1.0;"));
+          })glsl",
+            /*$0=*/single_channel ? "vec1" : "vec4",
+            /*$1=*/
+            flip_vertically_
+                ? "vec2(sample_coordinate.x, 1.0 - sample_coordinate.y);"
+                : "sample_coordinate;",
+            /*$2=*/output_range_.has_value()
+                ? absl::Substitute(
+                      "pixel = pixel * float($0) + float($1);",
+                      (output_range_->second - output_range_->first),
+                      output_range_->first)
+                : "",
+            /*$3=*/single_channel ? "" : R"glsl(fragColor.g = pixel.g;
+                                            fragColor.b = pixel.b;)glsl",
+            /*$4=*/
+            include_alpha ? "fragColor.a = pixel.a;"
+                          : (single_channel ? "" : "fragColor.a = 1.0;"));
 
-    const GLint attr_location[NUM_ATTRIBUTES] = {
-        ATTRIB_VERTEX,
-        ATTRIB_TEXTURE_POSITION,
-    };
-    const GLchar* attr_name[NUM_ATTRIBUTES] = {
-        "position",
-        "texture_coordinate",
-    };
-    // shader program and params
-    mediapipe::GlhCreateProgram(
-        mediapipe::kBasicVertexShader, shader_source.c_str(), NUM_ATTRIBUTES,
-        &attr_name[0], attr_location, &to_tex2d_program_);
-    RET_CHECK(to_tex2d_program_) << "Problem initializing the program.";
-    glUseProgram(to_tex2d_program_);
-    glUniform1i(glGetUniformLocation(to_tex2d_program_, "frame"), 1);
-    glGenFramebuffers(1, &framebuffer_);
+        const GLint attr_location[NUM_ATTRIBUTES] = {
+            ATTRIB_VERTEX,
+            ATTRIB_TEXTURE_POSITION,
+        };
+        const GLchar* attr_name[NUM_ATTRIBUTES] = {
+            "position",
+            "texture_coordinate",
+        };
+        // shader program and params
+        mediapipe::GlhCreateProgram(
+            mediapipe::kBasicVertexShader, shader_source.c_str(),
+            NUM_ATTRIBUTES, &attr_name[0], attr_location, &to_tex2d_program_);
+        RET_CHECK(to_tex2d_program_) << "Problem initializing the program.";
+        glUseProgram(to_tex2d_program_);
+        glUniform1i(glGetUniformLocation(to_tex2d_program_, "frame"), 1);
+        glGenFramebuffers(1, &framebuffer_);
 
 #endif  // MEDIAPIPE_OPENGL_ES_VERSION >= MEDIAPIPE_OPENGL_ES_31
-    return absl::OkStatus();
-  }));
+        return absl::OkStatus();
+      }));
 #endif  // MEDIAPIPE_OPENGL_ES_VERSION >= MEDIAPIPE_OPENGL_ES_30
 #endif  // !MEDIAPIPE_DISABLE_GPU
   return absl::OkStatus();
 }
 
-absl::Status TensorConverterCalculator::LoadOptions(CalculatorContext* cc) {
+absl::Status TensorConverterCalculator::LoadOptions(CalculatorContext* cc,
+                                                    bool use_gpu) {
   // Get calculator options specified in the graph.
   const auto& options =
       cc->Options<::mediapipe::TensorConverterCalculatorOptions>();
@@ -582,7 +619,7 @@ absl::Status TensorConverterCalculator::LoadOptions(CalculatorContext* cc) {
   if (options.has_output_tensor_float_range()) {
     output_range_.emplace(options.output_tensor_float_range().min(),
                           options.output_tensor_float_range().max());
-    CHECK_GT(output_range_->second, output_range_->first);
+    ABSL_CHECK_GT(output_range_->second, output_range_->first);
   }
 
   // Custom div and sub values.
@@ -593,79 +630,16 @@ absl::Status TensorConverterCalculator::LoadOptions(CalculatorContext* cc) {
   }
 
   // Get y-flip mode.
-  flip_vertically_ = options.flip_vertically();
+  MP_ASSIGN_OR_RETURN(flip_vertically_, ShouldFlipVertically(options, use_gpu));
 
   // Get row_major_matrix mode.
   row_major_matrix_ = options.row_major_matrix();
 
   // Get desired way to handle input channels.
   max_num_channels_ = options.max_num_channels();
-  CHECK_GE(max_num_channels_, 1);
-  CHECK_LE(max_num_channels_, 4);
-  CHECK_NE(max_num_channels_, 2);
-  return absl::OkStatus();
-}
-
-template <class T>
-absl::Status TensorConverterCalculator::NormalizeImage(
-    const ImageFrame& image_frame, bool flip_vertically, float* tensor_ptr) {
-  const int height = image_frame.Height();
-  const int width = image_frame.Width();
-  const int channels = image_frame.NumberOfChannels();
-  const int channels_preserved = std::min(channels, max_num_channels_);
-  const int channels_ignored = channels - channels_preserved;
-
-  if (output_range_.has_value()) {
-    // If the output float range is set and we are not using custom
-    // normalization, normalize the pixel values from [0, 255] to the specified
-    // output range.
-    RET_CHECK_NE(output_range_->first, output_range_->second);
-    const float scale = (output_range_->second - output_range_->first) / 255.0f;
-    const float bias = output_range_->first;
-
-    for (int i = 0; i < height; ++i) {
-      const T* image_ptr = reinterpret_cast<const T*>(
-          image_frame.PixelData() +
-          (flip_vertically ? height - 1 - i : i) * image_frame.WidthStep());
-      for (int j = 0; j < width; ++j) {
-        for (int c = 0; c < channels_preserved; ++c) {
-          *tensor_ptr++ = *image_ptr++ * scale + bias;
-        }
-        image_ptr += channels_ignored;
-      }
-    }
-  } else {
-    // [0,1], scale only (bias == 0)
-    // Verified that there are no precision issues with 1.0f / 255.0f expression
-    const float scale = 1.0f / 255.0f;
-    for (int i = 0; i < height; ++i) {
-      const T* image_ptr = reinterpret_cast<const T*>(
-          image_frame.PixelData() +
-          (flip_vertically ? height - 1 - i : i) * image_frame.WidthStep());
-      for (int j = 0; j < width; ++j) {
-        for (int c = 0; c < channels_preserved; ++c) {
-          *tensor_ptr++ = *image_ptr++ * scale;
-        }
-        image_ptr += channels_ignored;
-      }
-    }
-  }
-
-  return absl::OkStatus();
-}
-
-absl::Status TensorConverterCalculator::CopyMatrixToTensor(const Matrix& matrix,
-                                                           float* tensor_ptr) {
-  if (row_major_matrix_) {
-    auto matrix_map =
-        Eigen::Map<RowMajorMatrixXf>(tensor_ptr, matrix.rows(), matrix.cols());
-    matrix_map = matrix;
-  } else {
-    auto matrix_map =
-        Eigen::Map<ColMajorMatrixXf>(tensor_ptr, matrix.rows(), matrix.cols());
-    matrix_map = matrix;
-  }
-
+  ABSL_CHECK_GE(max_num_channels_, 1);
+  ABSL_CHECK_LE(max_num_channels_, 4);
+  ABSL_CHECK_NE(max_num_channels_, 2);
   return absl::OkStatus();
 }
 

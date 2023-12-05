@@ -14,13 +14,18 @@ stamp_metadata_parser_version(
 cc_library(
     name = "metadata_extractor",
     srcs = ["metadata_extractor.cc"],
-    hdrs = ["metadata_extractor.h"],
+    hdrs = [
+        "metadata_extractor.h",
+        "metadata_parser_h",
+    ],
     visibility = ["//visibility:public"],
     deps = [
+        ":metadata_version_utils",
         "//mediapipe/framework/port:status",
         "//mediapipe/tasks/cc:common",
-        "//mediapipe/tasks/cc/metadata/utils:zip_readonly_mem_file",
+        "//mediapipe/tasks/cc/metadata/utils:zip_utils",
         "//mediapipe/tasks/metadata:metadata_schema_cc",
+        "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
@@ -29,7 +34,6 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@flatbuffers//:runtime_cc",
         "@org_tensorflow//tensorflow/lite/schema:schema_fbs",
-        "@zlib//:zlib_minizip",
     ],
 )
 
@@ -67,4 +71,11 @@ cc_library(
         "@org_tensorflow//tensorflow/lite/schema:schema_fbs",
         "@zlib//:zlib_minizip",
     ],
+)
+
+cc_library(
+    name = "metadata_version_utils",
+    srcs = ["metadata_version_utils.cc"],
+    hdrs = ["metadata_version_utils.h"],
+    deps = ["@com_google_absl//absl/strings"],
 )

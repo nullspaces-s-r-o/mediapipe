@@ -15,6 +15,7 @@
 """Tests for mediapipe.python._framework_bindings.image."""
 
 import gc
+import os
 import random
 import sys
 
@@ -23,8 +24,11 @@ import cv2
 import numpy as np
 import PIL.Image
 
+# resources dependency
 from mediapipe.python._framework_bindings import image
 from mediapipe.python._framework_bindings import image_frame
+
+TEST_IMAGE_PATH = 'mediapipe/python/solutions/testdata'
 
 Image = image.Image
 ImageFormat = image_frame.ImageFormat
@@ -185,6 +189,30 @@ class ImageTest(absltest.TestCase):
     gc.collect()
     self.assertEqual(sys.getrefcount(rgb_image), initial_ref_count)
 
+  def test_image_create_from_cvmat(self):
+    image_path = os.path.join(os.path.dirname(__file__),
+                              'solutions/testdata/hands.jpg')
+    mat = cv2.imread(image_path).astype(np.uint8)
+    mat = cv2.cvtColor(mat, cv2.COLOR_BGR2RGB)
+    rgb_image = Image(image_format=ImageFormat.SRGB, data=mat)
+    self.assertEqual(rgb_image.width, 720)
+    self.assertEqual(rgb_image.height, 382)
+    self.assertEqual(rgb_image.channels, 3)
+    self.assertEqual(rgb_image.image_format, ImageFormat.SRGB)
+    self.assertTrue(np.array_equal(mat, rgb_image.numpy_view()))
+
+  def test_image_create_from_file(self):
+    image_path = os.path.join(os.path.dirname(__file__),
+                              'solutions/testdata/hands.jpg')
+    loaded_image = Image.create_from_file(image_path)
+    self.assertEqual(loaded_image.width, 720)
+    self.assertEqual(loaded_image.height, 382)
+    # On Mac w/ GPU support, images use 4 channels (SRGBA). Otherwise, all
+    # images use 3 channels (SRGB).
+    self.assertIn(loaded_image.channels, [3, 4])
+    self.assertIn(
+        loaded_image.image_format, [ImageFormat.SRGB, ImageFormat.SRGBA]
+    )
 
 if __name__ == '__main__':
   absltest.main()

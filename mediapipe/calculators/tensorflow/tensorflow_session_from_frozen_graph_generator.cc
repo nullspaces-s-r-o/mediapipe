@@ -24,13 +24,13 @@
 
 #include <string>
 
+#include "absl/log/absl_log.h"
 #include "mediapipe/calculators/tensorflow/tensorflow_session.h"
 #include "mediapipe/calculators/tensorflow/tensorflow_session_from_frozen_graph_generator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/deps/clock.h"
 #include "mediapipe/framework/deps/monotonic_clock.h"
 #include "mediapipe/framework/port/file_helpers.h"
-#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/tool/status_util.h"
@@ -101,7 +101,7 @@ class TensorFlowSessionFromFrozenGraphGenerator : public PacketGenerator {
       const PacketSet& input_side_packets, PacketSet* output_side_packets) {
     auto clock = std::unique_ptr<mediapipe::Clock>(
         mediapipe::MonotonicClock::CreateSynchronizedMonotonicClock());
-    const uint64 start_time = absl::ToUnixMicros(clock->TimeNow());
+    const uint64_t start_time = absl::ToUnixMicros(clock->TimeNow());
     const TensorFlowSessionFromFrozenGraphGeneratorOptions& options =
         packet_generator_options.GetExtension(
             TensorFlowSessionFromFrozenGraphGeneratorOptions::ext);
@@ -154,9 +154,9 @@ class TensorFlowSessionFromFrozenGraphGenerator : public PacketGenerator {
     }
 
     output_side_packets->Tag(kSessionTag) = Adopt(session.release());
-    const uint64 end_time = absl::ToUnixMicros(clock->TimeNow());
-    LOG(INFO) << "Loaded frozen model in: " << end_time - start_time
-              << " microseconds.";
+    const uint64_t end_time = absl::ToUnixMicros(clock->TimeNow());
+    ABSL_LOG(INFO) << "Loaded frozen model in: " << end_time - start_time
+                   << " microseconds.";
     return absl::OkStatus();
   }
 };

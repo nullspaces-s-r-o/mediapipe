@@ -15,6 +15,8 @@
 // Converts a single int or vector<int> or vector<vector<int>> to 1D (or 2D)
 // tf::Tensor.
 
+#include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
 #include "mediapipe/calculators/tensorflow/vector_int_to_tensor_calculator_options.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -86,7 +88,7 @@ absl::Status VectorIntToTensorCalculator::GetContract(CalculatorContract* cc) {
       cc->Inputs().Tag(kVectorInt).Set<std::vector<int>>();
     }
   } else {
-    LOG(FATAL) << "input size not supported";
+    ABSL_LOG(FATAL) << "input size not supported";
   }
   RET_CHECK_EQ(cc->Outputs().NumEntries(), 1)
       << "Only one output stream is supported.";
@@ -112,12 +114,12 @@ absl::Status VectorIntToTensorCalculator::Process(CalculatorContext* cc) {
             .Value()
             .Get<std::vector<std::vector<int>>>();
 
-    const int32 rows = input.size();
-    CHECK_GE(rows, 1);
-    const int32 cols = input[0].size();
-    CHECK_GE(cols, 1);
+    const int32_t rows = input.size();
+    ABSL_CHECK_GE(rows, 1);
+    const int32_t cols = input[0].size();
+    ABSL_CHECK_GE(cols, 1);
     for (int i = 1; i < rows; ++i) {
-      CHECK_EQ(input[i].size(), cols);
+      ABSL_CHECK_EQ(input[i].size(), cols);
     }
     if (options_.transpose()) {
       tensor_shape = tf::TensorShape({cols, rows});
@@ -134,13 +136,13 @@ absl::Status VectorIntToTensorCalculator::Process(CalculatorContext* cc) {
               AssignMatrixValue<tf::int64>(c, r, input[r][c], output.get());
               break;
             case tf::DT_UINT8:
-              AssignMatrixValue<uint8>(c, r, input[r][c], output.get());
+              AssignMatrixValue<uint8_t>(c, r, input[r][c], output.get());
               break;
             case tf::DT_INT32:
               AssignMatrixValue<int>(c, r, input[r][c], output.get());
               break;
             default:
-              LOG(FATAL) << "tensor data type is not supported.";
+              ABSL_LOG(FATAL) << "tensor data type is not supported.";
           }
         }
       }
@@ -152,13 +154,13 @@ absl::Status VectorIntToTensorCalculator::Process(CalculatorContext* cc) {
               AssignMatrixValue<tf::int64>(r, c, input[r][c], output.get());
               break;
             case tf::DT_UINT8:
-              AssignMatrixValue<uint8>(r, c, input[r][c], output.get());
+              AssignMatrixValue<uint8_t>(r, c, input[r][c], output.get());
               break;
             case tf::DT_INT32:
               AssignMatrixValue<int>(r, c, input[r][c], output.get());
               break;
             default:
-              LOG(FATAL) << "tensor data type is not supported.";
+              ABSL_LOG(FATAL) << "tensor data type is not supported.";
           }
         }
       }
@@ -171,8 +173,8 @@ absl::Status VectorIntToTensorCalculator::Process(CalculatorContext* cc) {
     } else {
       input = cc->Inputs().Tag(kVectorInt).Value().Get<std::vector<int>>();
     }
-    CHECK_GE(input.size(), 1);
-    const int32 length = input.size();
+    ABSL_CHECK_GE(input.size(), 1);
+    const int32_t length = input.size();
     tensor_shape = tf::TensorShape({length});
     auto output = ::absl::make_unique<tf::Tensor>(options_.tensor_data_type(),
                                                   tensor_shape);
@@ -182,18 +184,18 @@ absl::Status VectorIntToTensorCalculator::Process(CalculatorContext* cc) {
           output->tensor<tf::int64, 1>()(i) = input.at(i);
           break;
         case tf::DT_UINT8:
-          output->tensor<uint8, 1>()(i) = input.at(i);
+          output->tensor<uint8_t, 1>()(i) = input.at(i);
           break;
         case tf::DT_INT32:
           output->tensor<int, 1>()(i) = input.at(i);
           break;
         default:
-          LOG(FATAL) << "tensor data type is not supported.";
+          ABSL_LOG(FATAL) << "tensor data type is not supported.";
       }
     }
     cc->Outputs().Tag(kTensorOut).Add(output.release(), cc->InputTimestamp());
   } else {
-    LOG(FATAL) << "input size not supported";
+    ABSL_LOG(FATAL) << "input size not supported";
   }
   return absl::OkStatus();
 }

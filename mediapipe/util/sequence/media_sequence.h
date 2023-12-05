@@ -203,6 +203,10 @@ const char kClipLabelIndexKey[] = "clip/label/index";
 const char kClipLabelStringKey[] = "clip/label/string";
 // A list of label confidences for this clip.
 const char kClipLabelConfidenceKey[] = "clip/label/confidence";
+// A list of label start timestamps for this clip.
+const char kClipLabelStartTimestampKey[] = "clip/label/start/timestamp";
+// A list of label end timestamps for this clip.
+const char kClipLabelEndTimestampKey[] = "clip/label/end/timestamp";
 
 BYTES_CONTEXT_FEATURE(ExampleId, kExampleIdKey);
 BYTES_CONTEXT_FEATURE(ExampleDatasetName, kExampleDatasetNameKey);
@@ -220,6 +224,9 @@ INT64_CONTEXT_FEATURE(ClipEndTimestamp, kClipEndTimestampKey);
 VECTOR_BYTES_CONTEXT_FEATURE(ClipLabelString, kClipLabelStringKey);
 VECTOR_INT64_CONTEXT_FEATURE(ClipLabelIndex, kClipLabelIndexKey);
 VECTOR_FLOAT_CONTEXT_FEATURE(ClipLabelConfidence, kClipLabelConfidenceKey);
+VECTOR_INT64_CONTEXT_FEATURE(ClipLabelStartTimestamp,
+                             kClipLabelStartTimestampKey);
+VECTOR_INT64_CONTEXT_FEATURE(ClipLabelEndTimestamp, kClipLabelEndTimestampKey);
 
 // ***********************    SEGMENTS    *************************************
 // Context Keys:
@@ -627,6 +634,10 @@ PREFIXED_IMAGE(InstanceSegmentation, kInstanceSegmentationPrefix);
 const char kTextLanguageKey[] = "text/language";
 // A large block of text that applies to the media.
 const char kTextContextContentKey[] = "text/context/content";
+// A large block of text that applies to the media as token ids.
+const char kTextContextTokenIdKey[] = "text/context/token_id";
+// A large block of text that applies to the media as embeddings.
+const char kTextContextEmbeddingKey[] = "text/context/embedding";
 
 // Feature list keys:
 // The text contents for a given time.
@@ -644,6 +655,8 @@ const char kTextTokenIdKey[] = "text/token/id";
 
 BYTES_CONTEXT_FEATURE(TextLanguage, kTextLanguageKey);
 BYTES_CONTEXT_FEATURE(TextContextContent, kTextContextContentKey);
+VECTOR_INT64_CONTEXT_FEATURE(TextContextTokenId, kTextContextTokenIdKey);
+VECTOR_FLOAT_CONTEXT_FEATURE(TextContextEmbedding, kTextContextEmbeddingKey);
 BYTES_FEATURE_LIST(TextContent, kTextContentKey);
 INT64_FEATURE_LIST(TextTimestamp, kTextTimestampKey);
 INT64_FEATURE_LIST(TextDuration, kTextDurationKey);

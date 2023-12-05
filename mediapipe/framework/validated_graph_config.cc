@@ -15,8 +15,11 @@
 #include "mediapipe/framework/validated_graph_config.h"
 
 #include <memory>
+#include <string>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/log/absl_check.h"
+#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
@@ -33,6 +36,7 @@
 #include "mediapipe/framework/port/core_proto_inc.h"
 #include "mediapipe/framework/port/integral_types.h"
 #include "mediapipe/framework/port/logging.h"
+#include "mediapipe/framework/port/proto_ns.h"
 #include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/port/source_location.h"
 #include "mediapipe/framework/port/status.h"
@@ -48,8 +52,6 @@
 #include "mediapipe/framework/tool/validate_name.h"
 
 namespace mediapipe {
-
-namespace {
 
 // Create a debug string name for a set of edge.  An edge can be either
 // a stream or a side packet.
@@ -78,6 +80,8 @@ std::string DebugName(const CalculatorGraphConfig::Node& node_config) {
   return name;
 }
 
+namespace {
+
 std::string DebugName(const PacketGeneratorConfig& node_config) {
   return absl::StrCat(
       "[", node_config.packet_generator(), ", ",
@@ -98,7 +102,7 @@ std::string DebugName(const CalculatorGraphConfig& config,
                       NodeTypeInfo::NodeType node_type, int node_index) {
   switch (node_type) {
     case NodeTypeInfo::NodeType::CALCULATOR:
-      return DebugName(config.node(node_index));
+      return mediapipe::DebugName(config.node(node_index));
     case NodeTypeInfo::NodeType::PACKET_GENERATOR:
       return DebugName(config.packet_generator(node_index));
     case NodeTypeInfo::NodeType::GRAPH_INPUT_STREAM:
@@ -108,8 +112,8 @@ std::string DebugName(const CalculatorGraphConfig& config,
     case NodeTypeInfo::NodeType::UNKNOWN:
       /* Fall through. */ {}
   }
-  LOG(FATAL) << "Unknown NodeTypeInfo::NodeType: "
-             << NodeTypeInfo::NodeTypeToString(node_type);
+  ABSL_LOG(FATAL) << "Unknown NodeTypeInfo::NodeType: "
+                  << NodeTypeInfo::NodeTypeToString(node_type);
 }
 
 // Adds the ExecutorConfigs for predefined executors, if they are not in
@@ -158,8 +162,8 @@ std::string NodeTypeInfo::NodeTypeToString(NodeType node_type) {
     case NodeTypeInfo::NodeType::UNKNOWN:
       return "Unknown Node";
   }
-  LOG(FATAL) << "Unknown NodeTypeInfo::NodeType: "
-             << static_cast<int>(node_type);
+  ABSL_LOG(FATAL) << "Unknown NodeTypeInfo::NodeType: "
+                  << static_cast<int>(node_type);
 }
 
 absl::Status NodeTypeInfo::Initialize(
@@ -212,10 +216,11 @@ absl::Status NodeTypeInfo::Initialize(
   LegacyCalculatorSupport::Scoped<CalculatorContract> s(&contract_);
   // A number of calculators use the non-CC methods on GlCalculatorHelper
   // even though they are CalculatorBase-based.
-  ASSIGN_OR_RETURN(auto calculator_factory,
-                   CalculatorBaseRegistry::CreateByNameInNamespace(
-                       validated_graph.Package(), node_class),
-                   _ << "Unable to find Calculator \"" << node_class << "\"");
+  MP_ASSIGN_OR_RETURN(
+      auto calculator_factory,
+      CalculatorBaseRegistry::CreateByNameInNamespace(validated_graph.Package(),
+                                                      node_class),
+      _ << "Unable to find Calculator \"" << node_class << "\"");
   MP_RETURN_IF_ERROR(calculator_factory->GetContract(&contract_)).SetPrepend()
       << node_class << ": ";
 
@@ -257,7 +262,7 @@ absl::Status NodeTypeInfo::Initialize(
 
   // Run FillExpectations.
   const std::string& node_class = node.packet_generator();
-  ASSIGN_OR_RETURN(
+  MP_ASSIGN_OR_RETURN(
       auto static_access,
       internal::StaticAccessToGeneratorRegistry::CreateByNameInNamespace(
           validated_graph.Package(), node_class),
@@ -298,7 +303,7 @@ absl::Status NodeTypeInfo::Initialize(
 
   // Run FillExpectations.
   const std::string& node_class = node.status_handler();
-  ASSIGN_OR_RETURN(
+  MP_ASSIGN_OR_RETURN(
       auto static_access,
       internal::StaticAccessToStatusHandlerRegistry::CreateByNameInNamespace(
           validated_graph.Package(), node_class),
@@ -369,6 +374,7 @@ absl::Status ValidatedGraphConfig::Initialize(
     input_side_packets_.clear();
     output_side_packets_.clear();
     stream_to_producer_.clear();
+    output_streams_to_consumer_nodes_.clear();
     input_streams_.clear();
     output_streams_.clear();
     owned_packet_types_.clear();
@@ -597,8 +603,8 @@ absl::Status ValidatedGraphConfig::AddOutputSidePacketsForNode(
 absl::Status ValidatedGraphConfig::InitializeStreamInfo(
     bool* need_sorting_ptr) {
   // Define output streams for graph input streams.
-  ASSIGN_OR_RETURN(std::shared_ptr<tool::TagMap> graph_input_streams,
-                   tool::TagMap::Create(config_.input_stream()));
+  MP_ASSIGN_OR_RETURN(std::shared_ptr<tool::TagMap> graph_input_streams,
+                      tool::TagMap::Create(config_.input_stream()));
   for (int index = 0; index < graph_input_streams->Names().size(); ++index) {
     std::string name = graph_input_streams->Names()[index];
     owned_packet_types_.emplace_back(new PacketType());
@@ -691,12 +697,13 @@ absl::Status ValidatedGraphConfig::AddInputStreamsForNode(
       if (edge_info.back_edge) {
         // A back edge was specified, but its output side was already seen.
         if (!need_sorting_ptr) {
-          LOG(WARNING) << "Input Stream \"" << name
-                       << "\" for node with sorted index " << node_index
-                       << " name " << node_type_info->Contract().GetNodeName()
-                       << " is marked as a back edge, but its output stream is "
-                          "already available.  This means it was not necessary "
-                          "to mark it as a back edge.";
+          ABSL_LOG(WARNING)
+              << "Input Stream \"" << name << "\" for node with sorted index "
+              << node_index << " name "
+              << node_type_info->Contract().GetNodeName()
+              << " is marked as a back edge, but its output stream is "
+                 "already available.  This means it was not necessary "
+                 "to mark it as a back edge.";
         }
       } else {
         edge_info.upstream = iter->second;
@@ -719,6 +726,15 @@ absl::Status ValidatedGraphConfig::AddInputStreamsForNode(
                << " does not have a corresponding output stream.";
       }
     }
+    // Add this node as a consumer of this edge's output stream.
+    if (edge_info.upstream > -1) {
+      auto parent_node = output_streams_[edge_info.upstream].parent_node;
+      if (parent_node.type == NodeTypeInfo::NodeType::CALCULATOR) {
+        int this_idx = node_type_info->Node().index;
+        output_streams_to_consumer_nodes_[edge_info.upstream].push_back(
+            this_idx);
+      }
+    }
 
     edge_info.parent_node = node_type_info->Node();
     edge_info.name = name;
@@ -734,7 +750,7 @@ int ValidatedGraphConfig::SorterIndexForNode(NodeTypeInfo::NodeRef node) const {
     case NodeTypeInfo::NodeType::CALCULATOR:
       return generators_.size() + node.index;
     default:
-      CHECK(false);
+      ABSL_CHECK(false);
   }
 }
 
@@ -890,8 +906,8 @@ absl::Status ValidatedGraphConfig::ValidateSidePacketTypes() {
           "\"$3\" but the connected output side packet will be of type \"$4\"",
           side_packet.name,
           NodeTypeInfo::NodeTypeToString(side_packet.parent_node.type),
-          mediapipe::DebugName(config_, side_packet.parent_node.type,
-                               side_packet.parent_node.index),
+          DebugName(config_, side_packet.parent_node.type,
+                    side_packet.parent_node.index),
           side_packet.packet_type->DebugTypeName(),
           output_side_packets_[side_packet.upstream]
               .packet_type->DebugTypeName()));
@@ -1048,6 +1064,14 @@ absl::Status ValidatedGraphConfig::ValidateRequiredSidePacketTypes(
   for (const auto& required_item : required_side_packets_) {
     auto iter = side_packet_types.find(required_item.first);
     if (iter == side_packet_types.end()) {
+      bool is_optional = true;
+      for (int index : required_item.second) {
+        is_optional &= input_side_packets_[index].packet_type->IsOptional();
+      }
+      if (is_optional) {
+        // Side packets that are optional and not provided are ignored.
+        continue;
+      }
       statuses.push_back(mediapipe::InvalidArgumentErrorBuilder(MEDIAPIPE_LOC)
                          << "Side packet \"" << required_item.first
                          << "\" is required but was not provided.");

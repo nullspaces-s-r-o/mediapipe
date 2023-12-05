@@ -21,6 +21,8 @@
 #ifndef MEDIAPIPE_GPU_GPU_SHARED_DATA_INTERNAL_H_
 #define MEDIAPIPE_GPU_GPU_SHARED_DATA_INTERNAL_H_
 
+#include <memory>
+
 #include "mediapipe/framework/calculator_context.h"
 #include "mediapipe/framework/calculator_node.h"
 #include "mediapipe/framework/executor.h"
@@ -30,14 +32,14 @@
 #include "mediapipe/gpu/gpu_buffer_multi_pool.h"
 
 #ifdef __APPLE__
-#ifdef __OBJC__
-@class MPPGraphGPUData;
-#else
-struct MPPGraphGPUData;
-#endif  // __OBJC__
+#include "mediapipe/gpu/cv_texture_cache_manager.h"
 #endif  // defined(__APPLE__)
 
 namespace mediapipe {
+
+#ifdef __APPLE__
+class MetalSharedResources;
+#endif  // defined(__APPLE__)
 
 // TODO: rename to GpuService or GpuManager or something.
 class GpuResources {
@@ -55,9 +57,7 @@ class GpuResources {
 
   // Shared GL context for calculators.
   // TODO: require passing a context or node identifier.
-  const std::shared_ptr<GlContext>& gl_context() {
-    return gl_context(nullptr);
-  };
+  const std::shared_ptr<GlContext>& gl_context() { return gl_context(nullptr); }
 
   const std::shared_ptr<GlContext>& gl_context(CalculatorContext* cc);
 
@@ -65,7 +65,7 @@ class GpuResources {
   GpuBufferMultiPool& gpu_buffer_pool() { return gpu_buffer_pool_; }
 
 #ifdef __APPLE__
-  MPPGraphGPUData* ios_gpu_data();
+  MetalSharedResources& metal_shared() { return *metal_shared_; }
 #endif  // defined(__APPLE__)§
 
   absl::Status PrepareGpuNode(CalculatorNode* node);
@@ -84,15 +84,21 @@ class GpuResources {
   const std::string& ContextKey(const std::string& canonical_node_name);
 
   std::map<std::string, std::string> node_key_;
-  std::map<std::string, std::shared_ptr<GlContext>> gl_key_context_;
+
+  using GlContextMapType = std::map<std::string, std::shared_ptr<GlContext>>;
+  std::unique_ptr<GlContextMapType, void (*)(GlContextMapType*)>
+      gl_key_context_;
+
+#ifdef MEDIAPIPE_GPU_BUFFER_USE_CV_PIXEL_BUFFER
+  std::shared_ptr<CvTextureCacheManager> texture_caches_;
+#endif  // MEDIAPIPE_GPU_BUFFER_USE_CV_PIXEL_BUFFER
 
   // The pool must be destructed before the gl_context, but after the
   // ios_gpu_data, so the declaration order is important.
   GpuBufferMultiPool gpu_buffer_pool_;
 
 #ifdef __APPLE__
-  // Note that this is an Objective-C object.
-  MPPGraphGPUData* ios_gpu_data_;
+  std::unique_ptr<MetalSharedResources> metal_shared_;
 #endif  // defined(__APPLE__)
 
   std::map<std::string, std::shared_ptr<Executor>> named_executors_;

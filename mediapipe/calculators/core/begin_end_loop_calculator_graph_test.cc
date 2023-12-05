@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/memory/memory.h"
@@ -20,6 +21,7 @@
 #include "mediapipe/calculators/core/end_loop_calculator.h"
 #include "mediapipe/framework/calculator_contract.h"
 #include "mediapipe/framework/calculator_framework.h"
+#include "mediapipe/framework/formats/tensor.h"
 #include "mediapipe/framework/packet.h"
 #include "mediapipe/framework/port/gmock.h"
 #include "mediapipe/framework/port/gtest.h"
@@ -160,6 +162,75 @@ TEST_F(BeginEndLoopCalculatorGraphTest, MultipleVectors) {
               testing::ElementsAre(
                   PacketOfIntsEq(input_timestamp0, std::vector<int>{1, 2}),
                   PacketOfIntsEq(input_timestamp2, std::vector<int>{3, 4})));
+}
+
+TEST(BeginEndLoopCalculatorPossibleDataRaceTest,
+     EndLoopForIntegersDoesNotRace) {
+  auto graph_config = ParseTextProtoOrDie<CalculatorGraphConfig>(
+      R"pb(
+        num_threads: 4
+        input_stream: "ints"
+        node {
+          calculator: "BeginLoopIntegerCalculator"
+          input_stream: "ITERABLE:ints"
+          output_stream: "ITEM:int"
+          output_stream: "BATCH_END:timestamp"
+        }
+        node {
+          calculator: "IncrementCalculator"
+          input_stream: "int"
+          output_stream: "int_plus_one"
+        }
+        # BEGIN: Data race possibility
+        # EndLoop###Calculator and another calculator using the same input
+        # may introduce race due to EndLoop###Calculator possibly consuming
+        # packet.
+        node {
+          calculator: "EndLoopIntegersCalculator"
+          input_stream: "ITEM:int_plus_one"
+          input_stream: "BATCH_END:timestamp"
+          output_stream: "ITERABLE:ints_plus_one"
+        }
+        node {
+          calculator: "IncrementCalculator"
+          input_stream: "int_plus_one"
+          output_stream: "int_plus_two"
+        }
+        # END: Data race possibility
+        node {
+          calculator: "EndLoopIntegersCalculator"
+          input_stream: "ITEM:int_plus_two"
+          input_stream: "BATCH_END:timestamp"
+          output_stream: "ITERABLE:ints_plus_two"
+        }
+      )pb");
+  std::vector<Packet> int_plus_one_packets;
+  tool::AddVectorSink("ints_plus_one", &graph_config, &int_plus_one_packets);
+  std::vector<Packet> int_original_packets;
+  tool::AddVectorSink("ints_plus_two", &graph_config, &int_original_packets);
+
+  CalculatorGraph graph;
+  MP_ASSERT_OK(graph.Initialize(graph_config));
+  MP_ASSERT_OK(graph.StartRun({}));
+  for (int i = 0; i < 100; ++i) {
+    std::vector<int> ints = {i, i + 1, i + 2};
+    Timestamp ts = Timestamp(i);
+    MP_ASSERT_OK(graph.AddPacketToInputStream(
+        "ints", MakePacket<std::vector<int>>(std::move(ints)).At(ts)));
+    MP_ASSERT_OK(graph.WaitUntilIdle());
+    EXPECT_THAT(int_plus_one_packets,
+                testing::ElementsAre(
+                    PacketOfIntsEq(ts, std::vector<int>{i + 1, i + 2, i + 3})));
+    EXPECT_THAT(int_original_packets,
+                testing::ElementsAre(
+                    PacketOfIntsEq(ts, std::vector<int>{i + 2, i + 3, i + 4})));
+
+    int_plus_one_packets.clear();
+    int_original_packets.clear();
+  }
+
+  MP_ASSERT_OK(graph.CloseAllPacketSources());
+  MP_ASSERT_OK(graph.WaitUntilDone());
 }
 
 // Passes non empty vector through or outputs empty vector in case of timestamp
@@ -442,6 +513,68 @@ TEST_F(BeginEndLoopCalculatorGraphWithClonedInputsTest, MultipleVectors) {
               testing::ElementsAre(
                   PacketOfIntsEq(input_timestamp0, std::vector<int>{0, 2}),
                   PacketOfIntsEq(input_timestamp2, std::vector<int>{6, 9})));
+}
+
+absl::Status InitBeginEndTensorLoopTestGraph(
+    CalculatorGraph& graph, std::vector<Packet>& output_packets) {
+  auto graph_config = ParseTextProtoOrDie<CalculatorGraphConfig>(
+      R"pb(
+        num_threads: 4
+        input_stream: "tensors"
+        node {
+          calculator: "BeginLoopTensorCalculator"
+          input_stream: "ITERABLE:tensors"
+          output_stream: "ITEM:tensor"
+          output_stream: "BATCH_END:timestamp"
+        }
+        node {
+          calculator: "PassThroughCalculator"
+          input_stream: "tensor"
+          output_stream: "passed_tensor"
+        }
+        node {
+          calculator: "EndLoopTensorCalculator"
+          input_stream: "ITEM:passed_tensor"
+          input_stream: "BATCH_END:timestamp"
+          output_stream: "ITERABLE:output_tensors"
+        }
+      )pb");
+  tool::AddVectorSink("output_tensors", &graph_config, &output_packets);
+  MP_RETURN_IF_ERROR(graph.Initialize(graph_config));
+  return graph.StartRun({});
+}
+
+TEST(BeginEndTensorLoopCalculatorGraphTest, SingleNonEmptyVector) {
+  // Initialize the graph.
+  CalculatorGraph graph;
+  std::vector<Packet> output_packets;
+  MP_ASSERT_OK(InitBeginEndTensorLoopTestGraph(graph, output_packets));
+
+  // Prepare the inputs and run.
+  Timestamp input_timestamp = Timestamp(0);
+  std::vector<mediapipe::Tensor> tensors;
+  for (int i = 0; i < 4; i++) {
+    tensors.emplace_back(Tensor::ElementType::kFloat32,
+                         Tensor::Shape{4, 3, 2, 1});
+  }
+  Packet vector_packet =
+      MakePacket<std::vector<mediapipe::Tensor>>(std::move(tensors));
+  MP_ASSERT_OK(graph.AddPacketToInputStream(
+      "tensors", std::move(vector_packet).At(input_timestamp)));
+  MP_ASSERT_OK(graph.WaitUntilIdle());
+
+  // Verify the output packet.
+  EXPECT_EQ(output_packets.size(), 1);
+  const std::vector<Tensor>& output_tensors =
+      output_packets[0].Get<std::vector<Tensor>>();
+  EXPECT_EQ(output_tensors.size(), 4);
+  for (int i = 0; i < output_tensors.size(); i++) {
+    EXPECT_THAT(output_tensors[i].shape().dims,
+                testing::ElementsAre(4, 3, 2, 1));
+  }
+
+  MP_ASSERT_OK(graph.CloseAllPacketSources());
+  MP_ASSERT_OK(graph.WaitUntilDone());
 }
 
 }  // namespace
