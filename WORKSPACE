@@ -255,7 +255,7 @@ new_local_repository(
 
 new_local_repository(
     name = "linux_realsense",
-    path = "/home/jiri/coral/sysroot/usr/local",
+    path = "/home/jiri/coral/rootfs/usr/local",
     build_file = "@//third_party:linux_realsense.BUILD",
 )
 

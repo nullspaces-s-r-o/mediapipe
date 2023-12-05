@@ -1,3 +1,13 @@
+
+wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-amd64
+chmod +x bazelisk-linux-amd64
+sudo mv bazelisk-linux-amd64 /usr/local/bin/bazel
+
+
+Start using mediapipe [by installation](https://developers.google.com/mediapipe/framework/getting_started/install.md).
+Then go to [Hello world](https://developers.google.com/mediapipe/framework/getting_started/hello_world_cpp.md)
+
+
 ---
 layout: default
 title: Home
