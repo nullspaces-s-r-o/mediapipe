@@ -8,6 +8,8 @@ read `mediapipe/mediapipe/examples/coral/README.md`
 Start using mediapipe [by installation](https://developers.google.com/mediapipe/framework/getting_started/install.md).
 Then go to [Hello world](https://developers.google.com/mediapipe/framework/getting_started/hello_world_cpp.md)
 
+# Sync our fork with upstream
+Follow [this](https://youtu.be/-zvHQXnBO6c?si=_hi0Fsysg7Nx5KaH) tutorial.
 
 ---
 Known issuse
