@@ -74,8 +74,9 @@ def _impl(ctx):
         ctx = ctx,
         features = features,
         cxx_builtin_include_directories = [ # NEW
-            "/home/jiri/coral/sysroot/usr/include",
-            "/home/jiri/coral/sysroot/usr/local/include",
+            "/home/jiri/coral/rootfs/usr/include",
+            "/home/jiri/coral/rootfs/usr/local/include",
+            "/home/jiri/coral/stage/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/include",
             "/home/jiri/coral/x-tools/aarch64-linux-gnu/include",
@@ -91,7 +92,7 @@ def _impl(ctx):
         abi_version = "unknown",
         abi_libc_version = "unknown",
         tool_paths = tool_paths,
-        builtin_sysroot="/home/jiri/coral/sysroot"
+        builtin_sysroot="/home/jiri/coral/rootfs"
     )
 
     return ci

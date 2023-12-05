@@ -11,21 +11,29 @@ bazel build \
 	--compilation_mode dbg \
 	--copt=-g \
 	--cpu=aarch64 \
+	--verbose_failures \
+	--jobs 10 \
 	mediapipe/examples/coral:hand_tracking_$VER
+	# --sandbox_debug \
 	# --define tflite_with_xnnpack=false \
 	# --cxxopt='-std=c++17' \
 
-exit 0
+# exit 0
 
 # Copy to target
-APP=$HOME/fork/mediapipe/bazel-bin/mediapipe/examples/coral/hand_tracking_$VER
+APP=$HOME/mediapipe/bazel-bin/mediapipe/examples/coral/hand_tracking_$VER
 
 chmod +rwx $APP
+
+# copy the binary to the target
 rsync -az --info=progress2 \
 	$APP \
 	$TARGET:/home/mendel
 
-# exit 0
+# copy mediapipe execution graph to the target
+rsync -az --info=progress2 \
+	$HOME/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_tpu.pbtxt \
+	$TARGET:/home/mendel
 
 # Run executable on target
 ssh -n -f $TARGET \
