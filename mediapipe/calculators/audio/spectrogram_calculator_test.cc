@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "Eigen/Core"
-#include "absl/log/absl_log.h"
 #include "audio/dsp/number_util.h"
 #include "mediapipe/calculators/audio/spectrogram_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
@@ -93,8 +92,8 @@ class SpectrogramCalculatorTest
                 .cos()
                 .transpose();
       }
-      int64_t input_timestamp = round(packet_start_time_seconds *
-                                      Timestamp::kTimestampUnitsPerSecond);
+      int64 input_timestamp = round(packet_start_time_seconds *
+                                    Timestamp::kTimestampUnitsPerSecond);
       AppendInputPacket(packet_data, input_timestamp);
       total_num_input_samples += packet_size_samples;
     }
@@ -117,8 +116,8 @@ class SpectrogramCalculatorTest
       double packet_start_time_seconds =
           kInitialTimestampOffsetMicroseconds * 1e-6 +
           total_num_input_samples / input_sample_rate_;
-      int64_t input_timestamp = round(packet_start_time_seconds *
-                                      Timestamp::kTimestampUnitsPerSecond);
+      int64 input_timestamp = round(packet_start_time_seconds *
+                                    Timestamp::kTimestampUnitsPerSecond);
       std::unique_ptr<Matrix> impulse(
           new Matrix(Matrix::Zero(1, packet_sizes_samples[i])));
       (*impulse)(0, impulse_offsets_samples[i]) = 1.0;
@@ -158,8 +157,8 @@ class SpectrogramCalculatorTest
                 .cos()
                 .transpose();
       }
-      int64_t input_timestamp = round(packet_start_time_seconds *
-                                      Timestamp::kTimestampUnitsPerSecond);
+      int64 input_timestamp = round(packet_start_time_seconds *
+                                    Timestamp::kTimestampUnitsPerSecond);
       AppendInputPacket(packet_data, input_timestamp);
       total_num_input_samples += packet_size_samples;
     }
@@ -219,7 +218,7 @@ class SpectrogramCalculatorTest
       const double expected_timestamp_seconds =
           packet_timestamp_offset_seconds +
           cumulative_output_frames * frame_step_seconds;
-      const int64_t expected_timestamp_ticks =
+      const int64 expected_timestamp_ticks =
           expected_timestamp_seconds * Timestamp::kTimestampUnitsPerSecond;
       EXPECT_EQ(expected_timestamp_ticks, packet.Timestamp().Value());
       // Accept the timestamp of the first packet as the baseline for checking
@@ -883,11 +882,11 @@ void BM_ProcessDC(benchmark::State& state) {
 
   const CalculatorRunner::StreamContents& output = runner.Outputs().Index(0);
   const Matrix& output_matrix = output.packets[0].Get<Matrix>();
-  ABSL_LOG(INFO) << "Output matrix=" << output_matrix.rows() << "x"
-                 << output_matrix.cols();
-  ABSL_LOG(INFO) << "First values=" << output_matrix(0, 0) << ", "
-                 << output_matrix(1, 0) << ", " << output_matrix(2, 0) << ", "
-                 << output_matrix(3, 0);
+  LOG(INFO) << "Output matrix=" << output_matrix.rows() << "x"
+            << output_matrix.cols();
+  LOG(INFO) << "First values=" << output_matrix(0, 0) << ", "
+            << output_matrix(1, 0) << ", " << output_matrix(2, 0) << ", "
+            << output_matrix(3, 0);
 }
 
 BENCHMARK(BM_ProcessDC);

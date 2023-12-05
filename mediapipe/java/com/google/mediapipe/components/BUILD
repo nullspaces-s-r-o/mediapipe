@@ -71,10 +71,7 @@ android_library(
         "AudioDataProducer.java",
     ],
     visibility = ["//visibility:public"],
-    deps = [
-        "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:com_google_guava_guava",
-    ],
+    deps = ["@maven//:com_google_guava_guava"],
 )
 
 # MicrophoneHelper that provides access to audio data from a microphone

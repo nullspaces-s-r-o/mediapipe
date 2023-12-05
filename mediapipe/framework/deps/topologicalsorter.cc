@@ -16,19 +16,18 @@
 
 #include <algorithm>
 
-#include "absl/log/absl_check.h"
 #include "mediapipe/framework/port/logging.h"
 
 namespace mediapipe {
 
 TopologicalSorter::TopologicalSorter(int num_nodes) : num_nodes_(num_nodes) {
-  ABSL_CHECK_GE(num_nodes_, 0);
+  CHECK_GE(num_nodes_, 0);
   adjacency_lists_.resize(num_nodes_);
 }
 
 void TopologicalSorter::AddEdge(int from, int to) {
-  ABSL_CHECK(!traversal_started_ && from < num_nodes_ && to < num_nodes_ &&
-             from >= 0 && to >= 0);
+  CHECK(!traversal_started_ && from < num_nodes_ && to < num_nodes_ &&
+        from >= 0 && to >= 0);
   adjacency_lists_[from].push_back(to);
 }
 

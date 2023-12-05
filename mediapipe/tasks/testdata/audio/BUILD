@@ -30,7 +30,6 @@ mediapipe_files(srcs = [
     "two_heads_16000_hz_mono.wav",
     "two_heads_44100_hz_mono.wav",
     "yamnet_audio_classifier_with_metadata.tflite",
-    "yamnet_embedding_metadata.tflite",
 ])
 
 filegroup(
@@ -39,7 +38,6 @@ filegroup(
         "model_without_metadata.tflite",
         "two_heads.tflite",
         "yamnet_audio_classifier_with_metadata.tflite",
-        "yamnet_embedding_metadata.tflite",
     ],
 )
 

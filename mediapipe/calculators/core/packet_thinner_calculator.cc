@@ -17,7 +17,6 @@
 #include <cmath>  // for ceil
 #include <memory>
 
-#include "absl/log/absl_check.h"
 #include "mediapipe/calculators/core/packet_thinner_calculator.pb.h"
 #include "mediapipe/framework/calculator_context.h"
 #include "mediapipe/framework/calculator_framework.h"
@@ -98,7 +97,7 @@ class PacketThinnerCalculator : public CalculatorBase {
     cc->Inputs().Index(0).SetAny();
     cc->Outputs().Index(0).SetSameAs(&cc->Inputs().Index(0));
     if (cc->InputSidePackets().HasTag(kPeriodTag)) {
-      cc->InputSidePackets().Tag(kPeriodTag).Set<int64_t>();
+      cc->InputSidePackets().Tag(kPeriodTag).Set<int64>();
     }
     return absl::OkStatus();
   }
@@ -161,8 +160,8 @@ absl::Status PacketThinnerCalculator::Open(CalculatorContext* cc) {
 
   thinner_type_ = options.thinner_type();
   // This check enables us to assume only two thinner types exist in Process()
-  ABSL_CHECK(thinner_type_ == PacketThinnerCalculatorOptions::ASYNC ||
-             thinner_type_ == PacketThinnerCalculatorOptions::SYNC)
+  CHECK(thinner_type_ == PacketThinnerCalculatorOptions::ASYNC ||
+        thinner_type_ == PacketThinnerCalculatorOptions::SYNC)
       << "Unsupported thinner type.";
 
   if (thinner_type_ == PacketThinnerCalculatorOptions::ASYNC) {
@@ -174,12 +173,11 @@ absl::Status PacketThinnerCalculator::Open(CalculatorContext* cc) {
 
   if (cc->InputSidePackets().HasTag(kPeriodTag)) {
     period_ =
-        TimestampDiff(cc->InputSidePackets().Tag(kPeriodTag).Get<int64_t>());
+        TimestampDiff(cc->InputSidePackets().Tag(kPeriodTag).Get<int64>());
   } else {
     period_ = TimestampDiff(options.period());
   }
-  ABSL_CHECK_LT(TimestampDiff(0), period_)
-      << "Specified period must be positive.";
+  CHECK_LT(TimestampDiff(0), period_) << "Specified period must be positive.";
 
   if (options.has_start_time()) {
     start_time_ = Timestamp(options.start_time());
@@ -191,7 +189,7 @@ absl::Status PacketThinnerCalculator::Open(CalculatorContext* cc) {
 
   end_time_ =
       options.has_end_time() ? Timestamp(options.end_time()) : Timestamp::Max();
-  ABSL_CHECK_LT(start_time_, end_time_)
+  CHECK_LT(start_time_, end_time_)
       << "Invalid PacketThinner: start_time must be earlier than end_time";
 
   sync_output_timestamps_ = options.sync_output_timestamps();
@@ -234,7 +232,7 @@ absl::Status PacketThinnerCalculator::Close(CalculatorContext* cc) {
   // Emit any saved packets before quitting.
   if (!saved_packet_.IsEmpty()) {
     // Only sync thinner should have saved packets.
-    ABSL_CHECK_EQ(PacketThinnerCalculatorOptions::SYNC, thinner_type_);
+    CHECK_EQ(PacketThinnerCalculatorOptions::SYNC, thinner_type_);
     if (sync_output_timestamps_) {
       cc->Outputs().Index(0).AddPacket(
           saved_packet_.At(NearestSyncTimestamp(saved_packet_.Timestamp())));
@@ -271,7 +269,7 @@ absl::Status PacketThinnerCalculator::SyncThinnerProcess(
     const Timestamp saved_sync = NearestSyncTimestamp(saved);
     const Timestamp now = cc->InputTimestamp();
     const Timestamp now_sync = NearestSyncTimestamp(now);
-    ABSL_CHECK_LE(saved_sync, now_sync);
+    CHECK_LE(saved_sync, now_sync);
     if (saved_sync == now_sync) {
       // Saved Packet is in same interval as current packet.
       // Replace saved packet with current if it is at least as
@@ -297,20 +295,20 @@ absl::Status PacketThinnerCalculator::SyncThinnerProcess(
 }
 
 Timestamp PacketThinnerCalculator::NearestSyncTimestamp(Timestamp now) const {
-  ABSL_CHECK_NE(start_time_, Timestamp::Unset())
+  CHECK_NE(start_time_, Timestamp::Unset())
       << "Method only valid for sync thinner calculator.";
 
   // Computation is done using int64 arithmetic.  No easy way to avoid
   // since Timestamps don't support div and multiply.
-  const int64_t now64 = now.Value();
-  const int64_t start64 = start_time_.Value();
-  const int64_t period64 = period_.Value();
-  ABSL_CHECK_LE(0, period64);
+  const int64 now64 = now.Value();
+  const int64 start64 = start_time_.Value();
+  const int64 period64 = period_.Value();
+  CHECK_LE(0, period64);
 
   // Round now64 to its closest interval (units of period64).
-  int64_t sync64 =
+  int64 sync64 =
       (now64 - start64 + period64 / 2) / period64 * period64 + start64;
-  ABSL_CHECK_LE(abs(now64 - sync64), period64 / 2)
+  CHECK_LE(abs(now64 - sync64), period64 / 2)
       << "start64: " << start64 << "; now64: " << now64
       << "; sync64: " << sync64;
 

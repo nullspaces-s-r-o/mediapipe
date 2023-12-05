@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "Eigen/Core"
-#include "absl/log/absl_check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
@@ -139,7 +138,7 @@ absl::Status FramewiseTransformCalculatorBase::Process(CalculatorContext* cc) {
     TransformFrame(input_frame, &output_frame);
 
     // Copy output from vector<float> to Eigen::Vector.
-    ABSL_CHECK_EQ(output_frame.size(), num_output_channels_);
+    CHECK_EQ(output_frame.size(), num_output_channels_);
     Eigen::Map<const Eigen::MatrixXd> output_frame_map(&output_frame[0],
                                                        output_frame.size(), 1);
     output->col(frame) = output_frame_map.cast<float>();

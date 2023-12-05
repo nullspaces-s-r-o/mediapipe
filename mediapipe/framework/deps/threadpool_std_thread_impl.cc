@@ -17,10 +17,18 @@
 
 #include <thread>  // NOLINT(build/c++11)
 
-#include "absl/log/absl_log.h"
+#include "mediapipe/framework/deps/threadpool.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/syscall.h>
+#include <unistd.h>
+#endif
+
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
-#include "mediapipe/framework/deps/threadpool.h"
+#include "mediapipe/framework/port/logging.h"
 
 namespace mediapipe {
 
@@ -59,9 +67,8 @@ void* ThreadPool::WorkerThread::ThreadBody(void* arg) {
       thread->pool_->thread_options().nice_priority_level();
   const std::set<int> selected_cpus = thread->pool_->thread_options().cpu_set();
   if (nice_priority_level != 0 || !selected_cpus.empty()) {
-    ABSL_LOG(ERROR)
-        << "Thread priority and processor affinity feature aren't "
-           "supported by the std::thread threadpool implementation.";
+    LOG(ERROR) << "Thread priority and processor affinity feature aren't "
+                  "supported by the std::thread threadpool implementation.";
   }
   thread->pool_->RunWorker();
   return nullptr;

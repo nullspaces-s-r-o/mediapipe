@@ -16,10 +16,9 @@
 
 #include "absl/base/macros.h"
 #include "absl/base/thread_annotations.h"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
+#include "mediapipe/framework/port/logging.h"
 
 namespace mediapipe {
 
@@ -61,7 +60,7 @@ class MonotonicClockImpl : public MonotonicClock {
 
   // Absolve this object of responsibility for state_.
   void ReleaseState() {
-    ABSL_CHECK(state_owned_);
+    CHECK(state_owned_);
     state_owned_ = false;
   }
 
@@ -81,7 +80,7 @@ class MonotonicClockImpl : public MonotonicClock {
       absl::MutexLock m(&state_->lock);
 
       // Check consistency of internal data with state_.
-      ABSL_CHECK_LE(last_raw_time_, state_->max_time)
+      CHECK_LE(last_raw_time_, state_->max_time)
           << "non-monotonic behavior: last_raw_time_=" << last_raw_time_
           << ", max_time=" << state_->max_time;
 
@@ -108,7 +107,7 @@ class MonotonicClockImpl : public MonotonicClock {
       // First, update correction metrics.
       ++correction_count_;
       absl::Duration delta = state_->max_time - raw_time;
-      ABSL_CHECK_LT(absl::ZeroDuration(), delta);
+      CHECK_LT(absl::ZeroDuration(), delta);
       if (delta > max_correction_) {
         max_correction_ = delta;
       }
@@ -206,7 +205,7 @@ MonotonicClock* MonotonicClock::CreateSynchronizedMonotonicClock() {
 
 // Test access methods.
 void MonotonicClockAccess::SynchronizedMonotonicClockReset() {
-  ABSL_LOG(INFO) << "Resetting SynchronizedMonotonicClock";
+  LOG(INFO) << "Resetting SynchronizedMonotonicClock";
   State* sync_state = GlobalSyncState();
   absl::MutexLock m(&sync_state->lock);
   sync_state->max_time = absl::UnixEpoch();

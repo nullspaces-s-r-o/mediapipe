@@ -2,9 +2,8 @@
 
 #include <cmath>
 
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
-#include "mediapipe/framework/port/integral_types.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/util/filtering/low_pass_filter.h"
 
 namespace mediapipe {
@@ -19,7 +18,7 @@ OneEuroFilter::OneEuroFilter(double frequency, double min_cutoff, double beta,
   SetDerivateCutoff(derivate_cutoff);
   x_ = absl::make_unique<LowPassFilter>(GetAlpha(min_cutoff));
   dx_ = absl::make_unique<LowPassFilter>(GetAlpha(derivate_cutoff));
-  last_time_ = kint64min;
+  last_time_ = 0;
 }
 
 double OneEuroFilter::Apply(absl::Duration timestamp, double value_scale,
@@ -28,7 +27,7 @@ double OneEuroFilter::Apply(absl::Duration timestamp, double value_scale,
   if (last_time_ >= new_timestamp) {
     // Results are unpredictable in this case, so nothing to do but
     // return same value
-    ABSL_LOG(WARNING) << "New timestamp is equal or less than the last one.";
+    LOG(WARNING) << "New timestamp is equal or less than the last one.";
     return value;
   }
 
@@ -59,7 +58,7 @@ double OneEuroFilter::GetAlpha(double cutoff) {
 
 void OneEuroFilter::SetFrequency(double frequency) {
   if (frequency <= kEpsilon) {
-    ABSL_LOG(ERROR) << "frequency should be > 0";
+    LOG(ERROR) << "frequency should be > 0";
     return;
   }
   frequency_ = frequency;
@@ -67,7 +66,7 @@ void OneEuroFilter::SetFrequency(double frequency) {
 
 void OneEuroFilter::SetMinCutoff(double min_cutoff) {
   if (min_cutoff <= kEpsilon) {
-    ABSL_LOG(ERROR) << "min_cutoff should be > 0";
+    LOG(ERROR) << "min_cutoff should be > 0";
     return;
   }
   min_cutoff_ = min_cutoff;
@@ -77,7 +76,7 @@ void OneEuroFilter::SetBeta(double beta) { beta_ = beta; }
 
 void OneEuroFilter::SetDerivateCutoff(double derivate_cutoff) {
   if (derivate_cutoff <= kEpsilon) {
-    ABSL_LOG(ERROR) << "derivate_cutoff should be > 0";
+    LOG(ERROR) << "derivate_cutoff should be > 0";
     return;
   }
   derivate_cutoff_ = derivate_cutoff;

@@ -14,7 +14,6 @@
 
 #include "mediapipe/framework/graph_output_stream.h"
 
-#include "absl/log/absl_check.h"
 #include "absl/synchronization/mutex.h"
 #include "mediapipe/framework/port/status.h"
 
@@ -154,7 +153,7 @@ void OutputStreamPollerImpl::Reset() {
 }
 
 void OutputStreamPollerImpl::SetMaxQueueSize(int queue_size) {
-  ABSL_CHECK(queue_size >= -1)
+  CHECK(queue_size >= -1)
       << "Max queue size must be either -1 or non-negative.";
   input_stream_handler_->SetMaxQueueSize(queue_size);
 }
@@ -176,7 +175,7 @@ void OutputStreamPollerImpl::NotifyError() {
 }
 
 bool OutputStreamPollerImpl::Next(Packet* packet) {
-  ABSL_CHECK(packet);
+  CHECK(packet);
   bool empty_queue = true;
   bool timestamp_bound_changed = false;
   Timestamp min_timestamp = Timestamp::Unset();
@@ -213,7 +212,7 @@ bool OutputStreamPollerImpl::Next(Packet* packet) {
     bool stream_is_done = false;
     *packet = input_stream_->PopPacketAtTimestamp(
         min_timestamp, &num_packets_dropped, &stream_is_done);
-    ABSL_CHECK_EQ(num_packets_dropped, 0)
+    CHECK_EQ(num_packets_dropped, 0)
         << absl::Substitute("Dropped $0 packet(s) on input stream \"$1\".",
                             num_packets_dropped, input_stream_->Name());
   } else if (timestamp_bound_changed) {

@@ -287,7 +287,9 @@ REGISTER_CALCULATOR(ErrorCalculator);
   CFHolder<CVPixelBufferRef> inputBuffer;
   absl::Status status = CreateCVPixelBufferFromCGImage(_sourceImage.CGImage, &inputBuffer);
   XCTAssert(status.ok());
-  [self runGraph:_graph withPixelBuffer:*inputBuffer packetType:MPPPacketTypePixelBuffer];
+  CVPixelBufferRef outputBuffer = [self runGraph:_graph
+                                 withPixelBuffer:*inputBuffer
+                                      packetType:MPPPacketTypePixelBuffer];
   __weak MPPGraph* weakGraph = _graph;
   _graph = nil;
   XCTAssertNil(weakGraph);

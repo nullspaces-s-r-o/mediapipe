@@ -18,7 +18,6 @@
 #include <list>
 #include <string>
 
-#include "absl/log/absl_check.h"
 #include "mediapipe/framework/output_stream.h"
 #include "mediapipe/framework/packet.h"
 #include "mediapipe/framework/packet_type.h"
@@ -35,7 +34,7 @@ struct OutputStreamSpec {
   // Triggers the error callback with absl::Status info when an error
   // occurs.
   void TriggerErrorCallback(const absl::Status& status) const {
-    ABSL_CHECK(error_callback);
+    CHECK(error_callback);
     error_callback(status);
   }
 
@@ -128,8 +127,6 @@ class OutputStreamShard : public OutputStream {
   friend class GraphProfiler;
   // Accesses OutputStreamShard for profiling.
   friend class GraphTracer;
-  // Accesses OutputStreamShard for profiling.
-  friend class PerfettoTraceScope;
   // Accesses OutputStreamShard for post processing.
   friend class OutputStreamManager;
 };

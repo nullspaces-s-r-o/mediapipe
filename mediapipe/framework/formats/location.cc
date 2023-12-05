@@ -18,14 +18,13 @@
 #include <cmath>
 #include <memory>
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/substitute.h"
 #include "mediapipe/framework/formats/annotation/locus.pb.h"
 #include "mediapipe/framework/formats/annotation/rasterization.pb.h"
 #include "mediapipe/framework/port/canonical_errors.h"
 #include "mediapipe/framework/port/integral_types.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/port/point2.h"
 #include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/port/status.h"
@@ -36,11 +35,11 @@
 namespace mediapipe {
 
 namespace {
-// Extracts from the BinaryMask, stored as mediapipe.Rasterization in
+// Extracts from the BinaryMask, stored as Rasterization in
 // the location_data, the tightest bounding box, that contains all pixels
 // encoded in the rasterizations.
 Rectangle_i MaskToRectangle(const LocationData& location_data) {
-  ABSL_CHECK(location_data.mask().has_rasterization());
+  CHECK(location_data.mask().has_rasterization());
   const auto& rasterization = location_data.mask().rasterization();
   if (rasterization.interval_size() == 0) {
     return Rectangle_i(0, 0, 0, 0);
@@ -64,7 +63,7 @@ Location::Location() {}
 
 Location::Location(const LocationData& location_data)
     : location_data_(location_data) {
-  ABSL_CHECK(IsValidLocationData(location_data_));
+  CHECK(IsValidLocationData(location_data_));
 }
 
 Location Location::CreateGlobalLocation() {
@@ -153,15 +152,15 @@ bool Location::IsValidLocationData(const LocationData& location_data) {
 
 template <>
 Rectangle_i Location::GetBBox<Rectangle_i>() const {
-  ABSL_CHECK_EQ(LocationData::BOUNDING_BOX, location_data_.format());
+  CHECK_EQ(LocationData::BOUNDING_BOX, location_data_.format());
   const auto& box = location_data_.bounding_box();
   return Rectangle_i(box.xmin(), box.ymin(), box.width(), box.height());
 }
 
 Location& Location::Scale(const float scale) {
-  ABSL_CHECK(!location_data_.has_mask())
+  CHECK(!location_data_.has_mask())
       << "Location mask scaling is not implemented.";
-  ABSL_CHECK_GT(scale, 0.0f);
+  CHECK_GT(scale, 0.0f);
   switch (location_data_.format()) {
     case LocationData::GLOBAL: {
       // Do nothing.
@@ -188,8 +187,7 @@ Location& Location::Scale(const float scale) {
       break;
     }
     case LocationData::MASK: {
-      ABSL_LOG(FATAL)
-          << "Scaling for location data of type MASK is not supported.";
+      LOG(FATAL) << "Scaling for location data of type MASK is not supported.";
       break;
     }
   }
@@ -234,8 +232,7 @@ Location& Location::Square(int image_width, int image_height) {
       break;
     }
     case LocationData::MASK: {
-      ABSL_LOG(FATAL)
-          << "Squaring for location data of type MASK is not supported.";
+      LOG(FATAL) << "Squaring for location data of type MASK is not supported.";
       break;
     }
   }
@@ -250,7 +247,7 @@ namespace {
 // This function is inteded to shift boundaries of intervals such that they
 // best fit within an image.
 float BestShift(float min_value, float max_value, float range) {
-  ABSL_CHECK_LE(min_value, max_value);
+  CHECK_LE(min_value, max_value);
   const float value_range = max_value - min_value;
   if (value_range > range) {
     return 0.5f * (range - min_value - max_value);
@@ -297,8 +294,8 @@ Location& Location::ShiftToFitBestIntoImage(int image_width, int image_height) {
       const float y_shift = BestShift(mask_bounding_box.xmin(),
                                       mask_bounding_box.xmax(), image_height);
       auto* mask = location_data_.mutable_mask();
-      ABSL_CHECK_EQ(image_width, mask->width());
-      ABSL_CHECK_EQ(image_height, mask->height());
+      CHECK_EQ(image_width, mask->width());
+      CHECK_EQ(image_height, mask->height());
       for (auto& interval :
            *mask->mutable_rasterization()->mutable_interval()) {
         interval.set_y(interval.y() + y_shift);
@@ -330,7 +327,7 @@ Location& Location::Crop(const Rectangle_i& crop_box) {
       break;
     }
     case LocationData::RELATIVE_BOUNDING_BOX:
-      ABSL_LOG(FATAL)
+      LOG(FATAL)
           << "Can't crop a relative bounding box using absolute coordinates. "
              "Use the 'Rectangle_f version of Crop() instead";
     case LocationData::MASK: {
@@ -364,7 +361,7 @@ Location& Location::Crop(const Rectangle_f& crop_box) {
       // Do nothing.
       break;
     case LocationData::BOUNDING_BOX:
-      ABSL_LOG(FATAL)
+      LOG(FATAL)
           << "Can't crop an absolute bounding box using relative coordinates. "
              "Use the 'Rectangle_i version of Crop() instead";
     case LocationData::RELATIVE_BOUNDING_BOX: {
@@ -380,9 +377,8 @@ Location& Location::Crop(const Rectangle_f& crop_box) {
       break;
     }
     case LocationData::MASK:
-      ABSL_LOG(FATAL)
-          << "Can't crop a mask using relative coordinates. Use the "
-             "'Rectangle_i' version of Crop() instead";
+      LOG(FATAL) << "Can't crop a mask using relative coordinates. Use the "
+                    "'Rectangle_i' version of Crop() instead";
   }
   return *this;
 }
@@ -422,7 +418,7 @@ Rectangle_i Location::ConvertToBBox<Rectangle_i>(int image_width,
 }
 
 Rectangle_f Location::GetRelativeBBox() const {
-  ABSL_CHECK_EQ(LocationData::RELATIVE_BOUNDING_BOX, location_data_.format());
+  CHECK_EQ(LocationData::RELATIVE_BOUNDING_BOX, location_data_.format());
   const auto& box = location_data_.relative_bounding_box();
   return Rectangle_f(box.xmin(), box.ymin(), box.width(), box.height());
 }
@@ -461,7 +457,7 @@ Rectangle_f Location::ConvertToRelativeBBox(int image_width,
 
 template <>
 ::mediapipe::BoundingBox Location::GetBBox<::mediapipe::BoundingBox>() const {
-  ABSL_CHECK_EQ(LocationData::BOUNDING_BOX, location_data_.format());
+  CHECK_EQ(LocationData::BOUNDING_BOX, location_data_.format());
   const auto& box = location_data_.bounding_box();
   ::mediapipe::BoundingBox bounding_box;
   bounding_box.set_left_x(box.xmin());
@@ -484,7 +480,7 @@ template <>
 }
 
 std::vector<Point2_f> Location::GetRelativeKeypoints() const {
-  ABSL_CHECK_EQ(LocationData::RELATIVE_BOUNDING_BOX, location_data_.format());
+  CHECK_EQ(LocationData::RELATIVE_BOUNDING_BOX, location_data_.format());
   std::vector<Point2_f> keypoints;
   for (const auto& keypoint : location_data_.relative_keypoints()) {
     keypoints.emplace_back(Point2_f(keypoint.x(), keypoint.y()));

@@ -7,7 +7,7 @@
 
 namespace mediapipe {
 namespace {
-constexpr GraphService<int> kIntService("mediapipe::IntService");
+const GraphService<int> kIntService("mediapipe::IntService");
 }  // namespace
 
 TEST(GraphServiceManager, SetGetServiceObject) {

@@ -18,7 +18,6 @@
 #include <memory>
 #include <string>
 
-#include "absl/log/absl_check.h"
 #include "mediapipe/calculators/audio/stabilized_log_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/formats/matrix.h"
@@ -60,7 +59,7 @@ class StabilizedLogCalculator : public CalculatorBase {
     output_scale_ = stabilized_log_calculator_options.output_scale();
     check_nonnegativity_ =
         stabilized_log_calculator_options.check_nonnegativity();
-    ABSL_CHECK_GE(stabilizer_, 0.0)
+    CHECK_GE(stabilizer_, 0.0)
         << "stabilizer must be >= 0.0, received a value of " << stabilizer_;
 
     // If the input packets have a header, propagate the header to the output.

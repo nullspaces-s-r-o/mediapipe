@@ -15,13 +15,21 @@
 # Description:
 #   Working with dense optical flow in mediapipe.
 
-load("//mediapipe/framework/port:build_config.bzl", "mediapipe_proto_library")
+load("//mediapipe/framework/port:build_config.bzl", "mediapipe_cc_proto_library")
 
 licenses(["notice"])
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
-mediapipe_proto_library(
+proto_library(
     name = "anchor_proto",
     srcs = ["anchor.proto"],
+    visibility = ["//visibility:public"],
+)
+
+mediapipe_cc_proto_library(
+    name = "anchor_cc_proto",
+    srcs = ["anchor.proto"],
+    visibility = ["//visibility:public"],
+    deps = [":anchor_proto"],
 )

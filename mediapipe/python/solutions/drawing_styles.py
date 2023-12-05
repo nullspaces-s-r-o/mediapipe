@@ -30,8 +30,6 @@ _GRAY = (128, 128, 128)
 _PURPLE = (128, 64, 128)
 _PEACH = (180, 229, 255)
 _WHITE = (224, 224, 224)
-_CYAN = (192, 255, 48)
-_MAGENTA = (192, 48, 255)
 
 # Hands
 _THICKNESS_WRIST_MCP = 3
@@ -39,10 +37,9 @@ _THICKNESS_FINGER = 2
 _THICKNESS_DOT = -1
 
 # Hand landmarks
-_PALM_LANDMARKS = (HandLandmark.WRIST, HandLandmark.THUMB_CMC,
-                   HandLandmark.INDEX_FINGER_MCP,
-                   HandLandmark.MIDDLE_FINGER_MCP, HandLandmark.RING_FINGER_MCP,
-                   HandLandmark.PINKY_MCP)
+_PALM_LANMARKS = (HandLandmark.WRIST, HandLandmark.THUMB_CMC,
+                  HandLandmark.INDEX_FINGER_MCP, HandLandmark.MIDDLE_FINGER_MCP,
+                  HandLandmark.RING_FINGER_MCP, HandLandmark.PINKY_MCP)
 _THUMP_LANDMARKS = (HandLandmark.THUMB_MCP, HandLandmark.THUMB_IP,
                     HandLandmark.THUMB_TIP)
 _INDEX_FINGER_LANDMARKS = (HandLandmark.INDEX_FINGER_PIP,
@@ -57,7 +54,7 @@ _RING_FINGER_LANDMARKS = (HandLandmark.RING_FINGER_PIP,
 _PINKY_FINGER_LANDMARKS = (HandLandmark.PINKY_PIP, HandLandmark.PINKY_DIP,
                            HandLandmark.PINKY_TIP)
 _HAND_LANDMARK_STYLE = {
-    _PALM_LANDMARKS:
+    _PALM_LANMARKS:
         DrawingSpec(
             color=_RED, thickness=_THICKNESS_DOT, circle_radius=_RADIUS),
     _THUMP_LANDMARKS:
@@ -109,23 +106,6 @@ _FACEMESH_CONTOURS_CONNECTION_STYLE = {
         DrawingSpec(color=_RED, thickness=_THICKNESS_CONTOURS),
     face_mesh_connections.FACEMESH_FACE_OVAL:
         DrawingSpec(color=_WHITE, thickness=_THICKNESS_CONTOURS)
-}
-
-_FACEMESH_CONTOURS_CONNECTION_STYLE_1 = {
-    face_mesh_connections.FACEMESH_LIPS:
-        DrawingSpec(color=_BLUE, thickness=_THICKNESS_CONTOURS),
-    face_mesh_connections.FACEMESH_LEFT_EYE:
-        DrawingSpec(color=_CYAN, thickness=_THICKNESS_CONTOURS),
-    face_mesh_connections.FACEMESH_LEFT_EYEBROW:
-        DrawingSpec(color=_GREEN, thickness=_THICKNESS_CONTOURS),
-    face_mesh_connections.FACEMESH_RIGHT_EYE:
-        DrawingSpec(color=_MAGENTA, thickness=_THICKNESS_CONTOURS),
-    face_mesh_connections.FACEMESH_RIGHT_EYEBROW:
-        DrawingSpec(color=_RED, thickness=_THICKNESS_CONTOURS),
-    face_mesh_connections.FACEMESH_FACE_OVAL:
-        DrawingSpec(color=_WHITE, thickness=_THICKNESS_CONTOURS),
-    face_mesh_connections.FACEMESH_NOSE:
-        DrawingSpec(color=_YELLOW, thickness=_THICKNESS_CONTOURS)
 }
 
 # Pose
@@ -180,24 +160,15 @@ def get_default_hand_connections_style(
 
 
 def get_default_face_mesh_contours_style(
-    i: int = 0,
 ) -> Mapping[Tuple[int, int], DrawingSpec]:
   """Returns the default face mesh contours drawing style.
-
-  Args:
-      i: The id for default style. Currently there are two default styles.
 
   Returns:
       A mapping from each face mesh contours connection to its default drawing
       spec.
   """
-  default_style = (
-      _FACEMESH_CONTOURS_CONNECTION_STYLE_1
-      if i == 1
-      else _FACEMESH_CONTOURS_CONNECTION_STYLE
-  )
   face_mesh_contours_connection_style = {}
-  for k, v in default_style.items():
+  for k, v in _FACEMESH_CONTOURS_CONNECTION_STYLE.items():
     for connection in k:
       face_mesh_contours_connection_style[connection] = v
   return face_mesh_contours_connection_style

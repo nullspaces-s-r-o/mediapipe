@@ -18,7 +18,6 @@
 #include <memory>
 #include <vector>
 
-#include "absl/log/absl_check.h"
 #include "absl/strings/str_cat.h"
 #include "mediapipe/framework/calculator_contract.h"
 #include "mediapipe/framework/calculator_framework.h"
@@ -46,7 +45,7 @@ absl::Status RunGeneratorFillExpectations(
   // side packet.
   PacketGeneratorConfig config = input_config;
 
-  MP_ASSIGN_OR_RETURN(
+  ASSIGN_OR_RETURN(
       auto static_access,
       internal::StaticAccessToGeneratorRegistry::CreateByNameInNamespace(
           package, config.packet_generator()),
@@ -79,9 +78,9 @@ absl::Status RunGenerateAndValidateTypes(
     const PacketGeneratorOptions& extendable_options,
     const PacketSet& input_side_packets, PacketSet* output_side_packets,
     const std::string& package) {
-  ABSL_CHECK(output_side_packets);
+  CHECK(output_side_packets);
   // Get static access to functions.
-  MP_ASSIGN_OR_RETURN(
+  ASSIGN_OR_RETURN(
       auto static_access,
       internal::StaticAccessToGeneratorRegistry::CreateByNameInNamespace(
           package, packet_generator_name),

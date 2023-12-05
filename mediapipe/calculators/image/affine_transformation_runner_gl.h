@@ -29,8 +29,7 @@ absl::StatusOr<std::unique_ptr<AffineTransformation::Runner<
     mediapipe::GpuBuffer, std::unique_ptr<mediapipe::GpuBuffer>>>>
 CreateAffineTransformationGlRunner(
     std::shared_ptr<mediapipe::GlCalculatorHelper> gl_helper,
-    mediapipe::GpuOrigin::Mode gpu_origin,
-    AffineTransformation::Interpolation interpolation);
+    mediapipe::GpuOrigin::Mode gpu_origin);
 
 }  // namespace mediapipe
 

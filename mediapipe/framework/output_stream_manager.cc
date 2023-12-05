@@ -14,7 +14,6 @@
 
 #include "mediapipe/framework/output_stream_manager.h"
 
-#include "absl/log/absl_check.h"
 #include "absl/synchronization/mutex.h"
 #include "mediapipe/framework/input_stream_handler.h"
 #include "mediapipe/framework/port/status_builder.h"
@@ -81,7 +80,7 @@ void OutputStreamManager::PropagateHeader() {
 
 void OutputStreamManager::AddMirror(InputStreamHandler* input_stream_handler,
                                     CollectionItemId id) {
-  ABSL_CHECK(input_stream_handler);
+  CHECK(input_stream_handler);
   mirrors_.emplace_back(input_stream_handler, id);
 }
 
@@ -164,7 +163,7 @@ Timestamp OutputStreamManager::ComputeOutputTimestampBound(
 // TODO Consider moving the propagation logic to OutputStreamHandler.
 void OutputStreamManager::PropagateUpdatesToMirrors(
     Timestamp next_timestamp_bound, OutputStreamShard* output_stream_shard) {
-  ABSL_CHECK(output_stream_shard);
+  CHECK(output_stream_shard);
   {
     if (next_timestamp_bound != Timestamp::Unset()) {
       absl::MutexLock lock(&stream_mutex_);

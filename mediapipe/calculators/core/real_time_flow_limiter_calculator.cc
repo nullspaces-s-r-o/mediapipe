@@ -76,11 +76,7 @@ constexpr char kMaxInFlightTag[] = "MAX_IN_FLIGHT";
 //   }
 //   output_stream: "gated_frames"
 // }
-//
-// Please use FlowLimiterCalculator, which replaces this calculator and
-// defines a few additional configuration options.
-class ABSL_DEPRECATED("Use FlowLimiterCalculator instead.")
-    RealTimeFlowLimiterCalculator : public CalculatorBase {
+class RealTimeFlowLimiterCalculator : public CalculatorBase {
  public:
   static absl::Status GetContract(CalculatorContract* cc) {
     int num_data_streams = cc->Inputs().NumEntries("");

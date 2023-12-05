@@ -13,10 +13,7 @@
 // limitations under the License.
 
 #import <AVFoundation/AVFoundation.h>
-#import <CoreAudio/CoreAudioTypes.h>
 #import <Foundation/Foundation.h>
-
-NS_ASSUME_NONNULL_BEGIN
 
 @class MPPInputSource;
 
@@ -34,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
                 timestamp:(CMTime)timestamp
                fromSource:(MPPInputSource*)source;
 
-// Provides the delegate with new depth frame data.
+// Provides the delegate with a new depth frame data
 @optional
 - (void)processDepthData:(AVDepthData*)depthData
                timestamp:(CMTime)timestamp
@@ -42,23 +39,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @optional
 - (void)videoDidPlayToEnd:(CMTime)timestamp;
-
-// Provides the delegate with the format of the audio track to be played.
-@optional
-- (void)willStartPlayingAudioWithFormat:(const AudioStreamBasicDescription*)format
-                             fromSource:(MPPInputSource*)source;
-
-// Lets the delegate know that there is no audio track despite audio playback
-// having been requested (or that audio playback failed for other reasons).
-@optional
-- (void)noAudioAvailableFromSource:(MPPInputSource*)source;
-
-// Provides the delegate with a new audio packet.
-@optional
-- (void)processAudioPacket:(const AudioBufferList*)audioPacket
-                 numFrames:(CMItemCount)numFrames
-                 timestamp:(CMTime)timestamp
-                fromSource:(MPPInputSource*)source;
 
 @end
 
@@ -88,5 +68,3 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)stop;
 
 @end
-
-NS_ASSUME_NONNULL_END

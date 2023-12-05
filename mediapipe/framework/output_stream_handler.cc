@@ -14,7 +14,6 @@
 
 #include "mediapipe/framework/output_stream_handler.h"
 
-#include "absl/log/absl_check.h"
 #include "absl/synchronization/mutex.h"
 #include "mediapipe/framework/collection_item_id.h"
 #include "mediapipe/framework/output_stream_shard.h"
@@ -32,7 +31,7 @@ absl::Status OutputStreamHandler::InitializeOutputStreamManagers(
 
 absl::Status OutputStreamHandler::SetupOutputShards(
     OutputStreamShardSet* output_shards) {
-  ABSL_CHECK(output_shards);
+  CHECK(output_shards);
   for (CollectionItemId id = output_stream_managers_.BeginId();
        id < output_stream_managers_.EndId(); ++id) {
     OutputStreamManager* manager = output_stream_managers_.Get(id);
@@ -53,7 +52,7 @@ void OutputStreamHandler::PrepareForRun(
 }
 
 void OutputStreamHandler::Open(OutputStreamShardSet* output_shards) {
-  ABSL_CHECK(output_shards);
+  CHECK(output_shards);
   PropagateOutputPackets(Timestamp::Unstarted(), output_shards);
   for (auto& manager : output_stream_managers_) {
     manager->PropagateHeader();
@@ -63,7 +62,7 @@ void OutputStreamHandler::Open(OutputStreamShardSet* output_shards) {
 
 void OutputStreamHandler::PrepareOutputs(Timestamp input_timestamp,
                                          OutputStreamShardSet* output_shards) {
-  ABSL_CHECK(output_shards);
+  CHECK(output_shards);
   for (CollectionItemId id = output_stream_managers_.BeginId();
        id < output_stream_managers_.EndId(); ++id) {
     output_stream_managers_.Get(id)->ResetShard(&output_shards->Get(id));
@@ -80,7 +79,7 @@ void OutputStreamHandler::UpdateTaskTimestampBound(Timestamp timestamp) {
     if (task_timestamp_bound_ == timestamp) {
       return;
     }
-    ABSL_CHECK_GT(timestamp, task_timestamp_bound_);
+    CHECK_GT(timestamp, task_timestamp_bound_);
     task_timestamp_bound_ = timestamp;
     if (propagation_state_ == kPropagatingBound) {
       propagation_state_ = kPropagationPending;
@@ -150,7 +149,7 @@ void OutputStreamHandler::Close(OutputStreamShardSet* output_shards) {
 
 void OutputStreamHandler::PropagateOutputPackets(
     Timestamp input_timestamp, OutputStreamShardSet* output_shards) {
-  ABSL_CHECK(output_shards);
+  CHECK(output_shards);
   for (CollectionItemId id = output_stream_managers_.BeginId();
        id < output_stream_managers_.EndId(); ++id) {
     OutputStreamManager* manager = output_stream_managers_.Get(id);

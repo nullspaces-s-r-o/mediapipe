@@ -18,17 +18,12 @@
 #define MEDIAPIPE_FRAMEWORK_PACKET_H_
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
-#include <ostream>
 #include <string>
 #include <type_traits>
 
 #include "absl/base/macros.h"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
-#include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/synchronization/mutex.h"
 #include "mediapipe/framework/deps/no_destructor.h"
@@ -114,18 +109,7 @@ class Packet {
   // Transfers the ownership of holder's data to a unique pointer
   // of the object if the packet is the sole owner of a non-foreign
   // holder. Otherwise, returns error when the packet can't be consumed.
-  //
-  // --- WARNING ---
-  // Packet is thread-compatible and this member function is non-const. Hence,
-  // calling it requires exclusive access to the object - callers are
-  // responsible for ensuring that no other thread is doing anything with the
-  // packet.
-  //
-  // For example, if a node/calculator calls this function, then no other
-  // calculator should be processing the same packet. Nodes/calculators cannot
-  // enforce/guarantee this as they don't know of each other, which means graph
-  // must be written in a special way to account for that. It's error-prone and
-  // general recommendation is to avoid calling this function.
+  // See ConsumeOrCopy for threading requirements and example usage.
   template <typename T>
   absl::StatusOr<std::unique_ptr<T>> Consume();
 
@@ -133,33 +117,24 @@ class Packet {
   // unique pointer if the packet is the sole owner of a non-foreign
   // holder. Otherwise, the unique pointer holds a copy of the original
   // data. In either case, the original packet is set to empty. The
-  // function returns error when the packet can't be consumed or copied. If
+  // method returns error when the packet can't be consumed or copied. If
   // was_copied is not nullptr, it is set to indicate whether the packet
   // data was copied.
-  //
-  // --- WARNING ---
-  // Packet is thread-compatible and this member function is non-const. Hence,
-  // calling it requires exclusive access to the object - callers are
-  // responsible for ensuring that no other thread is doing anything with the
-  // packet.
-  //
-  // For example, if a node/calculator calls this function, then no other
-  // calculator should be processing the same packet. Nodes/calculators cannot
-  // enforce/guarantee this as they don't know of each other, which means graph
-  // must be written in a special way to account for that. It's error-prone and
-  // general recommendation is to avoid calling this function.
-  //
+  // Packet is thread-compatible, therefore Packet::ConsumeOrCopy()
+  // must be thread-compatible: clients who use this function are
+  // responsible for ensuring that no other thread is doing anything
+  // with the Packet.
   // Example usage:
-  //   MP_ASSIGN_OR_RETURN(std::unique_ptr<Detection> detection,
+  //   ASSIGN_OR_RETURN(std::unique_ptr<Detection> detection,
   //                    p.ConsumeOrCopy<Detection>());
   //   // The unique_ptr type can be omitted with auto.
-  //   MP_ASSIGN_OR_RETURN(auto detection, p.ConsumeOrCopy<Detection>());
-  //   If you would like to crash on failure (prefer MP_ASSIGN_OR_RETURN):
+  //   ASSIGN_OR_RETURN(auto detection, p.ConsumeOrCopy<Detection>());
+  //   If you would like to crash on failure (prefer ASSIGN_OR_RETURN):
   //   auto detection = p.ConsumeOrCopy<Detection>().value();
   //   // In functions which do not return absl::Status use an adaptor
-  //   // function as the third argument to MP_ASSIGN_OR_RETURN.  In tests,
+  //   // function as the third argument to ASSIGN_OR_RETURN.  In tests,
   //   // use an adaptor which returns void.
-  //   MP_ASSIGN_OR_RETURN(auto detection, p.ConsumeOrCopy<Detection>(),
+  //   ASSIGN_OR_RETURN(auto detection, p.ConsumeOrCopy<Detection>(),
   //                    _.With([](const absl::Status& status) {
   //                      MP_EXPECT_OK(status);
   //                      // Use CHECK_OK to crash and report a usable line
@@ -393,14 +368,11 @@ class HolderBase {
   }
   // Returns a printable string identifying the type stored in the holder.
   virtual const std::string DebugTypeName() const = 0;
-  // Returns debug data id.
-  virtual int64_t DebugDataId() const = 0;
   // Returns the registered type name if it's available, otherwise the
   // empty string.
   virtual const std::string RegisteredTypeName() const = 0;
   // Get the type id of the underlying data type.
   virtual TypeId GetTypeId() const = 0;
-
   // Downcasts this to Holder<T>.  Returns nullptr if deserialization
   // failed or if the requested type is not what is stored.
   template <typename T>
@@ -479,37 +451,60 @@ struct is_concrete_proto_t
                     !std::is_same<proto_ns::MessageLite, T>{} &&
                     !std::is_same<proto_ns::Message, T>{}> {};
 
-template <typename T>
-std::unique_ptr<HolderBase> CreateMessageHolder() {
-  return absl::make_unique<Holder<T>>(new T);
-}
-
 // Registers a message type. T must be a non-cv-qualified concrete proto type.
-MEDIAPIPE_STATIC_REGISTRATOR_TEMPLATE(MessageRegistrator, MessageHolderRegistry,
-                                      T{}.GetTypeName(), CreateMessageHolder<T>)
+template <typename T>
+struct MessageRegistrationImpl {
+  static NoDestructor<mediapipe::RegistrationToken> registration;
+  // This could have been a lambda inside registration's initializer below, but
+  // MSVC has a bug with lambdas, so we put it here as a workaround.
+  static std::unique_ptr<Holder<T>> CreateMessageHolder() {
+    return absl::make_unique<Holder<T>>(new T);
+  }
+};
+
+// Static members of template classes can be defined in the header.
+template <typename T>
+NoDestructor<mediapipe::RegistrationToken>
+    MessageRegistrationImpl<T>::registration(MessageHolderRegistry::Register(
+        T{}.GetTypeName(), MessageRegistrationImpl<T>::CreateMessageHolder));
 
 // For non-Message payloads, this does nothing.
 template <typename T, typename Enable = void>
-struct HolderPayloadRegistrator {};
+struct HolderSupport {
+  static void EnsureStaticInit() {}
+};
 
 // This template ensures that, for each concrete MessageLite subclass that is
 // stored in a Packet, we register a function that allows us to create a
 // Holder with the correct payload type from the proto's type name.
-//
-// We must use std::remove_cv to ensure we don't try to register Foo twice if
-// there are Holder<Foo> and Holder<const Foo>. TODO: lift this
-// up to Holder?
 template <typename T>
-struct HolderPayloadRegistrator<
-    T, typename std::enable_if<is_concrete_proto_t<T>{}>::type>
-    : private MessageRegistrator<typename std::remove_cv<T>::type> {};
+struct HolderSupport<T,
+                     typename std::enable_if<is_concrete_proto_t<T>{}>::type> {
+  // We must use std::remove_cv to ensure we don't try to register Foo twice if
+  // there are Holder<Foo> and Holder<const Foo>. TODO: lift this
+  // up to Holder?
+  using R = MessageRegistrationImpl<typename std::remove_cv<T>::type>;
+  // For the registration static member to be instantiated, it needs to be
+  // referenced in a context that requires the definition to exist (see ISO/IEC
+  // C++ 2003 standard, 14.7.1). Calling this ensures that's the case.
+  // We need two different call-sites to cover proto types for which packets
+  // are only ever created (i.e. the protos are only produced by calculators)
+  // and proto types for which packets are only ever consumed (i.e. the protos
+  // are only consumed by calculators).
+  static void EnsureStaticInit() { CHECK(R::registration.get() != nullptr); }
+};
 
 template <typename T>
-class Holder : public HolderBase, private HolderPayloadRegistrator<T> {
+class Holder : public HolderBase {
  public:
-  explicit Holder(const T* ptr) : ptr_(ptr) {}
+  explicit Holder(const T* ptr) : ptr_(ptr) {
+    HolderSupport<T>::EnsureStaticInit();
+  }
   ~Holder() override { delete_helper(); }
-  const T& data() const { return *ptr_; }
+  const T& data() const {
+    HolderSupport<T>::EnsureStaticInit();
+    return *ptr_;
+  }
   TypeId GetTypeId() const final { return kTypeId<T>; }
   // Releases the underlying data pointer and transfers the ownership to a
   // unique pointer.
@@ -539,7 +534,6 @@ class Holder : public HolderBase, private HolderPayloadRegistrator<T> {
   const std::string DebugTypeName() const final {
     return MediaPipeTypeStringOrDemangled<T>();
   }
-  int64_t DebugDataId() const final { return reinterpret_cast<int64_t>(ptr_); }
   const std::string RegisteredTypeName() const final {
     const std::string* type_string = MediaPipeTypeString<T>();
     if (type_string) {
@@ -748,7 +742,7 @@ inline Packet& Packet::operator=(Packet&& packet) {
 inline bool Packet::IsEmpty() const { return holder_ == nullptr; }
 
 inline TypeId Packet::GetTypeId() const {
-  ABSL_CHECK(holder_);
+  CHECK(holder_);
   return holder_->GetTypeId();
 }
 
@@ -758,7 +752,7 @@ inline const T& Packet::Get() const {
   if (holder == nullptr) {
     // Produce a good error message.
     absl::Status status = ValidateAsType<T>();
-    ABSL_LOG(FATAL) << "Packet::Get() failed: " << status.message();
+    LOG(FATAL) << "Packet::Get() failed: " << status.message();
   }
   return holder->data();
 }
@@ -767,13 +761,13 @@ inline Timestamp Packet::Timestamp() const { return timestamp_; }
 
 template <typename T>
 Packet Adopt(const T* ptr) {
-  ABSL_CHECK(ptr != nullptr);
+  CHECK(ptr != nullptr);
   return packet_internal::Create(new packet_internal::Holder<T>(ptr));
 }
 
 template <typename T>
 Packet PointToForeign(const T* ptr) {
-  ABSL_CHECK(ptr != nullptr);
+  CHECK(ptr != nullptr);
   return packet_internal::Create(new packet_internal::ForeignHolder<T>(ptr));
 }
 

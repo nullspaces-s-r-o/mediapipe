@@ -18,7 +18,6 @@
 
 #include <vector>
 
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
@@ -76,7 +75,7 @@ class CallbackHandler {
     // The jobject global reference is managed by the Graph directly.
     // So no-op here.
     if (java_callback_) {
-      ABSL_LOG(ERROR) << "Java callback global reference is not released.";
+      LOG(ERROR) << "Java callback global reference is not released.";
     }
   }
 
@@ -136,8 +135,7 @@ Graph::~Graph() {
   // Cleans up the jni objects.
   JNIEnv* env = mediapipe::java::GetJNIEnv();
   if (env == nullptr) {
-    ABSL_LOG(ERROR)
-        << "Can't attach to java thread, no jni clean up performed.";
+    LOG(ERROR) << "Can't attach to java thread, no jni clean up performed.";
     return;
   }
   for (const auto& handler : callback_handlers_) {
@@ -221,18 +219,20 @@ absl::Status Graph::AddMultiStreamCallbackHandler(
 
 int64_t Graph::AddSurfaceOutput(const std::string& output_stream_name) {
   if (!graph_config()) {
-    ABSL_LOG(ERROR) << "Graph is not loaded!";
+    LOG(ERROR) << "Graph is not loaded!";
     return 0;
   }
 
 #if MEDIAPIPE_DISABLE_GPU
-  ABSL_LOG(FATAL) << "GPU support has been disabled in this build!";
+  LOG(FATAL) << "GPU support has been disabled in this build!";
 #else
   CalculatorGraphConfig::Node* sink_node = graph_config()->add_node();
   sink_node->set_name(mediapipe::tool::GetUnusedNodeName(
       *graph_config(), absl::StrCat("egl_surface_sink_", output_stream_name)));
   sink_node->set_calculator("GlSurfaceSinkCalculator");
   sink_node->add_input_stream(output_stream_name);
+  sink_node->add_input_side_packet(
+      absl::StrCat(kGpuSharedTagName, ":", kGpuSharedSidePacketName));
 
   const std::string input_side_packet_name =
       mediapipe::tool::GetUnusedSidePacketName(
@@ -293,7 +293,7 @@ CalculatorGraphConfig Graph::GetCalculatorGraphConfig() {
   CalculatorGraph temp_graph;
   absl::Status status = InitializeGraph(&temp_graph);
   if (!status.ok()) {
-    ABSL_LOG(ERROR) << "GetCalculatorGraphConfig failed:\n" << status.message();
+    LOG(ERROR) << "GetCalculatorGraphConfig failed:\n" << status.message();
   }
   return temp_graph.Config();
 }
@@ -418,13 +418,13 @@ absl::Status Graph::RunGraphUntilClose(JNIEnv* env) {
   CalculatorGraph calculator_graph;
   absl::Status status = InitializeGraph(&calculator_graph);
   if (!status.ok()) {
-    ABSL_LOG(ERROR) << status.message();
+    LOG(ERROR) << status.message();
     running_graph_.reset(nullptr);
     return status;
   }
   // TODO: gpu & services set up!
   status = calculator_graph.Run(CreateCombinedSidePackets());
-  ABSL_LOG(INFO) << "Graph run finished.";
+  LOG(INFO) << "Graph run finished.";
 
   return status;
 }
@@ -442,9 +442,9 @@ absl::Status Graph::StartRunningGraph(JNIEnv* env) {
   // Set the mode for adding packets to graph input streams.
   running_graph_->SetGraphInputStreamAddMode(graph_input_stream_add_mode_);
   if (VLOG_IS_ON(2)) {
-    ABSL_LOG(INFO) << "input packet streams:";
+    LOG(INFO) << "input packet streams:";
     for (auto& name : graph_config()->input_stream()) {
-      ABSL_LOG(INFO) << name;
+      LOG(INFO) << name;
     }
   }
   absl::Status status;
@@ -452,7 +452,7 @@ absl::Status Graph::StartRunningGraph(JNIEnv* env) {
   if (gpu_resources_) {
     status = running_graph_->SetGpuResources(gpu_resources_);
     if (!status.ok()) {
-      ABSL_LOG(ERROR) << status.message();
+      LOG(ERROR) << status.message();
       running_graph_.reset(nullptr);
       return status;
     }
@@ -463,7 +463,7 @@ absl::Status Graph::StartRunningGraph(JNIEnv* env) {
     status = running_graph_->SetServicePacket(*service_packet.first,
                                               service_packet.second);
     if (!status.ok()) {
-      ABSL_LOG(ERROR) << status.message();
+      LOG(ERROR) << status.message();
       running_graph_.reset(nullptr);
       return status;
     }
@@ -471,15 +471,15 @@ absl::Status Graph::StartRunningGraph(JNIEnv* env) {
 
   status = InitializeGraph(running_graph_.get());
   if (!status.ok()) {
-    ABSL_LOG(ERROR) << status.message();
+    LOG(ERROR) << status.message();
     running_graph_.reset(nullptr);
     return status;
   }
-  ABSL_LOG(INFO) << "Start running the graph, waiting for inputs.";
+  LOG(INFO) << "Start running the graph, waiting for inputs.";
   status =
       running_graph_->StartRun(CreateCombinedSidePackets(), stream_headers_);
   if (!status.ok()) {
-    ABSL_LOG(ERROR) << status;
+    LOG(ERROR) << status;
     running_graph_.reset(nullptr);
     return status;
   }
@@ -522,12 +522,12 @@ absl::Status Graph::CloseInputStream(std::string stream_name) {
   if (!running_graph_) {
     return absl::FailedPreconditionError("Graph must be running.");
   }
-  ABSL_LOG(INFO) << "Close input stream: " << stream_name;
+  LOG(INFO) << "Close input stream: " << stream_name;
   return running_graph_->CloseInputStream(stream_name);
 }
 
 absl::Status Graph::CloseAllInputStreams() {
-  ABSL_LOG(INFO) << "Close all input streams.";
+  LOG(INFO) << "Close all input streams.";
   if (!running_graph_) {
     return absl::FailedPreconditionError("Graph must be running.");
   }
@@ -535,7 +535,7 @@ absl::Status Graph::CloseAllInputStreams() {
 }
 
 absl::Status Graph::CloseAllPacketSources() {
-  ABSL_LOG(INFO) << "Close all input streams.";
+  LOG(INFO) << "Close all input streams.";
   if (!running_graph_) {
     return absl::FailedPreconditionError("Graph must be running.");
   }
@@ -566,7 +566,7 @@ void Graph::SetInputSidePacket(const std::string& stream_name,
 void Graph::SetStreamHeader(const std::string& stream_name,
                             const Packet& packet) {
   stream_headers_[stream_name] = packet;
-  ABSL_LOG(INFO) << stream_name << " stream header being set.";
+  LOG(INFO) << stream_name << " stream header being set.";
 }
 
 void Graph::SetGraphInputStreamAddMode(
@@ -580,18 +580,18 @@ mediapipe::GpuResources* Graph::GetGpuResources() const {
 }
 #endif  // !MEDIAPIPE_DISABLE_GPU
 
-absl::Status Graph::SetParentGlContext(int64_t java_gl_context) {
+absl::Status Graph::SetParentGlContext(int64 java_gl_context) {
 #if MEDIAPIPE_DISABLE_GPU
-  ABSL_LOG(FATAL) << "GPU support has been disabled in this build!";
+  LOG(FATAL) << "GPU support has been disabled in this build!";
 #else
   if (gpu_resources_) {
     return absl::AlreadyExistsError(
         "trying to set the parent GL context, but the gpu shared "
         "data has already been set up.");
   }
-  MP_ASSIGN_OR_RETURN(gpu_resources_,
-                      mediapipe::GpuResources::Create(
-                          reinterpret_cast<EGLContext>(java_gl_context)));
+  ASSIGN_OR_RETURN(gpu_resources_,
+                   mediapipe::GpuResources::Create(
+                       reinterpret_cast<EGLContext>(java_gl_context)));
 #endif  // MEDIAPIPE_DISABLE_GPU
   return absl::OkStatus();
 }

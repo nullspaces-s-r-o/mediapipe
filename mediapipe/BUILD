@@ -14,29 +14,25 @@
 
 licenses(["notice"])  # Apache 2.0
 
-load("@mediapipe//mediapipe:platforms.bzl", "config_setting_and_platform")
+# Note: yes, these need to use "//external:android/crosstool", not
+# @androidndk//:default_crosstool.
 
-# Generic Android
 config_setting(
     name = "android",
-    constraint_values = [
-        "@platforms//os:android",
-    ],
+    values = {"crosstool_top": "//external:android/crosstool"},
     visibility = ["//visibility:public"],
 )
 
-# Android x86 32-bit.
-config_setting_and_platform(
+config_setting(
     name = "android_x86",
-    constraint_values = [
-        "@platforms//os:android",
-        "@platforms//cpu:x86_32",
-    ],
+    values = {
+        "crosstool_top": "//external:android/crosstool",
+        "cpu": "x86",
+    },
     visibility = ["//visibility:public"],
 )
 
-# Android x86 64-bit.
-config_setting_and_platform(
+config_setting(
     name = "android_x86_64",
     values = {
         "crosstool_top": "//external:android/crosstool",
@@ -81,85 +77,27 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
-# MacOS ARM64.
-config_setting_and_platform(
-    name = "macos_arm64",
-    constraint_values = [
-        "@platforms//os:macos",
-        "@platforms//cpu:arm64",
-    ],
+# Note: this cannot just match "apple_platform_type": "macos" because that option
+# defaults to "macos" even when building on Linux!
+alias(
+    name = "macos",
+    actual = select({
+        ":macos_i386": ":macos_i386",
+        ":macos_x86_64": ":macos_x86_64",
+        ":macos_arm64": ":macos_arm64",
+        "//conditions:default": ":macos_i386",  # Arbitrarily chosen from above.
+    }),
     visibility = ["//visibility:public"],
 )
 
-# Generic iOS.
+# Note: this also matches on crosstool_top so that it does not produce ambiguous
+# selectors when used together with "android".
 config_setting(
     name = "ios",
-    constraint_values = [
-        "@platforms//os:ios",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-# iOS device ARM32.
-config_setting_and_platform(
-    name = "ios_armv7",
-    constraint_values = [
-        "@platforms//os:ios",
-        "@platforms//cpu:arm",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-# iOS device ARM64.
-config_setting_and_platform(
-    name = "ios_arm64",
-    constraint_values = [
-        "@platforms//os:ios",
-        "@platforms//cpu:arm64",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-# iOS device ARM64E.
-config_setting_and_platform(
-    name = "ios_arm64e",
-    constraint_values = [
-        "@platforms//os:ios",
-        "@platforms//cpu:arm64e",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-# iOS simulator x86 32-bit.
-config_setting_and_platform(
-    name = "ios_i386",
-    constraint_values = [
-        "@platforms//os:ios",
-        "@platforms//cpu:x86_32",
-        "@build_bazel_apple_support//constraints:simulator",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-# iOS simulator x86 64-bit.
-config_setting_and_platform(
-    name = "ios_x86_64",
-    constraint_values = [
-        "@platforms//os:ios",
-        "@platforms//cpu:x86_64",
-        "@build_bazel_apple_support//constraints:simulator",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-# iOS simulator ARM64.
-config_setting_and_platform(
-    name = "ios_sim_arm64",
-    constraint_values = [
-        "@platforms//os:ios",
-        "@platforms//cpu:arm64",
-        "@build_bazel_apple_support//constraints:simulator",
-    ],
+    values = {
+        "crosstool_top": "@bazel_tools//tools/cpp:toolchain",
+        "apple_platform_type": "ios",
+    },
     visibility = ["//visibility:public"],
 )
 
@@ -173,24 +111,51 @@ alias(
     visibility = ["//visibility:public"],
 )
 
-# Windows 64-bit.
-config_setting_and_platform(
-    name = "windows",
-    constraint_values = [
-        "@platforms//os:windows",
-        "@platforms//cpu:x86_64",
-    ],
+config_setting(
+    name = "macos_i386",
+    values = {
+        "apple_platform_type": "macos",
+        "cpu": "darwin",
+    },
     visibility = ["//visibility:public"],
 )
 
-# Linux 64-bit.
-config_setting_and_platform(
-    name = "linux",
-    constraint_values = [
-        "@platforms//os:linux",
-        "@platforms//cpu:x86_64",
-    ],
+config_setting(
+    name = "macos_x86_64",
+    values = {
+        "apple_platform_type": "macos",
+        "cpu": "darwin_x86_64",
+    },
     visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "macos_arm64",
+    values = {
+        "apple_platform_type": "macos",
+        "cpu": "darwin_arm64",
+    },
+    visibility = ["//visibility:public"],
+)
+
+[
+    config_setting(
+        name = arch,
+        values = {"cpu": arch},
+        visibility = ["//visibility:public"],
+    )
+    for arch in [
+        "ios_i386",
+        "ios_x86_64",
+        "ios_armv7",
+        "ios_arm64",
+        "ios_arm64e",
+    ]
+]
+
+config_setting(
+    name = "windows",
+    values = {"cpu": "x64_windows"},
 )
 
 exports_files(

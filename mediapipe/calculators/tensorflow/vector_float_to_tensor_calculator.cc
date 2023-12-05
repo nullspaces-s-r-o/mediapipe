@@ -14,7 +14,6 @@
 //
 // Converts vector<float> (or vector<vector<float>>) to 1D (or 2D) tf::Tensor.
 
-#include "absl/log/absl_log.h"
 #include "mediapipe/calculators/tensorflow/vector_float_to_tensor_calculator_options.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -69,7 +68,7 @@ absl::Status VectorFloatToTensorCalculator::GetContract(
         // Output vector<float>.
     );
   } else {
-    ABSL_LOG(FATAL) << "input size not supported";
+    LOG(FATAL) << "input size not supported";
   }
   RET_CHECK_EQ(cc->Outputs().NumEntries(), 1)
       << "Only one output stream is supported.";
@@ -91,9 +90,9 @@ absl::Status VectorFloatToTensorCalculator::Process(CalculatorContext* cc) {
     const std::vector<std::vector<float>>& input =
         cc->Inputs().Index(0).Value().Get<std::vector<std::vector<float>>>();
 
-    const int32_t rows = input.size();
+    const int32 rows = input.size();
     RET_CHECK_GE(rows, 1);
-    const int32_t cols = input[0].size();
+    const int32 cols = input[0].size();
     RET_CHECK_GE(cols, 1);
     for (int i = 1; i < rows; ++i) {
       RET_CHECK_EQ(input[i].size(), cols);
@@ -118,7 +117,7 @@ absl::Status VectorFloatToTensorCalculator::Process(CalculatorContext* cc) {
     const std::vector<float>& input =
         cc->Inputs().Index(0).Value().Get<std::vector<float>>();
     RET_CHECK_GE(input.size(), 1);
-    const int32_t length = input.size();
+    const int32 length = input.size();
     tensor_shape = tf::TensorShape({length});
     auto output = ::absl::make_unique<tf::Tensor>(tf::DT_FLOAT, tensor_shape);
     for (int i = 0; i < length; ++i) {
@@ -126,7 +125,7 @@ absl::Status VectorFloatToTensorCalculator::Process(CalculatorContext* cc) {
     }
     cc->Outputs().Index(0).Add(output.release(), cc->InputTimestamp());
   } else {
-    ABSL_LOG(FATAL) << "input size not supported";
+    LOG(FATAL) << "input size not supported";
   }
   return absl::OkStatus();
 }

@@ -13,14 +13,11 @@
 # limitations under the License.
 #
 
-load("@rules_foreign_cc//foreign_cc:cmake.bzl", "cmake")
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
 licenses(["notice"])  # Apache License 2.0
 
-package(default_visibility = ["//visibility:public"])
-
 exports_files(["LICENSE"])
+
+package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "glog",
@@ -30,6 +27,9 @@ cc_library(
             "@com_github_glog_glog_no_gflags//:glog",
         ],
         "//mediapipe:android_x86_64": [
+            "@com_github_glog_glog_no_gflags//:glog",
+        ],
+        "//mediapipe:android_armeabi": [
             "@com_github_glog_glog_no_gflags//:glog",
         ],
         "//mediapipe:android_arm": [
@@ -45,7 +45,7 @@ cc_library(
             "@com_github_glog_glog//:glog",
         ],
         "//mediapipe:windows": [
-            "@com_github_glog_glog_windows//:glog",
+            "@com_github_glog_glog//:glog",
         ],
         "//conditions:default": [
             "@com_github_glog_glog//:glog",
@@ -61,73 +61,16 @@ config_setting(
     visibility = ["//visibility:public"],
 )
 
-config_setting(
-    name = "opencv_ios_arm64_source_build",
-    define_values = {
-        "OPENCV": "source",
-    },
-    values = {
-        "apple_platform_type": "ios",
-        "cpu": "ios_arm64",
-    },
-)
-
-config_setting(
-    name = "opencv_ios_sim_arm64_source_build",
-    define_values = {
-        "OPENCV": "source",
-    },
-    values = {
-        "apple_platform_type": "ios",
-        "cpu": "ios_sim_arm64",
-    },
-)
-
-config_setting(
-    name = "opencv_ios_x86_64_source_build",
-    define_values = {
-        "OPENCV": "source",
-    },
-    values = {
-        "apple_platform_type": "ios",
-        "cpu": "ios_x86_64",
-    },
-)
-
-config_setting(
-    name = "opencv_ios_sim_fat_source_build",
-    define_values = {
-        "OPENCV": "source",
-    },
-    values = {
-        "apple_platform_type": "ios",
-        "ios_multi_cpus": "sim_arm64,x86_64",
-    },
-)
-
 alias(
     name = "opencv",
     actual = select({
         ":opencv_source_build": ":opencv_cmake",
-        ":opencv_ios_sim_arm64_source_build": "@ios_opencv_source//:opencv",
-        ":opencv_ios_arm64_source_build": "@ios_opencv_source//:opencv",
-        ":opencv_ios_x86_64_source_build": "@ios_opencv_source//:opencv",
         "//conditions:default": ":opencv_binary",
     }),
     visibility = ["//visibility:public"],
 )
 
-bzl_library(
-    name = "opencv_ios_xcframework_files_bzl",
-    srcs = ["opencv_ios_xcframework_files.bzl"],
-    visibility = ["//visibility:private"],
-)
-
-bzl_library(
-    name = "opencv_ios_source_bzl",
-    srcs = ["opencv_ios_source.bzl"],
-    visibility = ["//visibility:private"],
-)
+load("@rules_foreign_cc//tools/build_defs:cmake.bzl", "cmake_external")
 
 # Note: this determines the order in which the libraries are passed to the
 # linker, so if library A depends on library B, library B must come _after_.
@@ -151,7 +94,7 @@ OPENCV_SHARED_LIBS = True
 
 OPENCV_SO_VERSION = "3.4"
 
-cmake(
+cmake_external(
     name = "opencv_cmake",
     # Values to be passed as -Dkey=value on the CMake command line;
     # here are serving to provide some CMake script configuration options
@@ -169,7 +112,6 @@ cmake(
         "WITH_JPEG": "ON",
         "WITH_PNG": "ON",
         "WITH_TIFF": "ON",
-        "WITH_OPENCL": "OFF",
         "WITH_WEBP": "OFF",
         # Optimization flags
         "CV_ENABLE_INTRINSICS": "ON",
@@ -227,7 +169,7 @@ cmake(
         "-lpthread",
         "-lrt",
     ],
-    out_shared_libs = select({
+    shared_libraries = select({
         "@bazel_tools//src/conditions:darwin": ["libopencv_%s.%s.dylib" % (module, OPENCV_SO_VERSION) for module in OPENCV_MODULES],
         # Only the shared objects listed here will be linked in the directory
         # that Bazel adds to the RUNPATH of dependent executables. You cannot
@@ -235,7 +177,7 @@ cmake(
         # versioned name is the one that the executables actually reference.
         "//conditions:default": ["libopencv_%s.so.%s" % (module, OPENCV_SO_VERSION) for module in OPENCV_MODULES],
     }) if OPENCV_SHARED_LIBS else None,
-    out_static_libs = [
+    static_libraries = [
         "libopencv_%s.a" % module
         for module in OPENCV_MODULES
     ] if not OPENCV_SHARED_LIBS else None,
@@ -246,6 +188,7 @@ alias(
     actual = select({
         "//mediapipe:android_x86": "@android_opencv//:libopencv_x86",
         "//mediapipe:android_x86_64": "@android_opencv//:libopencv_x86_64",
+        "//mediapipe:android_armeabi": "@android_opencv//:libopencv_armeabi-v7a",
         "//mediapipe:android_arm": "@android_opencv//:libopencv_armeabi-v7a",
         "//mediapipe:android_arm64": "@android_opencv//:libopencv_arm64-v8a",
         "//mediapipe:ios": "@ios_opencv//:opencv",
@@ -262,6 +205,7 @@ cc_library(
     deps = select({
         "//mediapipe:android_x86": [],
         "//mediapipe:android_x86_64": [],
+        "//mediapipe:android_armeabi": [],
         "//mediapipe:android_arm": [],
         "//mediapipe:android_arm64": [],
         "//mediapipe:ios": [],
@@ -372,12 +316,5 @@ java_library(
     exports = [
         "@maven//:com_google_auto_value_auto_value",
         "@maven//:com_google_auto_value_auto_value_annotations",
-    ],
-)
-
-java_import(
-    name = "any_java_proto",
-    jars = [
-        "@com_google_protobuf//java/core:libcore.jar",
     ],
 )

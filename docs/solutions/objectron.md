@@ -1,8 +1,7 @@
 ---
-layout: forward
-target: https://developers.google.com/mediapipe/solutions/guide#legacy
+layout: default
 title: Objectron (3D Object Detection)
-parent: MediaPipe Legacy Solutions
+parent: Solutions
 nav_order: 12
 ---
 
@@ -18,14 +17,6 @@ nav_order: 12
 {:toc}
 </details>
 ---
-
-**Attention:** *Thank you for your interest in MediaPipe Solutions.
-We have ended support for this MediaPipe Legacy Solution as of March 1, 2023.
-For more information, see the
-[MediaPipe Solutions](https://developers.google.com/mediapipe/solutions/guide#legacy)
-site.*
-
-----
 
 ## Overview
 
@@ -179,7 +170,7 @@ and a
 The detection subgraph performs ML inference only once every few frames to
 reduce computation load, and decodes the output tensor to a FrameAnnotation that
 contains nine keypoints: the 3D bounding box's center and its eight vertices.
-The tracking subgraph runs every frame, using the box tracker in
+The tracking subgraph runs every frame, using the box traker in
 [MediaPipe Box Tracking](./box_tracking.md) to track the 2D box tightly
 enclosing the projection of the 3D bounding box, and lifts the tracked 2D
 keypoints to 3D with
@@ -622,7 +613,7 @@ z_ndc = 1 / Z
 
 ### Pixel Space
 
-In this API we set upper-left corner of an image as the origin of pixel
+In this API we set upper-left coner of an image as the origin of pixel
 coordinate. One can convert from NDC to pixel space as follows:
 
 ```

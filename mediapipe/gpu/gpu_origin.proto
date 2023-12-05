@@ -12,12 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto3";
+syntax = "proto2";
 
 package mediapipe;
-
-option java_package = "com.google.mediapipe.gpu";
-option java_outer_classname = "GpuOriginProto";
 
 message GpuOrigin {
   enum Mode {

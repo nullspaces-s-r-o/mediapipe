@@ -20,8 +20,6 @@
 #include <vector>
 
 #include "Eigen/Core"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/strings/substitute.h"
@@ -141,7 +139,7 @@ class TimeSeriesCalculatorTest : public ::testing::Test {
   // <base_names[0]>_<ids[0]>, <base_names[1]>_<ids[1]>, etc.
   std::vector<std::string> MakeNames(const std::vector<std::string>& base_names,
                                      const std::vector<std::string>& ids) {
-    ABSL_CHECK_EQ(base_names.size(), ids.size());
+    CHECK_EQ(base_names.size(), ids.size());
     std::vector<std::string> names;
     for (int i = 0; i < base_names.size(); ++i) {
       const std::string name_template = R"($0_$1)";
@@ -188,8 +186,7 @@ class TimeSeriesCalculatorTest : public ::testing::Test {
 
   void InitializeGraph(const CalculatorOptions& options) {
     if (num_external_inputs_ != -1) {
-      ABSL_LOG(WARNING)
-          << "Use num_side_packets_ instead of num_external_inputs_.";
+      LOG(WARNING) << "Use num_side_packets_ instead of num_external_inputs_.";
       num_side_packets_ = num_external_inputs_;
     }
 

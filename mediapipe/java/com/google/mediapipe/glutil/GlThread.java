@@ -128,10 +128,6 @@ public class GlThread extends Thread {
 
       prepareGl();
       startedSuccessfully = true;
-    } catch (RuntimeException e) {
-      releaseGl();
-      eglManager.release();
-      throw e;
     } finally {
       // Always stop waitUntilReady here, even if we got an exception.
       // Otherwise the main thread may be stuck waiting.

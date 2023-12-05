@@ -1,4 +1,4 @@
-/* Copyright 2022 The MediaPipe Authors.
+/* Copyright 2022 The MediaPipe Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ limitations under the License.
 #include <fstream>
 
 #include "absl/strings/str_split.h"
-#include "mediapipe/util/resource_util.h"
 
 namespace mediapipe {
 namespace tasks {
@@ -35,11 +34,7 @@ void ReadIStreamLineByLine(
   std::string str;
   while (std::getline(*istream, str)) {
     if (!str.empty()) {
-      if (str.back() == '\r') {  // Remove \r on Windows
-        line_processor(str.substr(0, str.length() - 1));
-      } else {
-        line_processor(str);
-      }
+      line_processor(str);
     }
   }
 }
@@ -69,8 +64,7 @@ std::vector<std::string> ReadIStreamByLine(std::istream* istream) {
 
 std::vector<std::string> LoadVocabFromFile(const std::string& path_to_vocab) {
   std::vector<std::string> vocab_from_file;
-  std::string file_name = *PathToResourceAsFile(path_to_vocab);
-  std::ifstream in(file_name.c_str());
+  std::ifstream in(path_to_vocab.c_str());
   return ReadIStreamByLine(&in);
 }
 
@@ -85,8 +79,7 @@ std::vector<std::string> LoadVocabFromBuffer(const char* vocab_buffer_data,
 absl::node_hash_map<std::string, int> LoadVocabAndIndexFromFile(
     const std::string& path_to_vocab) {
   absl::node_hash_map<std::string, int> vocab_index_map;
-  std::string file_name = *PathToResourceAsFile(path_to_vocab);
-  std::ifstream in(file_name.c_str());
+  std::ifstream in(path_to_vocab.c_str());
   return ReadIStreamLineSplits(&in);
 }
 

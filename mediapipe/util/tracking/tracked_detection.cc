@@ -20,8 +20,6 @@ namespace mediapipe {
 
 namespace {
 
-using ::mediapipe::NormalizedRect;
-
 // Struct for carrying boundary information.
 struct NormalizedRectBounds {
   float left, right, top, bottom;

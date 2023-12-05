@@ -26,15 +26,19 @@ constexpr char kStateChangeTag[] = "STATE_CHANGE";
 constexpr char kDisallowTag[] = "DISALLOW";
 constexpr char kAllowTag[] = "ALLOW";
 
-std::string ToString(GateCalculatorOptions::GateState state) {
+enum GateState {
+  GATE_UNINITIALIZED,
+  GATE_ALLOW,
+  GATE_DISALLOW,
+};
+
+std::string ToString(GateState state) {
   switch (state) {
-    case GateCalculatorOptions::UNSPECIFIED:
-      return "UNSPECIFIED";
-    case GateCalculatorOptions::GATE_UNINITIALIZED:
+    case GATE_UNINITIALIZED:
       return "UNINITIALIZED";
-    case GateCalculatorOptions::GATE_ALLOW:
+    case GATE_ALLOW:
       return "ALLOW";
-    case GateCalculatorOptions::GATE_DISALLOW:
+    case GATE_DISALLOW:
       return "DISALLOW";
   }
   DLOG(FATAL) << "Unknown GateState";
@@ -121,6 +125,7 @@ class GateCalculator : public CalculatorBase {
     RET_CHECK_OK(CheckAndInitAllowDisallowInputs(cc));
 
     const int num_data_streams = cc->Inputs().NumEntries("");
+    RET_CHECK_GE(num_data_streams, 1);
     RET_CHECK_EQ(cc->Outputs().NumEntries(""), num_data_streams)
         << "Number of data output streams must match with data input streams.";
 
@@ -149,12 +154,10 @@ class GateCalculator : public CalculatorBase {
 
     cc->SetOffset(TimestampDiff(0));
     num_data_streams_ = cc->Inputs().NumEntries("");
-
-    const auto& options = cc->Options<::mediapipe::GateCalculatorOptions>();
-    last_gate_state_ = options.initial_gate_state();
-
+    last_gate_state_ = GATE_UNINITIALIZED;
     RET_CHECK_OK(CopyInputHeadersToOutputs(cc->Inputs(), &cc->Outputs()));
 
+    const auto& options = cc->Options<::mediapipe::GateCalculatorOptions>();
     empty_packets_as_allow_ = options.empty_packets_as_allow();
 
     if (!use_side_packet_for_allow_disallow_ &&
@@ -182,12 +185,10 @@ class GateCalculator : public CalculatorBase {
         allow = !cc->Inputs().Tag(kDisallowTag).Get<bool>();
       }
     }
-    const GateCalculatorOptions::GateState new_gate_state =
-        allow ? GateCalculatorOptions::GATE_ALLOW
-              : GateCalculatorOptions::GATE_DISALLOW;
+    const GateState new_gate_state = allow ? GATE_ALLOW : GATE_DISALLOW;
 
     if (cc->Outputs().HasTag(kStateChangeTag)) {
-      if (last_gate_state_ != GateCalculatorOptions::GATE_UNINITIALIZED &&
+      if (last_gate_state_ != GATE_UNINITIALIZED &&
           last_gate_state_ != new_gate_state) {
         VLOG(2) << "State transition in " << cc->NodeName() << " @ "
                 << cc->InputTimestamp().Value() << " from "
@@ -223,8 +224,7 @@ class GateCalculator : public CalculatorBase {
   }
 
  private:
-  GateCalculatorOptions::GateState last_gate_state_ =
-      GateCalculatorOptions::GATE_UNINITIALIZED;
+  GateState last_gate_state_ = GATE_UNINITIALIZED;
   int num_data_streams_;
   bool empty_packets_as_allow_;
   bool use_side_packet_for_allow_disallow_ = false;

@@ -22,8 +22,6 @@
 
 namespace mediapipe {
 
-using ::mediapipe::NormalizedRect;
-
 namespace {
 
 // NORM_LANDMARKS is either the full set of landmarks for the hand, or

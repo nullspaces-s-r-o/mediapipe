@@ -18,7 +18,6 @@
 #include <memory>
 #include <vector>
 
-#include "absl/log/absl_check.h"
 #include "absl/memory/memory.h"
 #include "mediapipe/calculators/util/association_calculator.pb.h"
 #include "mediapipe/framework/calculator_context.h"
@@ -73,7 +72,7 @@ class AssociationCalculator : public CalculatorBase {
       prev_input_stream_id_ = cc->Inputs().GetId("PREV", 0);
     }
     options_ = cc->Options<::mediapipe::AssociationCalculatorOptions>();
-    ABSL_CHECK_GE(options_.min_similarity_threshold(), 0);
+    CHECK_GE(options_.min_similarity_threshold(), 0);
 
     return absl::OkStatus();
   }
@@ -171,13 +170,13 @@ class AssociationCalculator : public CalculatorBase {
     // Compare this element with elements of the input collection. If this
     // element has high overlap with elements of the collection, remove
     // those elements from the collection and add this element.
-    MP_ASSIGN_OR_RETURN(auto cur_rect, GetRectangle(element));
+    ASSIGN_OR_RETURN(auto cur_rect, GetRectangle(element));
 
     bool change_id = false;
     int new_elem_id = -1;
 
     for (auto uit = current->begin(); uit != current->end();) {
-      MP_ASSIGN_OR_RETURN(auto prev_rect, GetRectangle(*uit));
+      ASSIGN_OR_RETURN(auto prev_rect, GetRectangle(*uit));
       if (CalculateIou(cur_rect, prev_rect) >
           options_.min_similarity_threshold()) {
         std::pair<bool, int> prev_id = GetId(*uit);

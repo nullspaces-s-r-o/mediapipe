@@ -18,8 +18,6 @@
 
 #include <cmath>
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "mediapipe/framework/deps/mathutil.h"
@@ -27,6 +25,7 @@
 #include "mediapipe/framework/formats/location_opencv.h"
 #include "mediapipe/framework/port/file_helpers.h"
 #include "mediapipe/framework/port/integral_types.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/port/point2.h"
 #include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/type_map.h"
@@ -41,8 +40,8 @@ const float kFloFileHeaderOnRead = 202021.25;
 
 void CartesianToPolarCoordinates(const cv::Mat& cartesian, cv::Mat* magnitudes,
                                  cv::Mat* angles) {
-  ABSL_CHECK(magnitudes != nullptr);
-  ABSL_CHECK(angles != nullptr);
+  CHECK(magnitudes != nullptr);
+  CHECK(angles != nullptr);
   cv::Mat cartesian_components[2];
   cv::split(cartesian, cartesian_components);
   cv::cartToPolar(cartesian_components[0], cartesian_components[1], *magnitudes,
@@ -67,12 +66,12 @@ cv::Mat MakeVisualizationHsv(const cv::Mat_<float>& angles,
   cv::Mat hsv(angles.size(), CV_8UC3);
   for (int r = 0; r < hsv.rows; ++r) {
     for (int c = 0; c < hsv.cols; ++c) {
-      const uint8_t hue = static_cast<uint8_t>(255.0f * angles(r, c) / 360.0f);
-      uint8_t saturation = 255;
+      const uint8 hue = static_cast<uint8>(255.0f * angles(r, c) / 360.0f);
+      uint8 saturation = 255;
       if (magnitudes(r, c) < max_mag) {
-        saturation = static_cast<uint8_t>(255.0f * magnitudes(r, c) / max_mag);
+        saturation = static_cast<uint8>(255.0f * magnitudes(r, c) / max_mag);
       }
-      const uint8_t value = 255;
+      const uint8 value = 255;
 
       hsv.at<cv::Vec3b>(r, c) = cv::Vec3b(hue, saturation, value);
     }
@@ -106,7 +105,7 @@ cv::Mat OpticalFlowField::GetVisualizationInternal(
         std::max(std::numeric_limits<float>::epsilon(),
                  MaxAbsoluteValueIgnoringHuge(magnitudes, kHugeToIgnore));
   }
-  ABSL_CHECK_LT(0, max_magnitude);
+  CHECK_LT(0, max_magnitude);
   cv::Mat hsv = MakeVisualizationHsv(angles, magnitudes, max_magnitude);
   cv::Mat viz;
   cv::cvtColor(hsv, viz, 71 /*cv::COLOR_HSV2RGB_FULL*/);
@@ -120,7 +119,7 @@ cv::Mat OpticalFlowField::GetVisualization() const {
 
 cv::Mat OpticalFlowField::GetVisualizationSaturatedAt(
     float max_magnitude) const {
-  ABSL_CHECK_LT(0, max_magnitude)
+  CHECK_LT(0, max_magnitude)
       << "Specified saturation magnitude must be positive.";
   return GetVisualizationInternal(max_magnitude, true);
 }
@@ -148,9 +147,9 @@ void OpticalFlowField::Resize(int new_width, int new_height) {
 }
 
 void OpticalFlowField::CopyFromTensor(const tensorflow::Tensor& tensor) {
-  ABSL_CHECK_EQ(tensorflow::DT_FLOAT, tensor.dtype());
-  ABSL_CHECK_EQ(3, tensor.dims()) << "Tensor must be height x width x 2.";
-  ABSL_CHECK_EQ(2, tensor.dim_size(2)) << "Tensor must be height x width x 2.";
+  CHECK_EQ(tensorflow::DT_FLOAT, tensor.dtype());
+  CHECK_EQ(3, tensor.dims()) << "Tensor must be height x width x 2.";
+  CHECK_EQ(2, tensor.dim_size(2)) << "Tensor must be height x width x 2.";
   const int height = tensor.dim_size(0);
   const int width = tensor.dim_size(1);
   Allocate(width, height);
@@ -164,8 +163,8 @@ void OpticalFlowField::CopyFromTensor(const tensorflow::Tensor& tensor) {
 }
 
 void OpticalFlowField::SetFromProto(const OpticalFlowFieldData& proto) {
-  ABSL_CHECK_EQ(proto.width() * proto.height(), proto.dx_size());
-  ABSL_CHECK_EQ(proto.width() * proto.height(), proto.dy_size());
+  CHECK_EQ(proto.width() * proto.height(), proto.dx_size());
+  CHECK_EQ(proto.width() * proto.height(), proto.dy_size());
   flow_data_.create(proto.height(), proto.width());
   int i = 0;
   for (int r = 0; r < flow_data_.rows; ++r) {
@@ -192,8 +191,8 @@ void OpticalFlowField::ConvertToProto(OpticalFlowFieldData* proto) const {
 
 bool OpticalFlowField::FollowFlow(float x, float y, float* new_x,
                                   float* new_y) const {
-  ABSL_CHECK(new_x);
-  ABSL_CHECK(new_y);
+  CHECK(new_x);
+  CHECK(new_y);
   if (x < 0 || x > flow_data_.cols - 1 ||  // horizontal bounds
       y < 0 || y > flow_data_.rows - 1) {  // vertical bounds
     return false;
@@ -206,10 +205,10 @@ bool OpticalFlowField::FollowFlow(float x, float y, float* new_x,
 
 cv::Point2f OpticalFlowField::InterpolatedFlowAt(float x, float y) const {
   // Sanity bounds checks.
-  ABSL_CHECK_GE(x, 0);
-  ABSL_CHECK_GE(y, 0);
-  ABSL_CHECK_LE(x, flow_data_.cols - 1);
-  ABSL_CHECK_LE(y, flow_data_.rows - 1);
+  CHECK_GE(x, 0);
+  CHECK_GE(y, 0);
+  CHECK_LE(x, flow_data_.cols - 1);
+  CHECK_LE(y, flow_data_.rows - 1);
 
   const int x0 = static_cast<int>(std::floor(x));
   const int y0 = static_cast<int>(std::floor(y));
@@ -254,7 +253,7 @@ bool OpticalFlowField::AllWithinMargin(const OpticalFlowField& other,
       const cv::Point2f& other_motion = other.flow_data().at<cv::Point2f>(r, c);
       if (!MathUtil::WithinMargin(this_motion.x, other_motion.x, margin) ||
           !MathUtil::WithinMargin(this_motion.y, other_motion.y, margin)) {
-        ABSL_LOG(INFO) << "First failure at" << r << " " << c;
+        LOG(INFO) << "First failure at" << r << " " << c;
         return false;
       }
     }
@@ -266,9 +265,9 @@ void OpticalFlowField::EstimateMotionConsistencyOcclusions(
     const OpticalFlowField& forward, const OpticalFlowField& backward,
     double spatial_distance_threshold, Location* occluded_mask,
     Location* disoccluded_mask) {
-  ABSL_CHECK_EQ(forward.width(), backward.width())
+  CHECK_EQ(forward.width(), backward.width())
       << "Flow fields have different widths.";
-  ABSL_CHECK_EQ(forward.height(), backward.height())
+  CHECK_EQ(forward.height(), backward.height())
       << "Flow fields have different heights.";
   if (occluded_mask != nullptr) {
     *occluded_mask = FindMotionInconsistentPixels(forward, backward,
@@ -283,7 +282,7 @@ void OpticalFlowField::EstimateMotionConsistencyOcclusions(
 Location OpticalFlowField::FindMotionInconsistentPixels(
     const OpticalFlowField& forward, const OpticalFlowField& backward,
     double spatial_distance_threshold) {
-  const uint8_t kOccludedPixelValue = 1;
+  const uint8 kOccludedPixelValue = 1;
   const double threshold_sq =
       spatial_distance_threshold * spatial_distance_threshold;
   cv::Mat occluded = cv::Mat::zeros(forward.height(), forward.width(), CV_8UC1);
@@ -302,10 +301,10 @@ Location OpticalFlowField::FindMotionInconsistentPixels(
       if (!in_bounds_in_next_frame ||
           Point2_f(x - round_trip_x, y - round_trip_y).ToVector().Norm2() >
               threshold_sq) {
-        occluded.at<uint8_t>(y, x) = kOccludedPixelValue;
+        occluded.at<uint8>(y, x) = kOccludedPixelValue;
       }
     }
   }
-  return CreateCvMaskLocation<uint8_t>(occluded);
+  return CreateCvMaskLocation<uint8>(occluded);
 }
 }  // namespace mediapipe

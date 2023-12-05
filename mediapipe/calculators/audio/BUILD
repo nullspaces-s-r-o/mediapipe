@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Placeholder: load py_proto_library
-load("//mediapipe/framework/port:build_config.bzl", "mediapipe_cc_proto_library")
-
 licenses(["notice"])
 
 package(default_visibility = ["//visibility:private"])
+
+load("//mediapipe/framework/port:build_config.bzl", "mediapipe_cc_proto_library")
 
 proto_library(
     name = "mfcc_mel_calculators_proto",
@@ -146,7 +145,6 @@ cc_library(
         "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:status",
         "//mediapipe/util:time_series_util",
-        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
         "@com_google_audio_tools//audio/dsp/mfcc",
         "@eigen_archive//:eigen3",
@@ -165,9 +163,8 @@ cc_library(
         "//mediapipe/framework/formats:matrix",
         "//mediapipe/framework/formats:time_series_header_cc_proto",
         "//mediapipe/framework/port:integral_types",
+        "//mediapipe/framework/port:logging",
         "//mediapipe/util:time_series_util",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@com_google_audio_tools//audio/dsp:resampler",
         "@com_google_audio_tools//audio/dsp:resampler_q",
@@ -188,7 +185,6 @@ cc_library(
         "//mediapipe/framework/port:core_proto",
         "//mediapipe/framework/port:status",
         "//mediapipe/util:time_series_util",
-        "@com_google_absl//absl/log:absl_check",
     ],
     alwayslink = 1,
 )
@@ -201,6 +197,7 @@ cc_library(
         ":spectrogram_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:matrix",
+        "//mediapipe/framework/formats:time_series_header_cc_proto",
         "//mediapipe/framework/port:core_proto",
         "//mediapipe/framework/port:integral_types",
         "//mediapipe/framework/port:logging",
@@ -223,12 +220,13 @@ cc_library(
     deps = [
         ":time_series_framer_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework:timestamp",
         "//mediapipe/framework/formats:matrix",
         "//mediapipe/framework/formats:time_series_header_cc_proto",
+        "//mediapipe/framework/port:integral_types",
+        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:ret_check",
+        "//mediapipe/framework/port:status",
         "//mediapipe/util:time_series_util",
-        "@com_google_absl//absl/log:absl_check",
         "@com_google_audio_tools//audio/dsp:window_functions",
         "@eigen_archive//:eigen3",
     ],
@@ -279,7 +277,6 @@ cc_test(
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/framework/port:status",
         "//mediapipe/util:time_series_test_util",
-        "@com_google_audio_tools//audio/dsp/mfcc",
         "@eigen_archive//:eigen3",
     ],
 )
@@ -299,7 +296,6 @@ cc_test(
         "//mediapipe/framework/port:integral_types",
         "//mediapipe/framework/port:status",
         "//mediapipe/util:time_series_test_util",
-        "@com_google_absl//absl/log:absl_log",
         "@com_google_audio_tools//audio/dsp:number_util",
         "@eigen_archive//:eigen3",
     ],
@@ -323,21 +319,6 @@ cc_test(
     ],
 )
 
-cc_binary(
-    name = "time_series_framer_calculator_benchmark",
-    srcs = ["time_series_framer_calculator_benchmark.cc"],
-    deps = [
-        ":time_series_framer_calculator",
-        ":time_series_framer_calculator_cc_proto",
-        "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework:packet",
-        "//mediapipe/framework/formats:matrix",
-        "//mediapipe/framework/formats:time_series_header_cc_proto",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_benchmark//:benchmark",
-    ],
-)
-
 cc_test(
     name = "time_series_framer_calculator_test",
     srcs = ["time_series_framer_calculator_test.cc"],
@@ -352,7 +333,6 @@ cc_test(
         "//mediapipe/framework/port:integral_types",
         "//mediapipe/framework/port:status",
         "//mediapipe/util:time_series_test_util",
-        "@com_google_absl//absl/log:absl_log",
         "@com_google_audio_tools//audio/dsp:window_functions",
         "@eigen_archive//:eigen3",
     ],
@@ -372,8 +352,6 @@ cc_test(
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/tool:validate_type",
         "//mediapipe/util:time_series_test_util",
-        "@com_google_audio_tools//audio/dsp:resampler",
-        "@com_google_audio_tools//audio/dsp:resampler_q",
         "@com_google_audio_tools//audio/dsp:signal_vector_util",
         "@eigen_archive//:eigen3",
     ],

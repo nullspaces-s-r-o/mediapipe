@@ -22,8 +22,6 @@
 
 #include "absl/container/node_hash_map.h"
 #include "absl/container/node_hash_set.h"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "mediapipe/framework/port/integral_types.h"
 #include "mediapipe/util/tracking/measure_time.h"
@@ -49,7 +47,7 @@ bool IsPointWithinBounds(const Vector2_f& pt, float bounds, int frame_width,
 void GetRegionFlowFeatureList(const RegionFlowFrame& region_flow_frame,
                               int distance_from_border,
                               RegionFlowFeatureList* flow_feature_list) {
-  ABSL_CHECK(flow_feature_list);
+  CHECK(flow_feature_list);
   flow_feature_list->clear_feature();
   const int frame_width = region_flow_frame.frame_width();
   const int frame_height = region_flow_frame.frame_height();
@@ -78,8 +76,8 @@ void GetRegionFlowFeatureList(const RegionFlowFrame& region_flow_frame,
 
 float RegionFlowFeatureDistance(const PatchDescriptor& patch_desc_1,
                                 const PatchDescriptor& patch_desc_2) {
-  ABSL_DCHECK_EQ(patch_desc_1.data_size(), patch_desc_2.data_size());
-  ABSL_DCHECK_GE(patch_desc_1.data_size(), 3);
+  DCHECK_EQ(patch_desc_1.data_size(), patch_desc_2.data_size());
+  DCHECK_GE(patch_desc_1.data_size(), 3);
 
   constexpr int kNumMeans = 3;
   float sq_distance_sum = 0;
@@ -120,7 +118,7 @@ void ClampRegionFlowFeatureIRLSWeights(float lower, float upper,
 void ComputeRegionFlowFeatureTexturedness(
     const RegionFlowFeatureList& flow_feature_list, bool use_15percent_as_max,
     std::vector<float>* texturedness) {
-  ABSL_CHECK(texturedness != nullptr);
+  CHECK(texturedness != nullptr);
   *texturedness = std::vector<float>(flow_feature_list.feature_size(), 1.0f);
 
   int texture_idx = 0;
@@ -130,11 +128,11 @@ void ComputeRegionFlowFeatureTexturedness(
         PatchDescriptorColorStdevL1(feature->feature_descriptor());
 
     if (feature_stdev_l1 < 0.0f) {
-      ABSL_LOG_IF(WARNING,
-                  []() {
-                    static int k = 0;
-                    return k++ < 2;
-                  }())
+      LOG_IF(WARNING,
+             []() {
+               static int k = 0;
+               return k++ < 2;
+             }())
           << "Feature descriptor does not contain variance information. Was "
           << "ComputeRegionFlowFeatureDescriptors called?";
       continue;
@@ -202,7 +200,7 @@ void CornerFilteredRegionFlowFeatureIRLSWeights(
 void GetRegionFlowFeatureIRLSWeights(
     const RegionFlowFeatureList& flow_feature_list,
     std::vector<float>* irls_weights) {
-  ABSL_CHECK(irls_weights != nullptr);
+  CHECK(irls_weights != nullptr);
   irls_weights->clear();
   irls_weights->reserve(flow_feature_list.feature_size());
   for (auto feature = flow_feature_list.feature().begin();
@@ -213,8 +211,8 @@ void GetRegionFlowFeatureIRLSWeights(
 
 void SetRegionFlowFeatureIRLSWeights(const std::vector<float>& irls_weights,
                                      RegionFlowFeatureList* flow_feature_list) {
-  ABSL_CHECK(flow_feature_list != nullptr);
-  ABSL_CHECK_EQ(irls_weights.size(), flow_feature_list->feature_size());
+  CHECK(flow_feature_list != nullptr);
+  CHECK_EQ(irls_weights.size(), flow_feature_list->feature_size());
   int idx = 0;
   for (auto feature = flow_feature_list->mutable_feature()->begin();
        feature != flow_feature_list->mutable_feature()->end();
@@ -286,7 +284,7 @@ void SortRegionFlowById(RegionFlowFrame* flow_frame) {
 
 void InvertRegionFlow(const RegionFlowFrame& region_flow_frame,
                       RegionFlowFrame* inverted_flow_frame) {
-  ABSL_CHECK(inverted_flow_frame);
+  CHECK(inverted_flow_frame);
   inverted_flow_frame->CopyFrom(region_flow_frame);
   for (auto& region_flow : *inverted_flow_frame->mutable_region_flow()) {
     region_flow.set_centroid_x(region_flow.centroid_x() + region_flow.flow_x());
@@ -305,7 +303,7 @@ void InvertRegionFlow(const RegionFlowFrame& region_flow_frame,
 
 void InvertRegionFlowFeatureList(const RegionFlowFeatureList& feature_list,
                                  RegionFlowFeatureList* inverted_feature_list) {
-  ABSL_CHECK(inverted_feature_list);
+  CHECK(inverted_feature_list);
   *inverted_feature_list = feature_list;
   for (auto& feature : *inverted_feature_list->mutable_feature()) {
     InvertRegionFlowFeature(&feature);
@@ -373,7 +371,7 @@ void ScaleSalientPoint(float scale_x, float scale_y, SalientPoint* sp) {
 
 void ScaleSaliencyList(float scale, bool normalize_to_scale,
                        SaliencyPointList* saliency_list) {
-  ABSL_CHECK(saliency_list != nullptr);
+  CHECK(saliency_list != nullptr);
   for (auto& point_frame : *saliency_list) {
     ScaleSalientPointFrame(scale, normalize_to_scale, &point_frame);
   }
@@ -381,7 +379,7 @@ void ScaleSaliencyList(float scale, bool normalize_to_scale,
 
 void ScaleSalientPointFrame(float scale, bool normalize_to_scale,
                             SalientPointFrame* saliency) {
-  ABSL_CHECK(saliency != nullptr);
+  CHECK(saliency != nullptr);
   float saliency_scale = scale;
   if (normalize_to_scale) {
     float weight_sum = 0.0f;
@@ -401,7 +399,7 @@ void ScaleSalientPointFrame(float scale, bool normalize_to_scale,
 
 void ResetSaliencyBounds(float left, float bottom, float right, float top,
                          SaliencyPointList* saliency_list) {
-  ABSL_CHECK(saliency_list != nullptr);
+  CHECK(saliency_list != nullptr);
   for (auto& point_frame : *saliency_list) {
     for (auto& salient_point : *point_frame.mutable_point()) {
       salient_point.set_left(left);
@@ -414,8 +412,8 @@ void ResetSaliencyBounds(float left, float bottom, float right, float top,
 
 bool EllipseFromCovariance(float a, float bc, float d,
                            Vector2_f* axis_magnitude, float* angle) {
-  ABSL_CHECK(axis_magnitude != nullptr);
-  ABSL_CHECK(angle != nullptr);
+  CHECK(axis_magnitude != nullptr);
+  CHECK(angle != nullptr);
 
   // Get trace and determinant
   const float trace = a + d;
@@ -477,7 +475,7 @@ bool EllipseFromCovariance(float a, float bc, float d,
 void BoundingBoxFromEllipse(const Vector2_f& center, float norm_major_axis,
                             float norm_minor_axis, float angle,
                             std::vector<Vector2_f>* bounding_box) {
-  ABSL_CHECK(bounding_box != nullptr);
+  CHECK(bounding_box != nullptr);
   float dim_x;
   float dim_y;
   if (angle < M_PI * 0.25 || angle > M_PI * 0.75) {
@@ -503,8 +501,8 @@ void BoundingBoxFromEllipse(const Vector2_f& center, float norm_major_axis,
 
 void CopyToEmptyFeatureList(RegionFlowFeatureList* src,
                             RegionFlowFeatureList* dst) {
-  ABSL_CHECK(src != nullptr);
-  ABSL_CHECK(dst != nullptr);
+  CHECK(src != nullptr);
+  CHECK(dst != nullptr);
 
   // Swap out features for empty list.
   RegionFlowFeatureList empty_list;
@@ -517,7 +515,7 @@ void CopyToEmptyFeatureList(RegionFlowFeatureList* src,
   src->mutable_feature()->Swap(empty_list.mutable_feature());
 
   // src_features should be empty as in the beginning.
-  ABSL_CHECK_EQ(0, empty_list.feature_size());
+  CHECK_EQ(0, empty_list.feature_size());
 }
 
 void IntersectRegionFlowFeatureList(
@@ -525,11 +523,10 @@ void IntersectRegionFlowFeatureList(
     std::function<Vector2_f(const RegionFlowFeature&)> to_location_eval,
     RegionFlowFeatureList* from, RegionFlowFeatureList* result,
     std::vector<int>* source_indices) {
-  ABSL_CHECK(from != nullptr);
-  ABSL_CHECK(result != nullptr);
-  ABSL_CHECK(from->long_tracks())
-      << "Intersection only works for long features";
-  ABSL_CHECK(to.long_tracks()) << "Intersection only works for long features";
+  CHECK(from != nullptr);
+  CHECK(result != nullptr);
+  CHECK(from->long_tracks()) << "Intersection only works for long features";
+  CHECK(to.long_tracks()) << "Intersection only works for long features";
 
   // Hash features in to, based on track_id.
   absl::node_hash_map<int, const RegionFlowFeature*> track_map;
@@ -566,10 +563,9 @@ void LongFeatureStream::AddFeatures(const RegionFlowFeatureList& feature_list,
                                     bool check_connectivity,
                                     bool purge_non_present_features) {
   if (!feature_list.long_tracks()) {
-    ABSL_LOG(ERROR)
-        << "Feature stream should be used only used with long feature "
-        << "tracks. Ensure POLICY_LONG_FEATURE was used for "
-        << "RegionFlowComputation.";
+    LOG(ERROR) << "Feature stream should be used only used with long feature "
+               << "tracks. Ensure POLICY_LONG_FEATURE was used for "
+               << "RegionFlowComputation.";
     return;
   }
 
@@ -579,8 +575,8 @@ void LongFeatureStream::AddFeatures(const RegionFlowFeatureList& feature_list,
   }
 
   if (std::abs(feature_list.match_frame()) != 1) {
-    ABSL_LOG(ERROR) << "Only matching frames one frame from current one are "
-                    << "supported";
+    LOG(ERROR) << "Only matching frames one frame from current one are "
+               << "supported";
     return;
   }
 
@@ -588,7 +584,7 @@ void LongFeatureStream::AddFeatures(const RegionFlowFeatureList& feature_list,
   absl::node_hash_set<int> present_tracks;
   for (auto feature : feature_list.feature()) {  // Copy feature.
     if (feature.track_id() < 0) {
-      ABSL_LOG_IF(WARNING, []() {
+      LOG_IF(WARNING, []() {
         static int k = 0;
         return k++ < 2;
       }()) << "Feature does not have a valid track id assigned. Ignoring.";
@@ -597,7 +593,7 @@ void LongFeatureStream::AddFeatures(const RegionFlowFeatureList& feature_list,
     present_tracks.insert(feature.track_id());
     if (check_connectivity) {
       // A new feature should never have been erased before.
-      ABSL_CHECK(old_ids_.find(feature.track_id()) == old_ids_.end())
+      CHECK(old_ids_.find(feature.track_id()) == old_ids_.end())
           << "Feature : " << feature.track_id() << "was already removed.";
     }
 
@@ -611,10 +607,10 @@ void LongFeatureStream::AddFeatures(const RegionFlowFeatureList& feature_list,
     if (find_pos != tracks_.end()) {
       // Track is present, add to it.
       if (check_connectivity) {
-        ABSL_CHECK_LT((FeatureLocation(find_pos->second.back()) -
-                       FeatureMatchLocation(feature))
-                          .Norm2(),
-                      1e-4);
+        CHECK_LT((FeatureLocation(find_pos->second.back()) -
+                  FeatureMatchLocation(feature))
+                     .Norm2(),
+                 1e-4);
       }
       find_pos->second.push_back(feature);
     } else {
@@ -642,7 +638,7 @@ void LongFeatureStream::FlattenTrack(
     const std::vector<RegionFlowFeature>& features,
     std::vector<Vector2_f>* result, std::vector<float>* irls_weight,
     std::vector<Vector2_f>* flow) const {
-  ABSL_CHECK(result != nullptr);
+  CHECK(result != nullptr);
   if (features.empty()) {
     return;
   }
@@ -704,8 +700,7 @@ std::vector<Vector2_f> LongFeatureStream::FlattenedTrackById(int id) const {
 
 void LongFeatureInfo::AddFeatures(const RegionFlowFeatureList& feature_list) {
   if (!feature_list.long_tracks()) {
-    ABSL_LOG(ERROR)
-        << "Passed feature list was not computed with long tracks. ";
+    LOG(ERROR) << "Passed feature list was not computed with long tracks. ";
     return;
   }
 
@@ -735,7 +730,7 @@ void LongFeatureInfo::AddFeature(const RegionFlowFeature& feature) {
 
 void LongFeatureInfo::TrackLengths(const RegionFlowFeatureList& feature_list,
                                    std::vector<int>* track_lengths) const {
-  ABSL_CHECK(track_lengths);
+  CHECK(track_lengths);
   const int feature_size = feature_list.feature_size();
   track_lengths->resize(feature_size);
   for (int k = 0; k < feature_size; ++k) {
@@ -780,7 +775,7 @@ int LongFeatureInfo::GlobalTrackLength(float percentile) const {
 
 void GridTaps(int dim_x, int dim_y, int tap_radius,
               std::vector<std::vector<int>>* taps) {
-  ABSL_CHECK(taps);
+  CHECK(taps);
   const int grid_size = dim_x * dim_y;
   const int diam = 2 * tap_radius + 1;
   taps->resize(grid_size);

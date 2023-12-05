@@ -175,14 +175,6 @@ public class ExternalTextureConverter implements TextureFrameProducer {
   }
 
   /**
-   * Sets whether the timestamps of each frame should be adjusted to be always monotonically
-   * increasing. The default behavior is that this is {@code true}.
-   */
-  public void setShouldAdjustTimestamps(boolean shouldAdjustTimestamps) {
-    thread.setShouldAdjustTimestamps(shouldAdjustTimestamps);
-  }
-
-  /**
    * Sets an offset that can be used to adjust the timestamps on the camera frames, for example to
    * conform to a preferred time-base or to account for a known device latency. The offset is added
    * to each frame timetamp read by the ExternalTextureConverter.
@@ -306,7 +298,6 @@ public class ExternalTextureConverter implements TextureFrameProducer {
     private int bufferPoolMaxSize;
 
     private ExternalTextureRenderer renderer = null;
-    private boolean shouldAdjustTimestamps = true;
     private long nextFrameTimestampOffset = 0;
     private long timestampOffsetNanos = 0;
     private long previousTimestamp = 0;
@@ -442,10 +433,6 @@ public class ExternalTextureConverter implements TextureFrameProducer {
       super.releaseGl(); // This releases the EGL context, so must do it after any GL calls.
     }
 
-    public void setShouldAdjustTimestamps(boolean shouldAdjustTimestamps) {
-      this.shouldAdjustTimestamps = shouldAdjustTimestamps;
-    }
-
     public void setTimestampOffsetNanos(long offsetInNanos) {
       timestampOffsetNanos = offsetInNanos;
     }
@@ -578,8 +565,7 @@ public class ExternalTextureConverter implements TextureFrameProducer {
       // |nextFrameTimestampOffset| to ensure that timestamps increase monotonically.)
       long textureTimestamp =
           (surfaceTexture.getTimestamp() + timestampOffsetNanos) / NANOS_PER_MICRO;
-      if (shouldAdjustTimestamps
-          && previousTimestampValid
+      if (previousTimestampValid
           && textureTimestamp + nextFrameTimestampOffset <= previousTimestamp) {
         nextFrameTimestampOffset = previousTimestamp + 1 - textureTimestamp;
       }

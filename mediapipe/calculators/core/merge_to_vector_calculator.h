@@ -1,4 +1,4 @@
-/* Copyright 2022 The MediaPipe Authors.
+/* Copyright 2022 The MediaPipe Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,19 +42,11 @@ class MergeToVectorCalculator : public Node {
     return absl::OkStatus();
   }
 
-  absl::Status Open(::mediapipe::CalculatorContext* cc) {
-    cc->SetOffset(::mediapipe::TimestampDiff(0));
-    return absl::OkStatus();
-  }
-
   absl::Status Process(CalculatorContext* cc) {
-    std::vector<T> output_vector;
-    for (auto it = kIn(cc).begin(); it != kIn(cc).end(); it++) {
-      const auto& elem = *it;
-      if (!elem.IsEmpty()) {
-        output_vector.push_back(elem.Get());
-      }
-    }
+    const int input_num = kIn(cc).Count();
+    std::vector<T> output_vector(input_num);
+    std::transform(kIn(cc).begin(), kIn(cc).end(), output_vector.begin(),
+                   [](const auto& elem) -> T { return elem.Get(); });
     kOut(cc).Send(output_vector);
     return absl::OkStatus();
   }

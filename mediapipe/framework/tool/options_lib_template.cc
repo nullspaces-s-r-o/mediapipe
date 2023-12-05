@@ -28,7 +28,7 @@ constexpr char kDescriptorContents[] =
 mediapipe::FieldData ReadFileDescriptorSet(const std::string& pb) {
   mediapipe::FieldData result;
   *result.mutable_message_value()->mutable_type_url() =
-      "google::protobuf.FileDescriptorSet";
+      "proto2.FileDescriptorSet";
   *result.mutable_message_value()->mutable_value() = pb;
 
   // Force linking of the generated options protobuf.

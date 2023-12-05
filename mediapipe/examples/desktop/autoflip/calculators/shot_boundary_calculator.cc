@@ -18,7 +18,6 @@
 #include <utility>
 #include <vector>
 
-#include "absl/log/absl_log.h"
 #include "mediapipe/examples/desktop/autoflip/calculators/shot_boundary_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/formats/image_frame.h"
@@ -113,8 +112,8 @@ void ShotBoundaryCalculator::Transmit(mediapipe::CalculatorContext* cc,
     is_shot_change = false;
   }
   if (is_shot_change) {
-    ABSL_LOG(INFO) << "Shot change at: " << cc->InputTimestamp().Seconds()
-                   << " seconds.";
+    LOG(INFO) << "Shot change at: " << cc->InputTimestamp().Seconds()
+              << " seconds.";
     cc->Outputs()
         .Tag(kShotChangeTag)
         .AddPacket(Adopt(std::make_unique<bool>(true).release())

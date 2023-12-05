@@ -23,8 +23,6 @@
 #include <vector>
 
 #include "absl/base/macros.h"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
@@ -164,15 +162,15 @@ class PacketTypeSetErrorHandler {
     if (!missing_) {
       missing_ = absl::make_unique<Missing>();
     }
-    ABSL_CHECK(!missing_->initialized_errors);
+    CHECK(!missing_->initialized_errors);
     std::string key = absl::StrCat(tag, ":", index);
     return missing_->entries[key];
   }
 
   // In the const setting produce a FATAL error.
   const PacketType& GetFallback(const absl::string_view tag, int index) const {
-    ABSL_LOG(FATAL) << "Failed to get tag \"" << tag << "\" index " << index
-                    << ".  Unable to defer error due to const specifier.";
+    LOG(FATAL) << "Failed to get tag \"" << tag << "\" index " << index
+               << ".  Unable to defer error due to const specifier.";
     std::abort();
   }
 
@@ -183,9 +181,9 @@ class PacketTypeSetErrorHandler {
   // Get the error messages that have been deferred.
   // This function can only be called if HasError() is true.
   const std::vector<std::string>& ErrorMessages() const {
-    ABSL_CHECK(missing_) << "ErrorMessages() can only be called if errors have "
-                            "occurred.  Call HasError() before calling this "
-                            "function.";
+    CHECK(missing_) << "ErrorMessages() can only be called if errors have "
+                       "occurred.  Call HasError() before calling this "
+                       "function.";
     if (!missing_->initialized_errors) {
       for (const auto& entry : missing_->entries) {
         // Optional entries that were missing are not considered errors.

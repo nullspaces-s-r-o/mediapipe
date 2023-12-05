@@ -16,8 +16,8 @@
 
 #include <pthread.h>
 
-#include "absl/log/absl_log.h"
 #include "absl/synchronization/mutex.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/java/com/google/mediapipe/framework/jni/class_registry.h"
 
 namespace {
@@ -38,7 +38,7 @@ class JvmThread {
       case JNI_OK:
         break;
       case JNI_EDETACHED:
-        ABSL_LOG(INFO) << "GetEnv: not attached";
+        LOG(INFO) << "GetEnv: not attached";
         if (jvm_->AttachCurrentThread(
 #ifdef __ANDROID__
                 &jni_env_,
@@ -46,16 +46,16 @@ class JvmThread {
                 reinterpret_cast<void**>(&jni_env_),
 #endif  // __ANDROID__
                 nullptr) != 0) {
-          ABSL_LOG(ERROR) << "Failed to attach to java thread.";
+          LOG(ERROR) << "Failed to attach to java thread.";
           break;
         }
         attached_ = true;
         break;
       case JNI_EVERSION:
-        ABSL_LOG(ERROR) << "GetEnv: jni version not supported.";
+        LOG(ERROR) << "GetEnv: jni version not supported.";
         break;
       default:
-        ABSL_LOG(ERROR) << "GetEnv: unknown status.";
+        LOG(ERROR) << "GetEnv: unknown status.";
         break;
     }
   }
@@ -83,7 +83,7 @@ static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 static void ThreadExitCallback(void* key_value) {
   JvmThread* jvm_thread = reinterpret_cast<JvmThread*>(key_value);
   // Detach the thread when thread exits.
-  ABSL_LOG(INFO) << "Exiting thread. Detach thread.";
+  LOG(INFO) << "Exiting thread. Detach thread.";
   delete jvm_thread;
 }
 
@@ -187,7 +187,7 @@ bool SetJavaVM(JNIEnv* env) {
   absl::MutexLock lock(&g_jvm_mutex);
   if (!g_jvm) {
     if (env->GetJavaVM(&g_jvm) != JNI_OK) {
-      ABSL_LOG(ERROR) << "Can not get the Java VM instance!";
+      LOG(ERROR) << "Can not get the Java VM instance!";
       g_jvm = nullptr;
       return false;
     }

@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 
-#include "absl/log/absl_log.h"
+#include "mediapipe/framework/port/logging.h"
 
 namespace mediapipe {
 
@@ -27,7 +27,7 @@ DeletingFile::DeletingFile(const std::string& path, bool delete_on_destruction)
 DeletingFile::~DeletingFile() {
   if (delete_on_destruction_) {
     if (remove(path_.c_str()) != 0) {
-      ABSL_LOG(ERROR) << "Unable to delete file: " << path_;
+      LOG(ERROR) << "Unable to delete file: " << path_;
     }
   }
 }

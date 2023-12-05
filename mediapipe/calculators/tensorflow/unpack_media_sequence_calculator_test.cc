@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/numbers.h"
 #include "mediapipe/calculators/core/packet_resampler_calculator.pb.h"
@@ -82,7 +81,7 @@ class UnpackMediaSequenceCalculatorTest : public ::testing::Test {
     if (options != nullptr) {
       *config.mutable_options() = *options;
     }
-    ABSL_LOG(INFO) << config.DebugString();
+    LOG(INFO) << config.DebugString();
     runner_ = absl::make_unique<CalculatorRunner>(config);
   }
 
@@ -102,10 +101,10 @@ class UnpackMediaSequenceCalculatorTest : public ::testing::Test {
   std::unique_ptr<CalculatorRunner> runner_;
   const std::string video_id_ = "test_video_id";
   const std::string data_path_ = "test_directory";
-  const int64_t start_time_ = 3000000;
-  const int64_t end_time_ = 5000000;
+  const int64 start_time_ = 3000000;
+  const int64 end_time_ = 5000000;
   const std::string encoded_video_data_ = "encoded_video_data";
-  const int64_t encoded_video_start_timestamp_ = 1000000;
+  const int64 encoded_video_start_timestamp_ = 1000000;
   const double image_frame_rate_ = 1.0;
 };
 
@@ -221,7 +220,7 @@ TEST_F(UnpackMediaSequenceCalculatorTest, UnpacksOneForwardFlowImage) {
   for (int i = 0; i < num_forward_flow_images; ++i) {
     const std::string& output_image = output_packets[i].Get<std::string>();
     ASSERT_EQ(output_image, test_image_string);
-    ASSERT_EQ(output_packets[i].Timestamp().Value(), static_cast<int64_t>(i));
+    ASSERT_EQ(output_packets[i].Timestamp().Value(), static_cast<int64>(i));
   }
 }
 
@@ -250,7 +249,7 @@ TEST_F(UnpackMediaSequenceCalculatorTest, UnpacksTwoForwardFlowImages) {
   for (int i = 0; i < num_forward_flow_images; ++i) {
     const std::string& output_image = output_packets[i].Get<std::string>();
     ASSERT_EQ(output_image, test_image_strings[i]);
-    ASSERT_EQ(output_packets[i].Timestamp().Value(), static_cast<int64_t>(i));
+    ASSERT_EQ(output_packets[i].Timestamp().Value(), static_cast<int64>(i));
   }
 }
 

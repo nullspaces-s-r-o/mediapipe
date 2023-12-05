@@ -1,4 +1,4 @@
-/* Copyright 2022 The MediaPipe Authors.
+/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,18 +17,16 @@ limitations under the License.
 
 #include <string>
 
-#include "absl/cleanup/cleanup.h"
 #include "absl/memory/memory.h"
 #include "absl/status/status.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
+#include "contrib/minizip/ioapi.h"
+#include "contrib/minizip/unzip.h"
 #include "flatbuffers/flatbuffers.h"
 #include "mediapipe/framework/port/status_macros.h"
 #include "mediapipe/tasks/cc/common.h"
-#include "mediapipe/tasks/cc/metadata/metadata_parser.h"
-#include "mediapipe/tasks/cc/metadata/metadata_version_utils.h"
-#include "mediapipe/tasks/cc/metadata/utils/zip_utils.h"
+#include "mediapipe/tasks/cc/metadata/utils/zip_readonly_mem_file.h"
 #include "mediapipe/tasks/metadata/metadata_schema_generated.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
@@ -54,6 +52,72 @@ const T* GetItemFromVector(
     return nullptr;
   }
   return src_vector->Get(index);
+}
+
+// Wrapper function around calls to unzip to avoid repeating conversion logic
+// from error code to Status.
+absl::Status UnzipErrorToStatus(int error) {
+  if (error != UNZ_OK) {
+    return CreateStatusWithPayload(
+        StatusCode::kUnknown, "Unable to read associated file in zip archive.",
+        MediaPipeTasksStatus::kMetadataAssociatedFileZipError);
+  }
+  return absl::OkStatus();
+}
+
+// Stores a file name, position in zip buffer and size.
+struct ZipFileInfo {
+  std::string name;
+  ZPOS64_T position;
+  ZPOS64_T size;
+};
+
+// Returns the ZipFileInfo corresponding to the current file in the provided
+// unzFile object.
+absl::StatusOr<ZipFileInfo> GetCurrentZipFileInfo(const unzFile& zf) {
+  // Open file in raw mode, as data is expected to be uncompressed.
+  int method;
+  MP_RETURN_IF_ERROR(UnzipErrorToStatus(
+      unzOpenCurrentFile2(zf, &method, /*level=*/nullptr, /*raw=*/1)));
+  if (method != Z_NO_COMPRESSION) {
+    return CreateStatusWithPayload(
+        StatusCode::kUnknown, "Expected uncompressed zip archive.",
+        MediaPipeTasksStatus::kMetadataAssociatedFileZipError);
+  }
+
+  // Get file info a first time to get filename size.
+  unz_file_info64 file_info;
+  MP_RETURN_IF_ERROR(UnzipErrorToStatus(unzGetCurrentFileInfo64(
+      zf, &file_info, /*szFileName=*/nullptr, /*szFileNameBufferSize=*/0,
+      /*extraField=*/nullptr, /*extraFieldBufferSize=*/0,
+      /*szComment=*/nullptr, /*szCommentBufferSize=*/0)));
+
+  // Second call to get file name.
+  auto file_name_size = file_info.size_filename;
+  char* c_file_name = (char*)malloc(file_name_size);
+  MP_RETURN_IF_ERROR(UnzipErrorToStatus(unzGetCurrentFileInfo64(
+      zf, &file_info, c_file_name, file_name_size,
+      /*extraField=*/nullptr, /*extraFieldBufferSize=*/0,
+      /*szComment=*/nullptr, /*szCommentBufferSize=*/0)));
+  std::string file_name = std::string(c_file_name, file_name_size);
+  free(c_file_name);
+
+  // Get position in file.
+  auto position = unzGetCurrentFileZStreamPos64(zf);
+  if (position == 0) {
+    return CreateStatusWithPayload(
+        StatusCode::kUnknown, "Unable to read file in zip archive.",
+        MediaPipeTasksStatus::kMetadataAssociatedFileZipError);
+  }
+
+  // Close file and return.
+  MP_RETURN_IF_ERROR(UnzipErrorToStatus(unzCloseCurrentFile(zf)));
+
+  ZipFileInfo result{};
+  result.name = file_name;
+  result.position = position;
+  result.size = file_info.uncompressed_size;
+  return result;
 }
 }  // namespace
 
@@ -166,18 +230,6 @@ absl::Status ModelMetadataExtractor::InitFromModelBuffer(
       return CreateStatusWithPayload(StatusCode::kInternal,
                                      "Expected Model Metadata not to be null.");
     }
-    auto min_parser_version = model_metadata_->min_parser_version();
-    if (min_parser_version != nullptr &&
-        CompareVersions(min_parser_version->c_str(), kMetadataParserVersion) >
-            0) {
-      return CreateStatusWithPayload(
-          StatusCode::kInvalidArgument,
-          absl::StrFormat(
-              "Metadata schema version %s is smaller than the minimum version "
-              "%s to parse the metadata flatbuffer.",
-              kMetadataParserVersion, min_parser_version->c_str()),
-          MediaPipeTasksStatus::kMetadataInvalidSchemaVersionError);
-    }
     return ExtractAssociatedFiles(buffer_data, buffer_size);
     break;
   }
@@ -186,15 +238,47 @@ absl::Status ModelMetadataExtractor::InitFromModelBuffer(
 
 absl::Status ModelMetadataExtractor::ExtractAssociatedFiles(
     const char* buffer_data, size_t buffer_size) {
-  auto status =
-      ExtractFilesfromZipFile(buffer_data, buffer_size, &associated_files_);
-  if (!status.ok() &&
-      absl::StrContains(status.message(), "Unable to open zip archive.")) {
+  // Create in-memory read-only zip file.
+  ZipReadOnlyMemFile mem_file = ZipReadOnlyMemFile(buffer_data, buffer_size);
+  // Open zip.
+  unzFile zf = unzOpen2_64(/*path=*/nullptr, &mem_file.GetFileFunc64Def());
+  if (zf == nullptr) {
     // It's OK if it fails: this means there are no associated files with this
     // model.
     return absl::OkStatus();
   }
-  return status;
+  // Get number of files.
+  unz_global_info global_info;
+  if (unzGetGlobalInfo(zf, &global_info) != UNZ_OK) {
+    return CreateStatusWithPayload(
+        StatusCode::kUnknown, "Unable to get zip archive info.",
+        MediaPipeTasksStatus::kMetadataAssociatedFileZipError);
+  }
+
+  // Browse through files in archive.
+  if (global_info.number_entry > 0) {
+    int error = unzGoToFirstFile(zf);
+    while (error == UNZ_OK) {
+      ASSIGN_OR_RETURN(auto zip_file_info, GetCurrentZipFileInfo(zf));
+      // Store result in map.
+      associated_files_[zip_file_info.name] = absl::string_view(
+          buffer_data + zip_file_info.position, zip_file_info.size);
+      error = unzGoToNextFile(zf);
+    }
+    if (error != UNZ_END_OF_LIST_OF_FILE) {
+      return CreateStatusWithPayload(
+          StatusCode::kUnknown,
+          "Unable to read associated file in zip archive.",
+          MediaPipeTasksStatus::kMetadataAssociatedFileZipError);
+    }
+  }
+  // Close zip.
+  if (unzClose(zf) != UNZ_OK) {
+    return CreateStatusWithPayload(
+        StatusCode::kUnknown, "Unable to close zip archive.",
+        MediaPipeTasksStatus::kMetadataAssociatedFileZipError);
+  }
+  return absl::OkStatus();
 }
 
 absl::StatusOr<absl::string_view> ModelMetadataExtractor::GetAssociatedFile(
@@ -311,29 +395,6 @@ int ModelMetadataExtractor::GetOutputProcessUnitsCount() const {
   const Vector<flatbuffers::Offset<tflite::ProcessUnit>>* output_process_units =
       GetOutputProcessUnits();
   return output_process_units == nullptr ? 0 : output_process_units->size();
-}
-
-const flatbuffers::Vector<flatbuffers::Offset<tflite::CustomMetadata>>*
-ModelMetadataExtractor::GetCustomMetadataList() const {
-  if (model_metadata_ == nullptr ||
-      model_metadata_->subgraph_metadata() == nullptr) {
-    return nullptr;
-  }
-  return model_metadata_->subgraph_metadata()
-      ->Get(kDefaultSubgraphIndex)
-      ->custom_metadata();
-}
-
-const tflite::CustomMetadata* ModelMetadataExtractor::GetCustomMetadata(
-    int index) const {
-  return GetItemFromVector<tflite::CustomMetadata>(GetCustomMetadataList(),
-                                                   index);
-}
-
-int ModelMetadataExtractor::GetCustomMetadataCount() const {
-  const Vector<flatbuffers::Offset<tflite::CustomMetadata>>* custom_medata_vec =
-      GetCustomMetadataList();
-  return custom_medata_vec == nullptr ? 0 : custom_medata_vec->size();
 }
 
 }  // namespace metadata

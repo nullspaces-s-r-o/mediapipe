@@ -17,7 +17,6 @@
 #include <fstream>
 #include <sstream>
 
-#include "absl/log/absl_log.h"
 #include "absl/strings/match.h"
 #include "mediapipe/framework/port/file_helpers.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -47,10 +46,9 @@ absl::Status DefaultGetResourceContents(const std::string& path,
                                         std::string* output,
                                         bool read_as_binary) {
   if (!read_as_binary) {
-    ABSL_LOG(WARNING)
-        << "Setting \"read_as_binary\" to false is a no-op on ios.";
+    LOG(WARNING) << "Setting \"read_as_binary\" to false is a no-op on ios.";
   }
-  MP_ASSIGN_OR_RETURN(std::string full_path, PathToResourceAsFile(path));
+  ASSIGN_OR_RETURN(std::string full_path, PathToResourceAsFile(path));
   return file::GetContents(full_path, output, read_as_binary);
 }
 }  // namespace internal
@@ -65,7 +63,7 @@ absl::StatusOr<std::string> PathToResourceAsFile(const std::string& path) {
   {
     auto status_or_path = PathToResourceAsFileInternal(path);
     if (status_or_path.ok()) {
-      ABSL_LOG(INFO) << "Successfully loaded: " << path;
+      LOG(INFO) << "Successfully loaded: " << path;
       return status_or_path;
     }
   }
@@ -73,12 +71,11 @@ absl::StatusOr<std::string> PathToResourceAsFile(const std::string& path) {
   // If that fails, assume it was a relative path, and try just the base name.
   {
     const size_t last_slash_idx = path.find_last_of("\\/");
-    RET_CHECK(last_slash_idx != std::string::npos)
-        << path << " doesn't have a slash in it";  // Make sure it's a path.
+    CHECK_NE(last_slash_idx, std::string::npos);  // Make sure it's a path.
     auto base_name = path.substr(last_slash_idx + 1);
     auto status_or_path = PathToResourceAsFileInternal(base_name);
     if (status_or_path.ok()) {
-      ABSL_LOG(INFO) << "Successfully loaded: " << base_name;
+      LOG(INFO) << "Successfully loaded: " << base_name;
       return status_or_path;
     }
   }
@@ -92,7 +89,7 @@ absl::StatusOr<std::string> PathToResourceAsFile(const std::string& path) {
     if ([[NSFileManager defaultManager]
             fileExistsAtPath:[NSString
                                  stringWithUTF8String:test_path.c_str()]]) {
-      ABSL_LOG(INFO) << "Successfully loaded: " << test_path;
+      LOG(INFO) << "Successfully loaded: " << test_path;
       return test_path;
     }
   }

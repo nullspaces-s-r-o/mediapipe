@@ -16,8 +16,6 @@
 
 #include <numeric>
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_format.h"
 #include "mediapipe/util/tracking/region_flow.h"
 
@@ -78,8 +76,8 @@ void CameraMotionToMixtureHomography(const CameraMotion& camera_motion,
 
 CameraMotion ComposeCameraMotion(const CameraMotion& lhs,
                                  const CameraMotion& rhs) {
-  ABSL_CHECK_EQ(lhs.frame_width(), rhs.frame_width());
-  ABSL_CHECK_EQ(lhs.frame_height(), rhs.frame_height());
+  CHECK_EQ(lhs.frame_width(), rhs.frame_width());
+  CHECK_EQ(lhs.frame_height(), rhs.frame_height());
 
   CameraMotion result = rhs;
   if (lhs.has_translation() || rhs.has_translation()) {
@@ -108,10 +106,9 @@ CameraMotion ComposeCameraMotion(const CameraMotion& lhs,
 
   if (rhs.has_mixture_homography()) {
     if (lhs.has_mixture_homography()) {
-      ABSL_LOG(ERROR)
-          << "Mixture homographies are not closed under composition, "
-          << "Only rhs mixtures composed with lhs homographies "
-          << "are supported.";
+      LOG(ERROR) << "Mixture homographies are not closed under composition, "
+                 << "Only rhs mixtures composed with lhs homographies "
+                 << "are supported.";
     } else if (lhs.type() <= CameraMotion::UNSTABLE_SIM) {
       // We only composit base model when stability is sufficient.
       *result.mutable_mixture_homography() =
@@ -119,7 +116,7 @@ CameraMotion ComposeCameraMotion(const CameraMotion& lhs,
                                                 lhs.homography());
     }
   } else if (lhs.has_mixture_homography()) {
-    ABSL_LOG(ERROR) << "Only rhs mixtures supported.";
+    LOG(ERROR) << "Only rhs mixtures supported.";
   }
 
   // Select max unstable type.
@@ -178,7 +175,7 @@ CameraMotion InvertCameraMotion(const CameraMotion& motion) {
   }
 
   if (motion.has_mixture_homography()) {
-    ABSL_LOG(ERROR) << "Mixture homographies are not closed under inversion.";
+    LOG(ERROR) << "Mixture homographies are not closed under inversion.";
   }
 
   return inverted;
@@ -187,8 +184,8 @@ CameraMotion InvertCameraMotion(const CameraMotion& motion) {
 void SubtractCameraMotionFromFeatures(
     const std::vector<CameraMotion>& camera_motions,
     std::vector<RegionFlowFeatureList*>* feature_lists) {
-  ABSL_CHECK(feature_lists != nullptr);
-  ABSL_CHECK_GE(camera_motions.size(), feature_lists->size());
+  CHECK(feature_lists != nullptr);
+  CHECK_GE(camera_motions.size(), feature_lists->size());
   if (feature_lists->empty()) {
     return;
   }
@@ -230,9 +227,8 @@ void SubtractCameraMotionFromFeatures(
 float ForegroundMotion(const CameraMotion& camera_motion,
                        const RegionFlowFeatureList& feature_list) {
   if (camera_motion.has_mixture_homography()) {
-    ABSL_LOG(WARNING)
-        << "Mixture homographies are present but function is only "
-        << "using homographies. Truncation error likely.";
+    LOG(WARNING) << "Mixture homographies are present but function is only "
+                 << "using homographies. Truncation error likely.";
   }
 
   Homography background_motion;
@@ -331,7 +327,7 @@ template <class CameraMotionContainer>
 CameraMotion FirstCameraMotionForLooping(
     const CameraMotionContainer& camera_motions) {
   if (camera_motions.size() < 2) {
-    ABSL_LOG(ERROR) << "Not enough camera motions for refinement.";
+    LOG(ERROR) << "Not enough camera motions for refinement.";
     return CameraMotion();
   }
 
@@ -350,8 +346,8 @@ CameraMotion FirstCameraMotionForLooping(
     const CameraMotion& motion = camera_motions[i];
     if (motion.has_mixture_homography()) {
       // TODO: Implement
-      ABSL_LOG(WARNING) << "This function does not validly apply mixtures; "
-                        << "which are currently not closed under composition. ";
+      LOG(WARNING) << "This function does not validly apply mixtures; "
+                   << "which are currently not closed under composition. ";
     }
 
     switch (motion.type()) {
@@ -371,7 +367,7 @@ CameraMotion FirstCameraMotionForLooping(
       case CameraMotion::UNSTABLE_HOMOG:
         break;
       default:
-        ABSL_LOG(FATAL) << "Unknown CameraMotion::type.";
+        LOG(FATAL) << "Unknown CameraMotion::type.";
     }
 
     // Only accumulate motions which are valid for the entire chain, otherwise

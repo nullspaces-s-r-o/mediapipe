@@ -17,7 +17,6 @@ syntax = "proto2";
 package mediapipe;
 
 import "mediapipe/framework/calculator.proto";
-import "mediapipe/framework/calculator_options.proto";
 
 option java_package = "com.google.mediapipe.calculator.proto";
 option java_outer_classname = "InferenceCalculatorProto";
@@ -87,20 +86,6 @@ message InferenceCalculatorOptions {
       // specified by "cached_kernel_path", which still can be used if
       // serialized model is invalid or missing.
       optional string serialized_model_dir = 7;
-
-      enum CacheWritingBehavior {
-        // Do not write any caches.
-        NO_WRITE = 0;
-
-        // Try to write caches, log on failure.
-        TRY_WRITE = 1;
-
-        // Write caches or return an error if write fails.
-        WRITE_OR_ERROR = 2;
-      }
-      // Specifies how GPU caches are written to disk.
-      optional CacheWritingBehavior cache_writing_behavior = 10
-          [default = WRITE_OR_ERROR];
 
       // Unique token identifying the model. Used in conjunction with
       // "serialized_model_dir". It is the caller's responsibility to ensure

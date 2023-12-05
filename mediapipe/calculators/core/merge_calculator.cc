@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/log/absl_log.h"
 #include "mediapipe/framework/api2/node.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -54,7 +53,7 @@ class MergeCalculator : public Node {
   static absl::Status UpdateContract(CalculatorContract* cc) {
     RET_CHECK_GT(kIn(cc).Count(), 0) << "Needs at least one input stream";
     if (kIn(cc).Count() == 1) {
-      ABSL_LOG(WARNING)
+      LOG(WARNING)
           << "MergeCalculator expects multiple input streams to merge but is "
              "receiving only one. Make sure the calculator is configured "
              "correctly or consider removing this calculator to reduce "
@@ -73,8 +72,8 @@ class MergeCalculator : public Node {
       }
     }
 
-    ABSL_LOG(WARNING) << "Empty input packets at timestamp "
-                      << cc->InputTimestamp().Value();
+    LOG(WARNING) << "Empty input packets at timestamp "
+                 << cc->InputTimestamp().Value();
 
     return absl::OkStatus();
   }

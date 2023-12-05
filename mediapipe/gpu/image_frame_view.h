@@ -12,8 +12,9 @@ class ViewProvider<ImageFrame> {
  public:
   virtual ~ViewProvider() = default;
   virtual std::shared_ptr<const ImageFrame> GetReadView(
-      types<ImageFrame>) const = 0;
-  virtual std::shared_ptr<ImageFrame> GetWriteView(types<ImageFrame>) = 0;
+      types<ImageFrame>, std::shared_ptr<GpuBuffer> gpu_buffer) const = 0;
+  virtual std::shared_ptr<ImageFrame> GetWriteView(
+      types<ImageFrame>, std::shared_ptr<GpuBuffer> gpu_buffer) = 0;
 };
 
 }  // namespace internal

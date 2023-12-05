@@ -16,7 +16,6 @@
 
 #include <utility>
 
-#include "absl/log/absl_check.h"
 #include "absl/memory/memory.h"
 #include "absl/synchronization/mutex.h"
 #include "mediapipe/framework/port/logging.h"
@@ -28,7 +27,7 @@ void CalculatorContextManager::Initialize(
     std::shared_ptr<tool::TagMap> input_tag_map,
     std::shared_ptr<tool::TagMap> output_tag_map,
     bool calculator_run_in_parallel) {
-  ABSL_CHECK(calculator_state);
+  CHECK(calculator_state);
   calculator_state_ = calculator_state;
   input_tag_map_ = std::move(input_tag_map);
   output_tag_map_ = std::move(output_tag_map);
@@ -52,15 +51,15 @@ void CalculatorContextManager::CleanupAfterRun() {
 
 CalculatorContext* CalculatorContextManager::GetDefaultCalculatorContext()
     const {
-  ABSL_CHECK(default_context_.get());
+  CHECK(default_context_.get());
   return default_context_.get();
 }
 
 CalculatorContext* CalculatorContextManager::GetFrontCalculatorContext(
     Timestamp* context_input_timestamp) {
-  ABSL_CHECK(calculator_run_in_parallel_);
+  CHECK(calculator_run_in_parallel_);
   absl::MutexLock lock(&contexts_mutex_);
-  ABSL_CHECK(!active_contexts_.empty());
+  CHECK(!active_contexts_.empty());
   *context_input_timestamp = active_contexts_.begin()->first;
   return active_contexts_.begin()->second.get();
 }
@@ -71,7 +70,7 @@ CalculatorContext* CalculatorContextManager::PrepareCalculatorContext(
     return GetDefaultCalculatorContext();
   }
   absl::MutexLock lock(&contexts_mutex_);
-  ABSL_CHECK(!mediapipe::ContainsKey(active_contexts_, input_timestamp))
+  CHECK(!mediapipe::ContainsKey(active_contexts_, input_timestamp))
       << "Multiple invocations with the same timestamps are not allowed with "
          "parallel execution, input_timestamp = "
       << input_timestamp;

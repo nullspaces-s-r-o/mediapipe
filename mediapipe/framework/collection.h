@@ -24,12 +24,11 @@
 #include <vector>
 
 #include "absl/base/macros.h"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "mediapipe/framework/collection_item_id.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/tool/tag_map.h"
 #include "mediapipe/framework/tool/tag_map_helper.h"
 #include "mediapipe/framework/tool/validate_name.h"
@@ -53,7 +52,7 @@ struct CollectionErrorHandlerFatal {
   // get away with only one version of this function (which is const
   // but returns a non-const reference).
   T& GetFallback(const absl::string_view tag, int index) const {
-    ABSL_LOG(FATAL) << "Failed to get tag \"" << tag << "\" index " << index;
+    LOG(FATAL) << "Failed to get tag \"" << tag << "\" index " << index;
     std::abort();
   }
 };
@@ -366,7 +365,7 @@ class Collection {
   std::unique_ptr<stored_type[]> data_;
 
   // A class which allows errors to be reported flexibly.  The default
-  // instantiation performs a ABSL_LOG(FATAL) and does not have any member
+  // instantiation performs a LOG(FATAL) and does not have any member
   // variables (zero size).
   ErrorHandler error_handler_;
 };
@@ -414,16 +413,16 @@ bool Collection<T, storage, ErrorHandler>::UsesTags() const {
 template <typename T, CollectionStorage storage, typename ErrorHandler>
 typename Collection<T, storage, ErrorHandler>::value_type&
 Collection<T, storage, ErrorHandler>::Get(CollectionItemId id) {
-  ABSL_CHECK_LE(BeginId(), id);
-  ABSL_CHECK_LT(id, EndId());
+  CHECK_LE(BeginId(), id);
+  CHECK_LT(id, EndId());
   return begin()[id.value()];
 }
 
 template <typename T, CollectionStorage storage, typename ErrorHandler>
 const typename Collection<T, storage, ErrorHandler>::value_type&
 Collection<T, storage, ErrorHandler>::Get(CollectionItemId id) const {
-  ABSL_CHECK_LE(BeginId(), id);
-  ABSL_CHECK_LT(id, EndId());
+  CHECK_LE(BeginId(), id);
+  CHECK_LT(id, EndId());
   return begin()[id.value()];
 }
 
@@ -434,8 +433,8 @@ Collection<T, storage, ErrorHandler>::GetPtr(CollectionItemId id) {
                 "mediapipe::internal::Collection<T>::GetPtr() is only "
                 "available for collections that were defined with template "
                 "argument storage == CollectionStorage::kStorePointer.");
-  ABSL_CHECK_LE(BeginId(), id);
-  ABSL_CHECK_LT(id, EndId());
+  CHECK_LE(BeginId(), id);
+  CHECK_LT(id, EndId());
   return data_[id.value()];
 }
 
@@ -446,8 +445,8 @@ Collection<T, storage, ErrorHandler>::GetPtr(CollectionItemId id) const {
                 "mediapipe::internal::Collection<T>::GetPtr() is only "
                 "available for collections that were defined with template "
                 "argument storage == CollectionStorage::kStorePointer.");
-  ABSL_CHECK_LE(BeginId(), id);
-  ABSL_CHECK_LT(id, EndId());
+  CHECK_LE(BeginId(), id);
+  CHECK_LT(id, EndId());
   return data_[id.value()];
 }
 

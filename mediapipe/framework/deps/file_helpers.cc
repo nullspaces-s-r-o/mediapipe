@@ -17,9 +17,6 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <direct.h>
-
-#include <codecvt>
-#include <locale>
 #else
 #include <dirent.h>
 #endif  // _WIN32
@@ -89,31 +86,11 @@ class DirectoryListing {
   struct dirent* next_entry_ = nullptr;
 };
 #else
-#if defined(UNICODE)
-using PathString = std::wstring;
-
-PathString Utf8ToNative(const std::string& string) {
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> converter;
-  return converter.from_bytes(string.data(), string.data() + string.size());
-}
-std::string NativeToUtf8(const PathString& string) {
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> converter;
-  return converter.to_bytes(string.data(), string.data() + string.size());
-}
-#define FILE_PATH_LITERAL_INTERNAL(x) L##x
-#define FILE_PATH_LITERAL(x) FILE_PATH_LITERAL_INTERNAL(x)
-#else
-using PathString = std::string;
-PathString Utf8ToNative(const std::string& string) { return string; }
-std::string NativeToUtf8(const PathString& string) { return string; }
-#define FILE_PATH_LITERAL(x) x
-#endif
-
 class DirectoryListing {
  public:
-  explicit DirectoryListing(const std::string& directory)
-      : directory_(Utf8ToNative(directory)) {
-    PathString search_string = directory_ + Utf8ToNative("\\*.*");
+  explicit DirectoryListing(const std::string& directory) {
+    directory_ = directory;
+    std::string search_string = directory + "\\*.*";
     find_handle_ = FindFirstFile(search_string.c_str(), &find_data_);
   }
 
@@ -130,10 +107,10 @@ class DirectoryListing {
   // after the one that is returned, if it exists.
   std::string NextEntry() {
     if (HasNextEntry()) {
-      PathString result =
-          directory_ + Utf8ToNative("\\") + PathString(find_data_.cFileName);
+      std::string result =
+          std::string(directory_ + "\\" + find_data_.cFileName);
       ReadNextEntry();
-      return NativeToUtf8(result);
+      return result;
     } else {
       return std::string();
     }
@@ -142,9 +119,8 @@ class DirectoryListing {
  private:
   void ReadNextEntry() {
     int find_result = FindNextFile(find_handle_, &find_data_);
-    while (find_result != 0 &&
-           (PathString(find_data_.cFileName) == FILE_PATH_LITERAL(".") ||
-            PathString(find_data_.cFileName) == FILE_PATH_LITERAL(".."))) {
+    while (find_result != 0 && (std::string(find_data_.cFileName) == "." ||
+                                std::string(find_data_.cFileName) == "..")) {
       find_result = FindNextFile(find_handle_, &find_data_);
     }
 
@@ -154,7 +130,7 @@ class DirectoryListing {
     }
   }
 
-  const PathString directory_;
+  std::string directory_;
   HANDLE find_handle_ = INVALID_HANDLE_VALUE;
   WIN32_FIND_DATA find_data_;
 };
@@ -186,7 +162,7 @@ absl::Status GetContents(absl::string_view file_name, std::string* output,
 
 absl::Status SetContents(absl::string_view file_name,
                          absl::string_view content) {
-  FILE* fp = fopen(file_name.data(), "wb");
+  FILE* fp = fopen(file_name.data(), "w");
   if (fp == NULL) {
     return mediapipe::InvalidArgumentErrorBuilder(MEDIAPIPE_LOC)
            << "Can't open file: " << file_name;

@@ -17,7 +17,6 @@
 
 #include <memory>
 
-#include "absl/log/absl_check.h"
 #include "mediapipe/framework/graph_output_stream.h"
 
 namespace mediapipe {
@@ -28,14 +27,14 @@ class OutputStreamPoller {
   OutputStreamPoller(const OutputStreamPoller&) = delete;
   OutputStreamPoller& operator=(const OutputStreamPoller&) = delete;
   OutputStreamPoller(OutputStreamPoller&&) = default;
-  // Move assignment needs to be explicitly defaulted to allow
-  // MP_ASSIGN_OR_RETURN on `StatusOr<OutputStreamPoller>`.
+  // Move assignment needs to be explicitly defaulted to allow ASSIGN_OR_RETURN
+  // on `StatusOr<OutputStreamPoller>`.
   OutputStreamPoller& operator=(OutputStreamPoller&&) = default;
 
   // Resets OutputStramPollerImpl and cleans the internal packet queue.
   void Reset() {
     auto poller = internal_poller_impl_.lock();
-    ABSL_CHECK(poller) << "OutputStreamPollerImpl is already destroyed.";
+    CHECK(poller) << "OutputStreamPollerImpl is already destroyed.";
     poller->Reset();
   }
 
@@ -51,14 +50,14 @@ class OutputStreamPoller {
 
   void SetMaxQueueSize(int queue_size) {
     auto poller = internal_poller_impl_.lock();
-    ABSL_CHECK(poller) << "OutputStreamPollerImpl is already destroyed.";
+    CHECK(poller) << "OutputStreamPollerImpl is already destroyed.";
     return poller->SetMaxQueueSize(queue_size);
   }
 
   // Returns the number of packets in the queue.
   int QueueSize() {
     auto poller = internal_poller_impl_.lock();
-    ABSL_CHECK(poller) << "OutputStreamPollerImpl is already destroyed.";
+    CHECK(poller) << "OutputStreamPollerImpl is already destroyed.";
     return poller->QueueSize();
   }
 

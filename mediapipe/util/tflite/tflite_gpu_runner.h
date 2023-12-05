@@ -20,8 +20,6 @@
 #include <vector>
 
 #include "absl/status/status.h"
-#include "mediapipe/framework/port.h"
-#include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/port/statusor.h"
 #include "tensorflow/lite/core/api/op_resolver.h"
@@ -30,9 +28,9 @@
 #include "tensorflow/lite/delegates/gpu/gl/api2.h"
 #include "tensorflow/lite/model.h"
 
-#if defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+#ifdef __ANDROID__
 #include "tensorflow/lite/delegates/gpu/cl/api.h"
-#endif  // defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+#endif  // __ANDROID__
 
 namespace tflite {
 namespace gpu {
@@ -62,9 +60,6 @@ class TFLiteGPURunner {
 
   void ForceOpenGL() { opengl_is_forced_ = true; }
   void ForceOpenCL() { opencl_is_forced_ = true; }
-  void ForceOpenCLInitFromSerializedModel() {
-    opencl_init_from_serialized_model_is_forced_ = true;
-  }
 
   absl::Status BindSSBOToInputTensor(GLuint ssbo_id, int input_id);
   absl::Status BindSSBOToOutputTensor(GLuint ssbo_id, int output_id);
@@ -88,13 +83,12 @@ class TFLiteGPURunner {
     return output_shape_from_model_;
   }
 
-#if defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+#ifdef __ANDROID__
   void SetSerializedBinaryCache(std::vector<uint8_t>&& cache) {
     serialized_binary_cache_ = std::move(cache);
   }
 
-  absl::StatusOr<std::vector<uint8_t>> GetSerializedBinaryCache() {
-    RET_CHECK(cl_environment_) << "CL environment is not initialized.";
+  std::vector<uint8_t> GetSerializedBinaryCache() {
     return cl_environment_->GetSerializedBinaryCache();
   }
 
@@ -104,26 +98,26 @@ class TFLiteGPURunner {
   }
 
   absl::StatusOr<std::vector<uint8_t>> GetSerializedModel();
-#endif  // defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+#endif  // __ANDROID__
 
  private:
   absl::Status InitializeOpenGL(std::unique_ptr<InferenceBuilder>* builder);
   absl::Status InitializeOpenCL(std::unique_ptr<InferenceBuilder>* builder);
-#if defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+#ifdef __ANDROID__
   absl::Status InitializeOpenCLFromSerializedModel(
       std::unique_ptr<InferenceBuilder>* builder);
-#endif  // defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+#endif  // __ANDROID__
 
   InferenceOptions options_;
   std::unique_ptr<gl::InferenceEnvironment> gl_environment_;
 
-#if defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+#ifdef __ANDROID__
   std::unique_ptr<cl::InferenceEnvironment> cl_environment_;
 
   std::vector<uint8_t> serialized_binary_cache_;
   std::vector<uint8_t> serialized_model_;
   bool serialized_model_used_ = false;
-#endif  // defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+#endif  // __ANDROID__
 
   // graph_gl_ is maintained temporarily and becomes invalid after runner_ is
   // ready
@@ -144,7 +138,6 @@ class TFLiteGPURunner {
 
   bool opencl_is_forced_ = false;
   bool opengl_is_forced_ = false;
-  bool opencl_init_from_serialized_model_is_forced_ = false;
 };
 
 }  // namespace gpu

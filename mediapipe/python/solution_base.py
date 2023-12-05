@@ -193,12 +193,6 @@ NAME_TO_TYPE: Mapping[str, 'PacketDataType'] = {
         PacketDataType.PROTO_LIST,
     '::std::vector<::mediapipe::NormalizedRect>':
         PacketDataType.PROTO_LIST,
-    '::mediapipe::Joint':
-        PacketDataType.PROTO,
-    '::mediapipe::JointList':
-        PacketDataType.PROTO,
-    '::std::vector<::mediapipe::JointList>':
-        PacketDataType.PROTO_LIST,
 }
 
 

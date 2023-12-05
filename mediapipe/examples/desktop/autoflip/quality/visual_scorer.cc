@@ -21,7 +21,6 @@
 #include <memory>
 #include <vector>
 
-#include "absl/log/absl_log.h"
 #include "mediapipe/framework/port/opencv_core_inc.h"
 #include "mediapipe/framework/port/opencv_imgproc_inc.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -107,7 +106,7 @@ absl::Status VisualScorer::CalculateScore(const cv::Mat& image,
 
   *score = (area_score + sharpness_score + colorfulness_score) / weight_sum;
   if (*score > 1.0f || *score < 0.0f) {
-    ABSL_LOG(WARNING) << "Score of region outside expected range: " << *score;
+    LOG(WARNING) << "Score of region outside expected range: " << *score;
   }
   return absl::OkStatus();
 }

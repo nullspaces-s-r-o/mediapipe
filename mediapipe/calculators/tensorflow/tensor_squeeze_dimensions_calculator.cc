@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/log/absl_log.h"
 #include "mediapipe/calculators/tensorflow/tensor_squeeze_dimensions_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -48,7 +47,7 @@ class TensorSqueezeDimensionsCalculator : public CalculatorBase {
         << options_.DebugString();
     if (options_.dim_size() > 0) {
       remove_dims_ =
-          std::vector<int32_t>(options_.dim().begin(), options_.dim().end());
+          std::vector<int32>(options_.dim().begin(), options_.dim().end());
       std::sort(remove_dims_.rbegin(), remove_dims_.rend());
       remove_dims_initialized_ = true;
     }
@@ -88,7 +87,7 @@ class TensorSqueezeDimensionsCalculator : public CalculatorBase {
 
  private:
   TensorSqueezeDimensionsCalculatorOptions options_;
-  std::vector<int32_t> remove_dims_;
+  std::vector<int32> remove_dims_;
   bool remove_dims_initialized_;
 
   void InitializeToRemoveAllSingletonDimensions(
@@ -100,11 +99,10 @@ class TensorSqueezeDimensionsCalculator : public CalculatorBase {
       }
     }
     if (remove_dims_.empty()) {
-      ABSL_LOG(ERROR)
-          << "TensorSqueezeDimensionsCalculator is squeezing input with "
-             "no single-dimensions. Calculator will be a no-op.";
-      ABSL_LOG(ERROR) << "Input to TensorSqueezeDimensionsCalculator has shape "
-                      << tensor_shape.DebugString();
+      LOG(ERROR) << "TensorSqueezeDimensionsCalculator is squeezing input with "
+                    "no single-dimensions. Calculator will be a no-op.";
+      LOG(ERROR) << "Input to TensorSqueezeDimensionsCalculator has shape "
+                 << tensor_shape.DebugString();
     }
   }
 };

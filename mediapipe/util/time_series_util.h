@@ -25,6 +25,7 @@
 #include "mediapipe/framework/formats/matrix.h"
 #include "mediapipe/framework/formats/time_series_header.pb.h"
 #include "mediapipe/framework/port/integral_types.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/port/status.h"
 
 namespace mediapipe {
@@ -57,7 +58,7 @@ absl::Status FillTimeSeriesHeaderIfValid(const Packet& header_packet,
 absl::Status FillMultiStreamTimeSeriesHeaderIfValid(
     const Packet& header_packet, MultiStreamTimeSeriesHeader* header);
 
-// Returns absl::Status::OK iff options contains an extension of type
+// Returnsabsl::Status::OK iff options contains an extension of type
 // OptionsClass.
 template <typename OptionsClass>
 absl::Status HasOptionsExtension(const CalculatorOptions& options) {
@@ -74,7 +75,7 @@ absl::Status HasOptionsExtension(const CalculatorOptions& options) {
   return absl::InvalidArgumentError(error_message);
 }
 
-// Returns absl::Status::OK if the shape of 'matrix' is consistent
+// Returnsabsl::Status::OK if the shape of 'matrix' is consistent
 // with the num_samples and num_channels fields present in 'header'.
 // The corresponding matrix dimensions of unset header fields are
 // ignored, so e.g. an empty header (which is not valid according to

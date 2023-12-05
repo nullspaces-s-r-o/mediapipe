@@ -40,7 +40,7 @@ namespace mediapipe {
 //     if (cyclic) {
 //       PrintCycleNodes(cycle_nodes);
 //     } else {
-//       ABSL_LOG(INFO) << idx;
+//       LOG(INFO) << idx;
 //     }
 //   }
 class TopologicalSorter {

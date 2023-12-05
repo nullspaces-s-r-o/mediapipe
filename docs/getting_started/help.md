@@ -1,6 +1,5 @@
 ---
-layout: forward
-target: https://developers.google.com/mediapipe/framework/getting_started/help
+layout: default
 title: Getting Help
 parent: Getting Started
 nav_order: 8
@@ -12,12 +11,6 @@ nav_order: 8
 1. TOC
 {:toc}
 ---
-
-**Attention:** *Thanks for your interest in MediaPipe! We have moved to
-[https://developers.google.com/mediapipe](https://developers.google.com/mediapipe)
-as the primary developer documentation site for MediaPipe as of April 3, 2023.*
-
-----
 
 ## Technical questions
 
@@ -44,8 +37,8 @@ If you open a GitHub issue, here is our policy:
 - **OS Platform and Distribution (e.g., Linux Ubuntu 16.04)**:
 - **Mobile device (e.g. iPhone 8, Pixel 2, Samsung Galaxy) if the issue happens on mobile device**:
 - **Bazel version**:
-- **Android Studio, NDK, SDK versions (if issue is related to building in mobile dev environment)**:
-- **Xcode & Tulsi version (if issue is related to building in mobile dev environment)**:
+- **Android Studio, NDK, SDK versions (if issue is related to building in mobile dev enviroment)**:
+- **Xcode & Tulsi version (if issue is related to building in mobile dev enviroment)**:
 - **Exact steps to reproduce**:
 
 ### Describe the problem

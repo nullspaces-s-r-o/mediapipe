@@ -1,8 +1,7 @@
 ---
-layout: forward
-target: https://developers.google.com/mediapipe/solutions/guide#legacy
+layout: default
 title: Box Tracking
-parent: MediaPipe Legacy Solutions
+parent: Solutions
 nav_order: 10
 ---
 
@@ -18,14 +17,6 @@ nav_order: 10
 {:toc}
 </details>
 ---
-
-**Attention:** *Thank you for your interest in MediaPipe Solutions.
-We have ended support for this MediaPipe Legacy Solution as of March 1, 2023.
-For more information, see the
-[MediaPipe Solutions](https://developers.google.com/mediapipe/solutions/guide#legacy)
-site.*
-
-----
 
 ## Overview
 

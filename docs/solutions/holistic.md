@@ -1,8 +1,7 @@
 ---
-layout: forward
-target: https://github.com/google/mediapipe/blob/master/docs/solutions/holistic.md
+layout: default
 title: Holistic
-parent: MediaPipe Legacy Solutions
+parent: Solutions
 nav_order: 6
 ---
 
@@ -18,14 +17,6 @@ nav_order: 6
 {:toc}
 </details>
 ---
-
-**Attention:** *Thank you for your interest in MediaPipe Solutions.
-As of March 1, 2023, this solution is planned to be upgraded to a new MediaPipe
-Solution. For more information, see the
-[MediaPipe Solutions](https://developers.google.com/mediapipe/solutions/guide#legacy)
-site.*
-
-----
 
 ## Overview
 
@@ -75,7 +66,7 @@ previous frame as a guide to the object region on the current one. However,
 during fast movements, the tracker can lose the target, which requires the
 detector to re-localize it in the image. MediaPipe Holistic uses
 [pose](./pose.md) prediction (on every frame) as an additional ROI prior to
-reducing the response time of the pipeline when reacting to fast movements. This
+reduce the response time of the pipeline when reacting to fast movements. This
 also enables the model to retain semantic consistency across the body and its
 parts by preventing a mixup between left and right hands or body parts of one
 person in the frame with another.
@@ -268,7 +259,6 @@ mp_holistic = mp.solutions.holistic
 
 # For static images:
 IMAGE_FILES = []
-BG_COLOR = (192, 192, 192) # gray
 with mp_holistic.Holistic(
     static_image_mode=True,
     model_complexity=2,

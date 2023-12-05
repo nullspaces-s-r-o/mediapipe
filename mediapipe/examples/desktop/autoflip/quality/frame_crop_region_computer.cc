@@ -16,7 +16,6 @@
 
 #include <cmath>
 
-#include "absl/log/absl_log.h"
 #include "mediapipe/examples/desktop/autoflip/quality/utils.h"
 #include "mediapipe/framework/port/ret_check.h"
 
@@ -138,7 +137,7 @@ void FrameCropRegionComputer::UpdateCropRegionScore(
     const float feature_score, const bool is_required,
     float* crop_region_score) {
   if (feature_score < 0.0) {
-    ABSL_LOG(WARNING) << "Ignoring negative score";
+    LOG(WARNING) << "Ignoring negative score";
     return;
   }
 
@@ -162,8 +161,7 @@ void FrameCropRegionComputer::UpdateCropRegionScore(
       break;
     }
     default: {
-      ABSL_LOG(WARNING) << "Unknown CropRegionScoreType "
-                        << score_aggregation_type;
+      LOG(WARNING) << "Unknown CropRegionScoreType " << score_aggregation_type;
       break;
     }
   }

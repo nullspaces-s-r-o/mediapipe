@@ -19,7 +19,6 @@
 #define MEDIAPIPE_GPU_GL_TEXTURE_BUFFER_H_
 
 #include <atomic>
-#include <memory>
 
 #include "absl/memory/memory.h"
 #include "mediapipe/framework/formats/image_frame.h"
@@ -36,8 +35,7 @@ class GlCalculatorHelperImpl;
 // Implements a GPU memory buffer as an OpenGL texture. For internal use.
 class GlTextureBuffer
     : public internal::GpuBufferStorageImpl<
-          GlTextureBuffer, internal::ViewProvider<GlTextureView>>,
-      public std::enable_shared_from_this<GlTextureBuffer> {
+          GlTextureBuffer, internal::ViewProvider<GlTextureView>> {
  public:
   // This is called when the texture buffer is deleted. It is passed a sync
   // token created at that time on the GlContext. If the GlTextureBuffer has
@@ -73,11 +71,6 @@ class GlTextureBuffer
   // Create a texture with a copy of the data in image_frame.
   static std::unique_ptr<GlTextureBuffer> Create(const ImageFrame& image_frame);
 
-  static std::unique_ptr<GlTextureBuffer> Create(
-      const internal::GpuBufferSpec& spec) {
-    return Create(spec.width, spec.height, spec.format);
-  }
-
   // Wraps an existing texture, but does not take ownership of it.
   // deletion_callback is invoked when the GlTextureBuffer is released, so
   // the caller knows that the texture is no longer in use.
@@ -92,13 +85,15 @@ class GlTextureBuffer
   // TODO: turn into a single call?
   GLuint name() const { return name_; }
   GLenum target() const { return target_; }
-  int width() const override { return width_; }
-  int height() const override { return height_; }
-  GpuBufferFormat format() const override { return format_; }
+  int width() const { return width_; }
+  int height() const { return height_; }
+  GpuBufferFormat format() const { return format_; }
 
   GlTextureView GetReadView(internal::types<GlTextureView>,
+                            std::shared_ptr<GpuBuffer> gpu_buffer,
                             int plane) const override;
   GlTextureView GetWriteView(internal::types<GlTextureView>,
+                             std::shared_ptr<GpuBuffer> gpu_buffer,
                              int plane) override;
 
   // If this texture is going to be used outside of the context that produced
@@ -142,10 +137,6 @@ class GlTextureBuffer
   const std::shared_ptr<GlContext>& GetProducerContext() {
     return producer_context_;
   }
-
-#if MEDIAPIPE_GPU_BUFFER_USE_CV_PIXEL_BUFFER
-  static constexpr bool kDisableGpuBufferRegistration = true;
-#endif  // MEDIAPIPE_GPU_BUFFER_USE_CV_PIXEL_BUFFER
 
  private:
   // Creates a texture of dimensions width x height and allocates space for it.

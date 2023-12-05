@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "Eigen/Core"
-#include "absl/log/absl_log.h"
 #include "audio/dsp/window_functions.h"
 #include "mediapipe/calculators/audio/time_series_framer_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
@@ -50,7 +49,7 @@ class TimeSeriesFramerCalculatorTest
 
   // Returns a float value with the channel and timestamp separated by
   // an order of magnitude, for easy parsing by humans.
-  float TestValue(int64_t timestamp_in_microseconds, int channel) {
+  float TestValue(int64 timestamp_in_microseconds, int channel) {
     return timestamp_in_microseconds + channel / 10.0;
   }
 
@@ -60,7 +59,7 @@ class TimeSeriesFramerCalculatorTest
     auto matrix = new Matrix(num_channels, num_samples);
     for (int c = 0; c < num_channels; ++c) {
       for (int i = 0; i < num_samples; ++i) {
-        int64_t timestamp = time_series_util::SecondsToSamples(
+        int64 timestamp = time_series_util::SecondsToSamples(
             starting_timestamp_seconds + i / input_sample_rate_,
             Timestamp::kTimestampUnitsPerSecond);
         (*matrix)(c, i) = TestValue(timestamp, c);
@@ -187,12 +186,11 @@ class TimeSeriesFramerCalculatorTest
     const int num_unique_output_samples =
         round((output().packets.size() - 1) * frame_step_samples) +
         frame_duration_samples;
-    ABSL_LOG(INFO) << "packets.size()=" << output().packets.size()
-                   << " frame_duration_samples=" << frame_duration_samples
-                   << " frame_step_samples=" << frame_step_samples
-                   << " num_input_samples_=" << num_input_samples_
-                   << " num_unique_output_samples="
-                   << num_unique_output_samples;
+    LOG(INFO) << "packets.size()=" << output().packets.size()
+              << " frame_duration_samples=" << frame_duration_samples
+              << " frame_step_samples=" << frame_step_samples
+              << " num_input_samples_=" << num_input_samples_
+              << " num_unique_output_samples=" << num_unique_output_samples;
     const int num_padding_samples =
         num_unique_output_samples - num_input_samples_;
     if (options_.pad_final_packet()) {
@@ -431,7 +429,7 @@ class TimeSeriesFramerCalculatorTimestampingTest
       num_full_packets -= 1;
     }
 
-    int64_t num_samples = 0;
+    int64 num_samples = 0;
     for (int packet_num = 0; packet_num < num_full_packets; ++packet_num) {
       const Packet& packet = output().packets[packet_num];
       num_samples += FrameDurationSamples();

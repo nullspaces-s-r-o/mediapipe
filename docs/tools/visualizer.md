@@ -1,6 +1,5 @@
 ---
-layout: forward
-target: https://developers.google.com/mediapipe/framework/tools/visualizer
+layout: default
 title: Visualizer
 parent: Tools
 nav_order: 1
@@ -11,12 +10,6 @@ nav_order: 1
 
 1. TOC
 {:toc}
----
-
-**Attention:** *Thanks for your interest in MediaPipe! We have moved to
-[https://developers.google.com/mediapipe](https://developers.google.com/mediapipe)
-as the primary developer documentation site for MediaPipe as of April 3, 2023.*
-
 ---
 
 To help users understand the structure of their calculator graphs and to

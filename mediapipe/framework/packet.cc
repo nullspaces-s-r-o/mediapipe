@@ -14,7 +14,6 @@
 
 #include "mediapipe/framework/packet.h"
 
-#include "absl/log/absl_check.h"
 #include "absl/strings/str_cat.h"
 #include "mediapipe/framework/port.h"
 #include "mediapipe/framework/port/canonical_errors.h"
@@ -55,7 +54,7 @@ const HolderBase* GetHolder(const Packet& packet) {
 
 absl::StatusOr<Packet> PacketFromDynamicProto(const std::string& type_name,
                                               const std::string& serialized) {
-  MP_ASSIGN_OR_RETURN(
+  ASSIGN_OR_RETURN(
       auto message_holder,
       packet_internal::MessageHolderRegistry::CreateByName(type_name));
   auto* message =
@@ -136,11 +135,10 @@ absl::Status Packet::ValidateAsProtoMessageLite() const {
 }
 
 const proto_ns::MessageLite& Packet::GetProtoMessageLite() const {
-  ABSL_CHECK(holder_ != nullptr) << "The packet is empty.";
+  CHECK(holder_ != nullptr) << "The packet is empty.";
   const proto_ns::MessageLite* proto = holder_->GetProtoMessageLite();
-  ABSL_CHECK(proto != nullptr)
-      << "The Packet stores '" << holder_->DebugTypeName()
-      << "', it cannot be converted to MessageLite type.";
+  CHECK(proto != nullptr) << "The Packet stores '" << holder_->DebugTypeName()
+                          << "', it cannot be converted to MessageLite type.";
   return *proto;
 }
 

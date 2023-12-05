@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/log/absl_check.h"
 #include "mediapipe/calculators/util/rect_to_render_data_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/formats/rect.pb.h"
@@ -30,9 +29,6 @@ constexpr char kNormRectsTag[] = "NORM_RECTS";
 constexpr char kRectsTag[] = "RECTS";
 constexpr char kRenderDataTag[] = "RENDER_DATA";
 
-using ::mediapipe::NormalizedRect;
-using ::mediapipe::Rect;
-
 RenderAnnotation::Rectangle* NewRect(
     const RectToRenderDataCalculatorOptions& options, RenderData* render_data) {
   auto* annotation = render_data->add_render_annotations();
@@ -42,8 +38,8 @@ RenderAnnotation::Rectangle* NewRect(
   annotation->set_thickness(options.thickness());
 
   if (options.has_top_left_thickness()) {
-    ABSL_CHECK(!options.oval());
-    ABSL_CHECK(!options.filled());
+    CHECK(!options.oval());
+    CHECK(!options.filled());
     annotation->mutable_rectangle()->set_top_left_thickness(
         options.top_left_thickness());
   }

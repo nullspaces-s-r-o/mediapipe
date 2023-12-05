@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/log/absl_log.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/port/status.h"
 
@@ -29,7 +28,7 @@ class SimpleCalculator : public CalculatorBase {
   }
 
   absl::Status Process(CalculatorContext* cc) final {
-    ABSL_LOG(WARNING) << "Simple Calculator Process called, count_: " << count_;
+    LOG(WARNING) << "Simple Calculator Process called, count_: " << count_;
     int max_count = 1;
     if (cc->InputSidePackets().HasTag("MAX_COUNT")) {
       max_count = cc->InputSidePackets().Tag("MAX_COUNT").Get<int>();

@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "Eigen/Dense"
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/span.h"
@@ -71,7 +70,7 @@ class Lift2DFrameAnnotationTo3DCalculator : public CalculatorBase {
   // In a single MediaPipe session, the IDs are unique.
   // Also assign timestamp for the FrameAnnotation to be the input packet
   // timestamp.
-  void AssignObjectIdAndTimestamp(int64_t timestamp_us,
+  void AssignObjectIdAndTimestamp(int64 timestamp_us,
                                   FrameAnnotation* annotation);
   std::unique_ptr<Decoder> decoder_;
   Lift2DFrameAnnotationTo3DCalculatorOptions options_;
@@ -138,7 +137,7 @@ absl::Status Lift2DFrameAnnotationTo3DCalculator::ProcessCPU(
   auto status = decoder_->Lift2DTo3D(projection_matrix_, /*portrait*/ false,
                                      output_objects);
   if (!status.ok()) {
-    ABSL_LOG(ERROR) << status;
+    LOG(ERROR) << status;
     return status;
   }
   AssignObjectIdAndTimestamp(cc->InputTimestamp().Microseconds(),
@@ -160,7 +159,7 @@ absl::Status Lift2DFrameAnnotationTo3DCalculator::LoadOptions(
 }
 
 void Lift2DFrameAnnotationTo3DCalculator::AssignObjectIdAndTimestamp(
-    int64_t timestamp_us, FrameAnnotation* annotation) {
+    int64 timestamp_us, FrameAnnotation* annotation) {
   for (auto& ann : *annotation->mutable_annotations()) {
     ann.set_object_id(GetNextObjectId());
   }

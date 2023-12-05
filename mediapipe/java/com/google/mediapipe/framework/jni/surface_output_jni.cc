@@ -17,8 +17,6 @@
 #include <android/native_window_jni.h>
 #endif  // __ANDROID__
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/gpu/egl_surface_holder.h"
@@ -53,7 +51,7 @@ JNIEXPORT void JNICALL MEDIAPIPE_SURFACE_OUTPUT_METHOD(nativeSetSurface)(
     JNIEnv* env, jobject thiz, jlong context, jlong packet, jobject surface) {
 #ifdef __ANDROID__
   mediapipe::GlContext* gl_context = GetGlContext(context);
-  ABSL_CHECK(gl_context) << "GPU shared data not created";
+  CHECK(gl_context) << "GPU shared data not created";
   mediapipe::EglSurfaceHolder* surface_holder = GetSurfaceHolder(packet);
 
   // ANativeWindow_fromSurface must not be called on the GL thread, it is a
@@ -101,14 +99,14 @@ JNIEXPORT void JNICALL MEDIAPIPE_SURFACE_OUTPUT_METHOD(nativeSetSurface)(
     ANativeWindow_release(window);
   }
 #else
-  ABSL_LOG(FATAL) << "setSurface is only supported on Android";
+  LOG(FATAL) << "setSurface is only supported on Android";
 #endif  // __ANDROID__
 }
 
 JNIEXPORT void JNICALL MEDIAPIPE_SURFACE_OUTPUT_METHOD(nativeSetEglSurface)(
     JNIEnv* env, jobject thiz, jlong context, jlong packet, jlong surface) {
   mediapipe::GlContext* gl_context = GetGlContext(context);
-  ABSL_CHECK(gl_context) << "GPU shared data not created";
+  CHECK(gl_context) << "GPU shared data not created";
   auto egl_surface = reinterpret_cast<EGLSurface>(surface);
   mediapipe::EglSurfaceHolder* surface_holder = GetSurfaceHolder(packet);
   EGLSurface old_surface = EGL_NO_SURFACE;

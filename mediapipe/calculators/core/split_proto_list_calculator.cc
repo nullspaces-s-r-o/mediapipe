@@ -17,7 +17,6 @@
 
 #include "mediapipe/calculators/core/split_vector_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
-#include "mediapipe/framework/formats/body_rig.pb.h"
 #include "mediapipe/framework/formats/landmark.pb.h"
 #include "mediapipe/framework/port/canonical_errors.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -157,9 +156,9 @@ class SplitListsCalculator : public CalculatorBase {
   virtual ItemType* AddItem(ListType& list) const = 0;
 
  private:
-  std::vector<std::pair<int32_t, int32_t>> ranges_;
-  int32_t max_range_end_ = -1;
-  int32_t total_elements_ = 0;
+  std::vector<std::pair<int32, int32>> ranges_;
+  int32 max_range_end_ = -1;
+  int32 total_elements_ = 0;
   bool element_only_ = false;
   bool combine_outputs_ = false;
 };
@@ -196,18 +195,6 @@ class SplitLandmarkListCalculator
   }
 };
 REGISTER_CALCULATOR(SplitLandmarkListCalculator);
-
-class SplitJointListCalculator : public SplitListsCalculator<Joint, JointList> {
- protected:
-  int ListSize(const JointList& list) const override {
-    return list.joint_size();
-  }
-  const Joint GetItem(const JointList& list, int idx) const override {
-    return list.joint(idx);
-  }
-  Joint* AddItem(JointList& list) const override { return list.add_joint(); }
-};
-REGISTER_CALCULATOR(SplitJointListCalculator);
 
 }  // namespace mediapipe
 

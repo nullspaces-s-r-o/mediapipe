@@ -1,4 +1,4 @@
-/* Copyright 2022 The MediaPipe Authors.
+/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,8 +37,6 @@ using ::tflite::AudioPropertiesBuilder;
 using ::tflite::BertTokenizerOptionsBuilder;
 using ::tflite::ContentBuilder;
 using ::tflite::ContentProperties_AudioProperties;
-using ::tflite::CustomMetadata;
-using ::tflite::CustomMetadataBuilder;
 using ::tflite::ModelMetadataBuilder;
 using ::tflite::NormalizationOptionsBuilder;
 using ::tflite::ProcessUnit;
@@ -79,17 +77,13 @@ TEST(MetadataVersionTest,
   auto metadata = metadata_builder.Finish();
   FinishModelMetadataBuffer(builder, metadata);
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
             kTfLiteOk);
   // Validates that the version is well-formed (x.y.z).
-#ifdef _WIN32
-  EXPECT_THAT(min_version, MatchesRegex("\\d+\\.\\d+\\.\\d+"));
-#else
   EXPECT_THAT(min_version, MatchesRegex("[0-9]+\\.[0-9]+\\.[0-9]+"));
-#endif  // _WIN32
 }
 
 TEST(MetadataVersionTest,
@@ -100,7 +94,7 @@ TEST(MetadataVersionTest,
   auto metadata = metadata_builder.Finish();
   builder.Finish(metadata);
 
-  // Gets the minimum metadata parser version and triggers error.
+  // Gets the mimimum metadata parser version and triggers error.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -111,7 +105,7 @@ TEST(MetadataVersionTest,
 TEST(MetadataVersionTest,
      GetMinimumMetadataParserVersionForModelMetadataVocabAssociatedFiles) {
   // Creates a metadata flatbuffer with the field,
-  // ModelMetadata.associated_fields, populated with the vocabulary file type.
+  // ModelMetadata.associated_fiels, populated with the vocabulary file type.
   FlatBufferBuilder builder(1024);
   AssociatedFileBuilder associated_file_builder(builder);
   associated_file_builder.add_type(tflite::AssociatedFileType_VOCABULARY);
@@ -121,7 +115,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_associated_files(associated_files);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -147,7 +141,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_subgraph_metadata(subgraphs);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -159,8 +153,8 @@ TEST(MetadataVersionTest,
 TEST(MetadataVersionTest,
      GetMinimumMetadataParserVersionForInputMetadataVocabAssociatedFiles) {
   // Creates a metadata flatbuffer with the field,
-  // SubGraphMetadata.input_tensor_metadata.associated_fields, populated with
-  // the vocabulary file type.
+  // SubGraphMetadata.input_tensor_metadata.associated_fiels, populated with the
+  // vocabulary file type.
   FlatBufferBuilder builder(1024);
   AssociatedFileBuilder associated_file_builder(builder);
   associated_file_builder.add_type(tflite::AssociatedFileType_VOCABULARY);
@@ -172,7 +166,7 @@ TEST(MetadataVersionTest,
       std::vector<Offset<TensorMetadata>>{tensor_builder.Finish()});
   CreateModelWithMetadata(tensors, builder);
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -184,7 +178,7 @@ TEST(MetadataVersionTest,
 TEST(MetadataVersionTest,
      GetMinimumMetadataParserVersionForOutputMetadataVocabAssociatedFiles) {
   // Creates a metadata flatbuffer with the field,
-  // SubGraphMetadata.output_tensor_metadata.associated_fields, populated with
+  // SubGraphMetadata.output_tensor_metadata.associated_fiels, populated with
   // the vocabulary file type.
   FlatBufferBuilder builder(1024);
   AssociatedFileBuilder associated_file_builder(builder);
@@ -203,7 +197,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_subgraph_metadata(subgraphs);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -234,7 +228,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_subgraph_metadata(subgraphs);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -265,7 +259,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_subgraph_metadata(subgraphs);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -294,7 +288,7 @@ TEST(MetadataVersionTest,
       std::vector<Offset<TensorMetadata>>{tensor_builder.Finish()});
   CreateModelWithMetadata(tensors, builder);
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -323,7 +317,7 @@ TEST(MetadataVersionTest,
       std::vector<Offset<TensorMetadata>>{tensor_builder.Finish()});
   CreateModelWithMetadata(tensors, builder);
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -348,7 +342,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_subgraph_metadata(subgraphs);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -373,7 +367,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_subgraph_metadata(subgraphs);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -404,7 +398,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_subgraph_metadata(subgraphs);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -431,7 +425,7 @@ TEST(MetadataVersionTest,
       std::vector<Offset<TensorMetadata>>{tensor_builder.Finish()});
   CreateModelWithMetadata(tensors, builder);
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -453,7 +447,7 @@ TEST(MetadataVersionTest,
   metadata_builder.add_associated_files(associated_files);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
@@ -476,41 +470,13 @@ TEST(MetadataVersionTest,
   metadata_builder.add_associated_files(associated_files);
   FinishModelMetadataBuffer(builder, metadata_builder.Finish());
 
-  // Gets the minimum metadata parser version.
+  // Gets the mimimum metadata parser version.
   std::string min_version;
   EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
                                             builder.GetSize(), &min_version),
             kTfLiteOk);
   // Validates that the version is exactly 1.4.1.
   EXPECT_THAT(min_version, StrEq("1.4.1"));
-}
-
-TEST(MetadataVersionTest, GetMinimumMetadataParserVersionForOptions) {
-  // Creates a metadata flatbuffer with the field custom_metadata in subgraph
-  // metadata.
-  FlatBufferBuilder builder(1024);
-  auto name = builder.CreateString("custom_metadata");
-  auto data = builder.CreateVector(std::vector<unsigned char>{'a'});
-  CustomMetadataBuilder custom_metadata_builder(builder);
-  custom_metadata_builder.add_name(name);
-  custom_metadata_builder.add_data(data);
-  auto custom_metadata = builder.CreateVector(
-      std::vector<Offset<CustomMetadata>>{custom_metadata_builder.Finish()});
-  SubGraphMetadataBuilder subgraph_builder(builder);
-  subgraph_builder.add_custom_metadata(custom_metadata);
-  auto subgraphs = builder.CreateVector(
-      std::vector<Offset<SubGraphMetadata>>{subgraph_builder.Finish()});
-  ModelMetadataBuilder metadata_builder(builder);
-  metadata_builder.add_subgraph_metadata(subgraphs);
-  FinishModelMetadataBuffer(builder, metadata_builder.Finish());
-
-  // Gets the minimum metadata parser version.
-  std::string min_version;
-  EXPECT_EQ(GetMinimumMetadataParserVersion(builder.GetBufferPointer(),
-                                            builder.GetSize(), &min_version),
-            kTfLiteOk);
-  // Validates that the version is exactly 1.5.0.
-  EXPECT_EQ(min_version, "1.5.0");
 }
 
 }  // namespace

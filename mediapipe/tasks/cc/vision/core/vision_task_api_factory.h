@@ -1,4 +1,4 @@
-/* Copyright 2022 The MediaPipe Authors.
+/* Copyright 2022 The MediaPipe Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ limitations under the License.
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "mediapipe/framework/calculator.pb.h"
-#include "mediapipe/tasks/cc/core/task_api_factory.h"
 #include "mediapipe/tasks/cc/vision/core/base_vision_task_api.h"
 #include "tensorflow/lite/core/api/op_resolver.h"
 
@@ -61,8 +60,13 @@ class VisionTaskApiFactory {
             "Task graph config should only contain one task subgraph node.",
             MediaPipeTasksStatus::kInvalidTaskGraphConfigError);
       } else {
-        MP_RETURN_IF_ERROR(
-            tasks::core::TaskApiFactory::CheckHasValidOptions<Options>(node));
+        if (!node.options().HasExtension(Options::ext)) {
+          return CreateStatusWithPayload(
+              absl::StatusCode::kInvalidArgument,
+              absl::StrCat(node.calculator(),
+                           " is missing the required task options field."),
+              MediaPipeTasksStatus::kInvalidTaskGraphConfigError);
+        }
         found_task_subgraph = true;
       }
     }
@@ -81,10 +85,10 @@ class VisionTaskApiFactory {
           "callback shouldn't be provided.",
           MediaPipeTasksStatus::kInvalidTaskGraphConfigError);
     }
-    MP_ASSIGN_OR_RETURN(auto runner,
-                        tasks::core::TaskRunner::Create(
-                            std::move(graph_config), std::move(resolver),
-                            std::move(packets_callback)));
+    ASSIGN_OR_RETURN(auto runner,
+                     tasks::core::TaskRunner::Create(
+                         std::move(graph_config), std::move(resolver),
+                         std::move(packets_callback)));
     return std::make_unique<T>(std::move(runner), running_mode);
   }
 };

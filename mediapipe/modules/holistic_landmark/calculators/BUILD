@@ -21,6 +21,7 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "hand_detections_from_pose_to_rects_calculator",
     srcs = ["hand_detections_from_pose_to_rects_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/calculators/util:detections_to_rects_calculator",
         "//mediapipe/calculators/util:detections_to_rects_calculator_cc_proto",
@@ -38,6 +39,7 @@ cc_library(
 mediapipe_proto_library(
     name = "roi_tracking_calculator_proto",
     srcs = ["roi_tracking_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -47,6 +49,7 @@ mediapipe_proto_library(
 cc_library(
     name = "roi_tracking_calculator",
     srcs = ["roi_tracking_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":roi_tracking_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",

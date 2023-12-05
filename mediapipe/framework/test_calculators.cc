@@ -20,7 +20,6 @@
 #include <utility>
 
 #include "Eigen/Core"
-#include "absl/log/absl_check.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "mediapipe/framework/calculator_framework.h"
@@ -80,8 +79,8 @@ class IntSplitterPacketGenerator : public PacketGenerator {
       const PacketGeneratorOptions& extendable_options,  //
       PacketTypeSet* input_side_packets,                 //
       PacketTypeSet* output_side_packets) {
-    input_side_packets->Index(0).Set<uint64_t>();
-    output_side_packets->Index(0).Set<std::pair<uint32_t, uint32_t>>();
+    input_side_packets->Index(0).Set<uint64>();
+    output_side_packets->Index(0).Set<std::pair<uint32, uint32>>();
     return absl::OkStatus();
   }
 
@@ -89,11 +88,11 @@ class IntSplitterPacketGenerator : public PacketGenerator {
       const PacketGeneratorOptions& extendable_options,  //
       const PacketSet& input_side_packets,               //
       PacketSet* output_side_packets) {
-    uint64_t value = input_side_packets.Index(0).Get<uint64_t>();
-    uint32_t high = value >> 32;
-    uint32_t low = value & 0xFFFFFFFF;
+    uint64 value = input_side_packets.Index(0).Get<uint64>();
+    uint32 high = value >> 32;
+    uint32 low = value & 0xFFFFFFFF;
     output_side_packets->Index(0) =
-        Adopt(new std::pair<uint32_t, uint32_t>(high, low));
+        Adopt(new std::pair<uint32, uint32>(high, low));
     return absl::OkStatus();
   }
 };
@@ -108,10 +107,10 @@ class TaggedIntSplitterPacketGenerator : public PacketGenerator {
       const PacketGeneratorOptions& extendable_options,  //
       PacketTypeSet* input_side_packets,                 //
       PacketTypeSet* output_side_packets) {
-    input_side_packets->Index(0).Set<uint64_t>();
-    output_side_packets->Tag(kHighTag).Set<uint32_t>();
-    output_side_packets->Tag(kLowTag).Set<uint32_t>();
-    output_side_packets->Tag(kPairTag).Set<std::pair<uint32_t, uint32_t>>();
+    input_side_packets->Index(0).Set<uint64>();
+    output_side_packets->Tag(kHighTag).Set<uint32>();
+    output_side_packets->Tag(kLowTag).Set<uint32>();
+    output_side_packets->Tag(kPairTag).Set<std::pair<uint32, uint32>>();
     return absl::OkStatus();
   }
 
@@ -119,13 +118,13 @@ class TaggedIntSplitterPacketGenerator : public PacketGenerator {
       const PacketGeneratorOptions& extendable_options,  //
       const PacketSet& input_side_packets,               //
       PacketSet* output_side_packets) {
-    uint64_t value = input_side_packets.Index(0).Get<uint64_t>();
-    uint32_t high = value >> 32;
-    uint32_t low = value & 0xFFFFFFFF;
-    output_side_packets->Tag(kHighTag) = Adopt(new uint32_t(high));
-    output_side_packets->Tag(kLowTag) = Adopt(new uint32_t(low));
+    uint64 value = input_side_packets.Index(0).Get<uint64>();
+    uint32 high = value >> 32;
+    uint32 low = value & 0xFFFFFFFF;
+    output_side_packets->Tag(kHighTag) = Adopt(new uint32(high));
+    output_side_packets->Tag(kLowTag) = Adopt(new uint32(low));
     output_side_packets->Tag(kPairTag) =
-        Adopt(new std::pair<uint32_t, uint32_t>(high, low));
+        Adopt(new std::pair<uint32, uint32>(high, low));
     return absl::OkStatus();
   }
 };
@@ -147,7 +146,7 @@ class RangeCalculator : public CalculatorBase {
     cc->Outputs().Index(0).Set<int>();
     cc->Outputs().Index(1).Set<int>();
     cc->Outputs().Index(2).Set<double>();
-    cc->InputSidePackets().Index(0).Set<std::pair<uint32_t, uint32_t>>();
+    cc->InputSidePackets().Index(0).Set<std::pair<uint32, uint32>>();
     return absl::OkStatus();
   }
 
@@ -204,11 +203,11 @@ class RangeCalculator : public CalculatorBase {
 
   // Initializes this object.
   void Initialize(CalculatorContext* cc) {
-    ABSL_CHECK(!initialized_);
+    CHECK(!initialized_);
 
     cc->Options();  // Ensure Options() can be called here.
     std::tie(n_, k_) =
-        cc->InputSidePackets().Index(0).Get<std::pair<uint32_t, uint32_t>>();
+        cc->InputSidePackets().Index(0).Get<std::pair<uint32, uint32>>();
 
     index_ = 0;
     total_ = 0;
@@ -381,10 +380,10 @@ class RandomMatrixCalculator : public CalculatorBase {
 
   absl::Status Open(CalculatorContext* cc) override {
     auto& options = cc->Options<RandomMatrixCalculatorOptions>();
-    ABSL_CHECK_LT(0, options.timestamp_step());
-    ABSL_CHECK_LT(0, options.rows());
-    ABSL_CHECK_LT(0, options.cols());
-    ABSL_CHECK_LT(options.start_timestamp(), options.limit_timestamp());
+    CHECK_LT(0, options.timestamp_step());
+    CHECK_LT(0, options.rows());
+    CHECK_LT(0, options.cols());
+    CHECK_LT(options.start_timestamp(), options.limit_timestamp());
 
     current_timestamp_ = Timestamp(options.start_timestamp());
     cc->Outputs().Index(0).SetNextTimestampBound(current_timestamp_);
@@ -448,13 +447,13 @@ class MeanAndCovarianceCalculator : public CalculatorBase {
   absl::Status Process(CalculatorContext* cc) override {
     const Eigen::MatrixXd sample =
         cc->Inputs().Index(0).Get<Matrix>().cast<double>();
-    ABSL_CHECK_EQ(1, sample.cols());
+    CHECK_EQ(1, sample.cols());
     if (num_samples_ == 0) {
       rows_ = sample.rows();
       sum_vector_ = Eigen::VectorXd::Zero(rows_);
       outer_product_sum_ = Eigen::MatrixXd::Zero(rows_, rows_);
     } else {
-      ABSL_CHECK_EQ(sample.rows(), rows_);
+      CHECK_EQ(sample.rows(), rows_);
     }
     sum_vector_ += sample;
     outer_product_sum_ += sample * sample.transpose();
@@ -489,7 +488,7 @@ class MeanAndCovarianceCalculator : public CalculatorBase {
  private:
   Eigen::VectorXd sum_vector_;
   Eigen::MatrixXd outer_product_sum_;
-  int64_t num_samples_;
+  int64 num_samples_;
   int rows_;
 };
 REGISTER_CALCULATOR(MeanAndCovarianceCalculator);

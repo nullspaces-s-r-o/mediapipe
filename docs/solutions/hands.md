@@ -1,8 +1,7 @@
 ---
-layout: forward
-target: https://developers.google.com/mediapipe/solutions/vision/hand_landmarker
+layout: default
 title: Hands
-parent: MediaPipe Legacy Solutions
+parent: Solutions
 nav_order: 4
 ---
 
@@ -18,14 +17,6 @@ nav_order: 4
 {:toc}
 </details>
 ---
-
-**Attention:** *Thank you for your interest in MediaPipe Solutions.
-As of March 1, 2023, this solution was upgraded to a new MediaPipe
-Solution. For more information, see the
-[MediaPipe Solutions](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker)
-site.*
-
-----
 
 ## Overview
 

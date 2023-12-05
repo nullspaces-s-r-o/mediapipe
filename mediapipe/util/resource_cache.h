@@ -17,9 +17,7 @@
 
 #include <unordered_map>
 
-#include "absl/container/flat_hash_map.h"
 #include "absl/functional/function_ref.h"
-#include "absl/log/absl_check.h"
 #include "mediapipe/framework/port/logging.h"
 
 namespace mediapipe {
@@ -28,8 +26,7 @@ namespace mediapipe {
 // resource (e.g., image dimension for an image pool) is described bye the `Key`
 // type. The `Value` type must include an unset value, with implicit conversion
 // to bool reflecting set/unset state.
-template <typename Key, typename Value,
-          typename KeyHash = typename absl::flat_hash_map<Key, int>::hasher>
+template <typename Key, typename Value, typename KeyHash>
 class ResourceCache {
  public:
   Value Lookup(
@@ -39,14 +36,15 @@ class ResourceCache {
     Entry* entry;
     if (map_it == map_.end()) {
       std::tie(map_it, std::ignore) =
-          map_.try_emplace(key, std::make_unique<Entry>(key));
-      entry = map_it->second.get();
-      ABSL_CHECK_EQ(entry->request_count, 0);
+          map_.emplace(std::piecewise_construct, std::forward_as_tuple(key),
+                       std::forward_as_tuple(key));
+      entry = &map_it->second;
+      CHECK_EQ(entry->request_count, 0);
       entry->request_count = 1;
       entry_list_.Append(entry);
-      if (entry->prev != nullptr) ABSL_CHECK_GE(entry->prev->request_count, 1);
+      if (entry->prev != nullptr) CHECK_GE(entry->prev->request_count, 1);
     } else {
-      entry = map_it->second.get();
+      entry = &map_it->second;
       ++entry->request_count;
       Entry* larger = entry->prev;
       while (larger != nullptr &&
@@ -173,7 +171,7 @@ class ResourceCache {
     size_t size_ = 0;
   };
 
-  absl::flat_hash_map<Key, std::unique_ptr<Entry>, KeyHash> map_;
+  std::unordered_map<Key, Entry, KeyHash> map_;
   EntryList entry_list_;
   int total_request_count_ = 0;
 };

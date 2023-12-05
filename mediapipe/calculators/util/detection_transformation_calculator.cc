@@ -96,10 +96,10 @@ absl::StatusOr<LocationData::Format> GetLocationDataFormat(
     std::vector<Detection>& detections) {
   RET_CHECK(!detections.empty());
   LocationData::Format output_format;
-  MP_ASSIGN_OR_RETURN(output_format, GetLocationDataFormat(detections[0]));
+  ASSIGN_OR_RETURN(output_format, GetLocationDataFormat(detections[0]));
   for (int i = 1; i < detections.size(); ++i) {
-    MP_ASSIGN_OR_RETURN(LocationData::Format format,
-                        GetLocationDataFormat(detections[i]));
+    ASSIGN_OR_RETURN(LocationData::Format format,
+                     GetLocationDataFormat(detections[i]));
     if (output_format != format) {
       return absl::InvalidArgumentError(
           "Input detections have different location data formats.");
@@ -227,9 +227,6 @@ class DetectionTransformationCalculator : public Node {
     std::pair<int, int> image_size = kInImageSize(cc).Get();
     std::vector<Detection> transformed_detections;
     LocationData::Format input_location_data_format;
-    if (kInDetections(cc).IsEmpty() && kInDetection(cc).IsEmpty()) {
-      return absl::OkStatus();
-    }
     if (kInDetections(cc).IsConnected()) {
       transformed_detections = kInDetections(cc).Visit(
           [&](const DetectionList& detection_list) {
@@ -243,8 +240,8 @@ class DetectionTransformationCalculator : public Node {
         OutputEmptyDetections(cc);
         return absl::OkStatus();
       }
-      MP_ASSIGN_OR_RETURN(input_location_data_format,
-                          GetLocationDataFormat(transformed_detections));
+      ASSIGN_OR_RETURN(input_location_data_format,
+                       GetLocationDataFormat(transformed_detections));
       for (Detection& detection : transformed_detections) {
         MP_RETURN_IF_ERROR(ConvertBoundingBox(image_size, &detection));
       }
@@ -254,8 +251,8 @@ class DetectionTransformationCalculator : public Node {
         OutputEmptyDetections(cc);
         return absl::OkStatus();
       }
-      MP_ASSIGN_OR_RETURN(input_location_data_format,
-                          GetLocationDataFormat(kInDetection(cc).Get()));
+      ASSIGN_OR_RETURN(input_location_data_format,
+                       GetLocationDataFormat(kInDetection(cc).Get()));
       MP_RETURN_IF_ERROR(
           ConvertBoundingBox(image_size, &transformed_detection));
       transformed_detections.push_back(transformed_detection);

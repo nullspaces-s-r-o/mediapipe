@@ -67,7 +67,6 @@ public class ExternalTextureRenderer {
   private float[] textureTransformMatrix = new float[16];
   private boolean flipY;
   private int rotation = Surface.ROTATION_0;
-  private boolean doExplicitCpuSync = true;
 
   /** Call this to setup the shader program before rendering. */
   public void setup() {
@@ -100,14 +99,6 @@ public class ExternalTextureRenderer {
    */
   public void setRotation(int rotation) {
     this.rotation = rotation;
-  }
-
-  /**
-   * Configures whether the renderer should do an explicit CPU synchronization using glFinish upon
-   * each {@link #render} call. Defaults to true.
-   */
-  public void setDoExplicitCpuSync(boolean doExplicitCpuSync) {
-    this.doExplicitCpuSync = doExplicitCpuSync;
   }
 
   /**
@@ -159,11 +150,8 @@ public class ExternalTextureRenderer {
     GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0);
     ShaderUtil.checkGlError("glBindTexture");
 
-    if (doExplicitCpuSync) {
-
-      // TODO: add sync and go back to glFlush()
-      GLES20.glFinish();
-    }
+    // TODO: add sync and go back to glFlush()
+    GLES20.glFinish();
   }
 
   /**

@@ -1,4 +1,4 @@
-# Copyright 2022 The MediaPipe Authors.
+# Copyright 2022 The MediaPipe Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,68 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-package(default_visibility = ["//visibility:public"])
+load("//mediapipe/framework/port:build_config.bzl", "mediapipe_proto_library")
+
+package(default_visibility = ["//mediapipe/tasks:internal"])
 
 licenses(["notice"])
 
-cc_library(
-    name = "keypoint",
-    hdrs = ["keypoint.h"],
+mediapipe_proto_library(
+    name = "category_proto",
+    srcs = ["category.proto"],
 )
 
-cc_library(
-    name = "rect",
-    srcs = ["rect.cc"],
-    hdrs = ["rect.h"],
-)
-
-cc_library(
-    name = "category",
-    srcs = ["category.cc"],
-    hdrs = ["category.h"],
+mediapipe_proto_library(
+    name = "classifications_proto",
+    srcs = ["classifications.proto"],
     deps = [
-        "//mediapipe/framework/formats:classification_cc_proto",
-    ],
-)
-
-cc_library(
-    name = "classification_result",
-    srcs = ["classification_result.cc"],
-    hdrs = ["classification_result.h"],
-    deps = [
-        ":category",
-        "//mediapipe/framework/formats:classification_cc_proto",
-        "//mediapipe/tasks/cc/components/containers/proto:classifications_cc_proto",
-    ],
-)
-
-cc_library(
-    name = "detection_result",
-    srcs = ["detection_result.cc"],
-    hdrs = ["detection_result.h"],
-    deps = [
-        ":category",
-        ":keypoint",
-        ":rect",
-        "//mediapipe/framework/formats:detection_cc_proto",
-        "//mediapipe/framework/formats:location_data_cc_proto",
-    ],
-)
-
-cc_library(
-    name = "embedding_result",
-    srcs = ["embedding_result.cc"],
-    hdrs = ["embedding_result.h"],
-    deps = [
-        "//mediapipe/tasks/cc/components/containers/proto:embeddings_cc_proto",
-    ],
-)
-
-cc_library(
-    name = "landmark",
-    srcs = ["landmark.cc"],
-    hdrs = ["landmark.h"],
-    deps = [
-        "//mediapipe/framework/formats:landmark_cc_proto",
+        ":category_proto",
     ],
 )

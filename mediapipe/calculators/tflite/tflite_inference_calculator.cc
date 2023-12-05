@@ -17,12 +17,9 @@
 #include <string>
 #include <vector>
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "mediapipe/calculators/tflite/tflite_inference_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
-#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/util/tflite/config.h"
 
@@ -112,8 +109,8 @@ std::unique_ptr<tflite::Interpreter> BuildEdgeTpuInterpreter(
     edgetpu::EdgeTpuContext* edgetpu_context) {
   resolver->AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
   std::unique_ptr<tflite::Interpreter> interpreter;
-  ABSL_CHECK_EQ(tflite::InterpreterBuilder(model, *resolver)(&interpreter),
-                kTfLiteOk);
+  CHECK_EQ(tflite::InterpreterBuilder(model, *resolver)(&interpreter),
+           kTfLiteOk);
   interpreter->SetExternalContext(kTfLiteEdgeTpuContext, edgetpu_context);
   return interpreter;
 }
@@ -409,12 +406,11 @@ absl::Status TfLiteInferenceCalculator::Open(CalculatorContext* cc) {
   }
 
   if (use_advanced_gpu_api_ && !gpu_input_) {
-    ABSL_LOG(WARNING)
-        << "Cannot use advanced GPU APIs, input must be GPU buffers."
-           "Falling back to the default TFLite API.";
+    LOG(WARNING) << "Cannot use advanced GPU APIs, input must be GPU buffers."
+                    "Falling back to the default TFLite API.";
     use_advanced_gpu_api_ = false;
   }
-  ABSL_CHECK(!use_advanced_gpu_api_ || gpu_inference_);
+  CHECK(!use_advanced_gpu_api_ || gpu_inference_);
 
   MP_RETURN_IF_ERROR(LoadModel(cc));
 
@@ -489,9 +485,9 @@ absl::Status TfLiteInferenceCalculator::WriteKernelsToFile() {
 #if MEDIAPIPE_TFLITE_GL_INFERENCE && defined(MEDIAPIPE_ANDROID)
   if (use_kernel_caching_) {
     // Save kernel file.
-    MP_ASSIGN_OR_RETURN(std::vector<uint8_t> kernel_cache,
-                        tflite_gpu_runner_->GetSerializedBinaryCache());
-    std::string cache_str(kernel_cache.begin(), kernel_cache.end());
+    auto kernel_cache = absl::make_unique<std::vector<uint8_t>>(
+        tflite_gpu_runner_->GetSerializedBinaryCache());
+    std::string cache_str(kernel_cache->begin(), kernel_cache->end());
     MP_RETURN_IF_ERROR(
         mediapipe::file::SetContents(cached_kernel_filename_, cache_str));
   }
@@ -539,9 +535,8 @@ absl::Status TfLiteInferenceCalculator::ProcessInputsCpu(
     const TfLiteTensor* input_tensor = &input_tensors[i];
     RET_CHECK(input_tensor->data.raw);
     if (use_quantized_tensors_) {
-      const uint8_t* input_tensor_buffer = input_tensor->data.uint8;
-      uint8_t* local_tensor_buffer =
-          interpreter_->typed_input_tensor<uint8_t>(i);
+      const uint8* input_tensor_buffer = input_tensor->data.uint8;
+      uint8* local_tensor_buffer = interpreter_->typed_input_tensor<uint8>(i);
       std::memcpy(local_tensor_buffer, input_tensor_buffer,
                   input_tensor->bytes);
     } else {
@@ -733,7 +728,7 @@ absl::Status TfLiteInferenceCalculator::ReadKernelsFromFile() {
 absl::Status TfLiteInferenceCalculator::InitTFLiteGPURunner(
     CalculatorContext* cc) {
 #if MEDIAPIPE_TFLITE_GL_INFERENCE
-  MP_ASSIGN_OR_RETURN(model_packet_, GetModelAsPacket(*cc));
+  ASSIGN_OR_RETURN(model_packet_, GetModelAsPacket(*cc));
   const auto& model = *model_packet_.Get<TfLiteModelPtr>();
 
   tflite::ops::builtin::BuiltinOpResolverWithoutDefaultDelegates
@@ -806,10 +801,9 @@ absl::Status TfLiteInferenceCalculator::InitTFLiteGPURunner(
       const int tensor_idx = interpreter_->inputs()[i];
       interpreter_->SetTensorParametersReadWrite(tensor_idx, kTfLiteFloat32, "",
                                                  shape, quant);
-      ABSL_CHECK(interpreter_->ResizeInputTensor(tensor_idx, shape) ==
-                 kTfLiteOk);
+      CHECK(interpreter_->ResizeInputTensor(tensor_idx, shape) == kTfLiteOk);
     }
-    ABSL_CHECK(interpreter_->AllocateTensors() == kTfLiteOk);
+    CHECK(interpreter_->AllocateTensors() == kTfLiteOk);
   }
 
   // Create and bind OpenGL buffers for outputs.
@@ -817,8 +811,8 @@ absl::Status TfLiteInferenceCalculator::InitTFLiteGPURunner(
   gpu_data_out_.resize(tflite_gpu_runner_->outputs_size());
   for (int i = 0; i < tflite_gpu_runner_->outputs_size(); ++i) {
     gpu_data_out_[i] = absl::make_unique<GPUData>();
-    MP_ASSIGN_OR_RETURN(gpu_data_out_[i]->elements,
-                        tflite_gpu_runner_->GetOutputElements(i));
+    ASSIGN_OR_RETURN(gpu_data_out_[i]->elements,
+                     tflite_gpu_runner_->GetOutputElements(i));
     // Create and bind input buffer.
     MP_RETURN_IF_ERROR(
         ::tflite::gpu::gl::CreateReadWriteShaderStorageBuffer<float>(
@@ -839,7 +833,7 @@ absl::Status TfLiteInferenceCalculator::LoadModel(CalculatorContext* cc) {
     return absl::OkStatus();
   }
 
-  MP_ASSIGN_OR_RETURN(model_packet_, GetModelAsPacket(*cc));
+  ASSIGN_OR_RETURN(model_packet_, GetModelAsPacket(*cc));
   const auto& model = *model_packet_.Get<TfLiteModelPtr>();
 
   tflite::ops::builtin::BuiltinOpResolverWithoutDefaultDelegates
@@ -1058,7 +1052,7 @@ absl::Status TfLiteInferenceCalculator::LoadDelegate(CalculatorContext* cc) {
           gpu_data_in_[i]->shape.w * gpu_data_in_[i]->shape.c;
       // Input to model can be RGBA only.
       if (tensor->dims->data[3] != 4) {
-        ABSL_LOG(WARNING) << "Please ensure input GPU tensor is 4 channels.";
+        LOG(WARNING) << "Please ensure input GPU tensor is 4 channels.";
       }
       const std::string shader_source =
           absl::Substitute(R"(#include <metal_stdlib>

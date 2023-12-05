@@ -244,7 +244,7 @@
       if ([_session canAddOutput:_depthDataOutput]) {
         [_session addOutput:_depthDataOutput];
 
-        AVCaptureConnection* __unused connection =
+        AVCaptureConnection* connection =
             [_depthDataOutput connectionWithMediaType:AVMediaTypeDepthData];
 
         // Set this when we have a handler.
@@ -327,6 +327,7 @@
   if (depthData.depthDataType != kCVPixelFormatType_DepthFloat32) {
     depthData = [depthData depthDataByConvertingToDepthDataType:kCVPixelFormatType_DepthFloat32];
   }
+  CVPixelBufferRef depthBuffer = depthData.depthDataMap;
   [self.delegate processDepthData:depthData timestamp:timestamp fromSource:self];
 }
 

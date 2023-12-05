@@ -22,17 +22,14 @@ namespace mediapipe {
 
 using TestServiceObject = std::map<std::string, int>;
 
-inline constexpr GraphService<TestServiceObject> kTestService(
-    "test_service", GraphServiceBase::kDisallowDefaultInitialization);
-inline constexpr GraphService<int> kAnotherService(
-    "another_service", GraphServiceBase::kAllowDefaultInitialization);
+extern const GraphService<TestServiceObject> kTestService;
+extern const GraphService<int> kAnotherService;
 
 class NoDefaultConstructor {
  public:
   NoDefaultConstructor() = delete;
 };
-inline constexpr GraphService<NoDefaultConstructor> kNoDefaultService(
-    "no_default_service", GraphServiceBase::kAllowDefaultInitialization);
+extern const GraphService<NoDefaultConstructor> kNoDefaultService;
 
 class NeedsCreateMethod {
  public:
@@ -43,8 +40,7 @@ class NeedsCreateMethod {
  private:
   NeedsCreateMethod() = default;
 };
-inline constexpr GraphService<NeedsCreateMethod> kNeedsCreateService(
-    "needs_create_service", GraphServiceBase::kAllowDefaultInitialization);
+extern const GraphService<NeedsCreateMethod> kNeedsCreateService;
 
 // Use a service.
 class TestServiceCalculator : public CalculatorBase {

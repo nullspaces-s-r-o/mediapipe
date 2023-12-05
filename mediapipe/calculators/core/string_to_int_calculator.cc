@@ -64,16 +64,16 @@ REGISTER_CALCULATOR(StringToIntCalculator);
 using StringToUintCalculator = StringToIntCalculatorTemplate<unsigned int>;
 REGISTER_CALCULATOR(StringToUintCalculator);
 
-using StringToInt32Calculator = StringToIntCalculatorTemplate<int32_t>;
+using StringToInt32Calculator = StringToIntCalculatorTemplate<int32>;
 REGISTER_CALCULATOR(StringToInt32Calculator);
 
-using StringToUint32Calculator = StringToIntCalculatorTemplate<uint32_t>;
+using StringToUint32Calculator = StringToIntCalculatorTemplate<uint32>;
 REGISTER_CALCULATOR(StringToUint32Calculator);
 
-using StringToInt64Calculator = StringToIntCalculatorTemplate<int64_t>;
+using StringToInt64Calculator = StringToIntCalculatorTemplate<int64>;
 REGISTER_CALCULATOR(StringToInt64Calculator);
 
-using StringToUint64Calculator = StringToIntCalculatorTemplate<uint64_t>;
+using StringToUint64Calculator = StringToIntCalculatorTemplate<uint64>;
 REGISTER_CALCULATOR(StringToUint64Calculator);
 
 }  // namespace mediapipe

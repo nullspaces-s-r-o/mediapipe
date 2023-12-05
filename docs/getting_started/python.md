@@ -1,6 +1,5 @@
 ---
-layout: forward
-target: https://developers.google.com/mediapipe/
+layout: default
 title: MediaPipe in Python
 parent: Getting Started
 has_children: true
@@ -14,12 +13,6 @@ nav_order: 3
 1. TOC
 {:toc}
 ---
-
-**Attention:** *Thanks for your interest in MediaPipe! We have moved to
-[https://developers.google.com/mediapipe](https://developers.google.com/mediapipe)
-as the primary developer documentation site for MediaPipe as of April 3, 2023.*
-
-----
 
 ## Ready-to-use Python Solutions
 
@@ -148,4 +141,3 @@ Nvidia Jetson and Raspberry Pi, please read
     ```bash
     (mp_env)mediapipe$ python3 setup.py bdist_wheel
     ```
-7. Exit from the MediaPipe repo directory and launch the Python interpreter.

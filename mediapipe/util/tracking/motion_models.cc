@@ -22,8 +22,6 @@
 
 #include "Eigen/Core"
 #include "Eigen/Dense"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_format.h"
 
 // Set to true to use catmull rom mixture weights instead of Gaussian weights
@@ -45,10 +43,10 @@ AffineModel ModelAdapter<TranslationModel>::ToAffine(
 
 TranslationModel ModelAdapter<TranslationModel>::FromAffine(
     const AffineModel& model) {
-  ABSL_DCHECK_EQ(model.a(), 1);
-  ABSL_DCHECK_EQ(model.b(), 0);
-  ABSL_DCHECK_EQ(model.c(), 0);
-  ABSL_DCHECK_EQ(model.d(), 1);
+  DCHECK_EQ(model.a(), 1);
+  DCHECK_EQ(model.b(), 0);
+  DCHECK_EQ(model.c(), 0);
+  DCHECK_EQ(model.d(), 1);
 
   return TranslationAdapter::FromArgs(model.dx(), model.dy());
 }
@@ -65,7 +63,7 @@ TranslationModel ModelAdapter<TranslationModel>::FromHomography(
 
 void ModelAdapter<TranslationModel>::GetJacobianAtPoint(const Vector2_f& pt,
                                                         float* jacobian) {
-  ABSL_DCHECK(jacobian);
+  DCHECK(jacobian);
   jacobian[0] = 1;
   jacobian[1] = 0;
   jacobian[2] = 0;
@@ -117,7 +115,7 @@ SimilarityModel ModelAdapter<SimilarityModel>::FromArgs(float dx, float dy,
 
 SimilarityModel ModelAdapter<SimilarityModel>::FromFloatPointer(
     const float* args, bool identity_parametrization) {
-  ABSL_DCHECK(args);
+  DCHECK(args);
   SimilarityModel model;
   model.set_dx(args[0]);
   model.set_dy(args[1]);
@@ -128,7 +126,7 @@ SimilarityModel ModelAdapter<SimilarityModel>::FromFloatPointer(
 
 SimilarityModel ModelAdapter<SimilarityModel>::FromDoublePointer(
     const double* args, bool identity_parametrization) {
-  ABSL_DCHECK(args);
+  DCHECK(args);
   SimilarityModel model;
   model.set_dx(args[0]);
   model.set_dy(args[1]);
@@ -153,7 +151,7 @@ SimilarityModel ModelAdapter<SimilarityModel>::Invert(
   bool success = true;
   const SimilarityModel result = InvertChecked(model, &success);
   if (!success) {
-    ABSL_LOG(ERROR) << "Model not invertible. Returning identity.";
+    LOG(ERROR) << "Model not invertible. Returning identity.";
     return SimilarityModel();
   } else {
     return result;
@@ -220,7 +218,7 @@ float ModelAdapter<SimilarityModel>::GetParameter(const SimilarityModel& model,
     case 3:
       return model.rotation();
     default:
-      ABSL_LOG(FATAL) << "Parameter id is out of bounds";
+      LOG(FATAL) << "Parameter id is out of bounds";
   }
 
   return 0;
@@ -237,7 +235,7 @@ std::string ModelAdapter<SimilarityModel>::ToString(
 SimilarityModel ModelAdapter<SimilarityModel>::NormalizationTransform(
     float frame_width, float frame_height) {
   const float scale = std::hypot(frame_width, frame_height);
-  ABSL_DCHECK_NE(scale, 0);
+  DCHECK_NE(scale, 0);
   return SimilarityAdapter::FromArgs(0, 0, 1.0 / scale, 0);
 }
 
@@ -264,8 +262,8 @@ AffineModel ModelAdapter<LinearSimilarityModel>::ToAffine(
 
 LinearSimilarityModel ModelAdapter<LinearSimilarityModel>::FromAffine(
     const AffineModel& model) {
-  ABSL_DCHECK_EQ(model.a(), model.d());
-  ABSL_DCHECK_EQ(model.b(), -model.c());
+  DCHECK_EQ(model.a(), model.d());
+  DCHECK_EQ(model.b(), -model.c());
 
   return LinearSimilarityAdapter::FromArgs(model.dx(), model.dy(), model.a(),
                                            -model.b());
@@ -315,7 +313,7 @@ LinearSimilarityModel ModelAdapter<LinearSimilarityModel>::AddIdentity(
 
 void ModelAdapter<LinearSimilarityModel>::GetJacobianAtPoint(
     const Vector2_f& pt, float* jacobian) {
-  ABSL_DCHECK(jacobian);
+  DCHECK(jacobian);
   // First row.
   jacobian[0] = 1;
   jacobian[1] = 0;
@@ -332,7 +330,7 @@ LinearSimilarityModel
 ModelAdapter<LinearSimilarityModel>::NormalizationTransform(
     float frame_width, float frame_height) {
   const float scale = std::hypot(frame_width, frame_height);
-  ABSL_DCHECK_NE(scale, 0);
+  DCHECK_NE(scale, 0);
   return LinearSimilarityAdapter::FromArgs(0, 0, 1.0 / scale, 0);
 }
 
@@ -370,7 +368,7 @@ std::string ModelAdapter<AffineModel>::ToString(const AffineModel& model) {
 AffineModel ModelAdapter<AffineModel>::NormalizationTransform(
     float frame_width, float frame_height) {
   const float scale = std::hypot(frame_width, frame_height);
-  ABSL_DCHECK_NE(scale, 0);
+  DCHECK_NE(scale, 0);
   return AffineAdapter::FromArgs(0, 0, 1.0f / scale, 0, 0, 1.0f / scale);
 }
 
@@ -381,8 +379,8 @@ Homography ModelAdapter<AffineModel>::ToHomography(const AffineModel& model) {
 }
 
 AffineModel ModelAdapter<AffineModel>::FromHomography(const Homography& model) {
-  ABSL_DCHECK_EQ(model.h_20(), 0);
-  ABSL_DCHECK_EQ(model.h_21(), 0);
+  DCHECK_EQ(model.h_20(), 0);
+  DCHECK_EQ(model.h_21(), 0);
 
   float params[6] = {model.h_02(), model.h_12(),   // dx, dy
                      model.h_00(), model.h_01(),   // a, b
@@ -413,7 +411,7 @@ AffineModel ModelAdapter<AffineModel>::AddIdentity(
 
 void ModelAdapter<AffineModel>::GetJacobianAtPoint(const Vector2_f& pt,
                                                    float* jacobian) {
-  ABSL_DCHECK(jacobian);
+  DCHECK(jacobian);
   // First row.
   jacobian[0] = 1;
   jacobian[1] = 0;
@@ -552,7 +550,7 @@ Homography ModelAdapter<Homography>::InvertChecked(const Homography& model,
   Eigen::Matrix3d inv_model_mat = model_mat.inverse();
 
   if (inv_model_mat(2, 2) == 0) {
-    ABSL_LOG(ERROR) << "Degenerate homography. See proto.";
+    LOG(ERROR) << "Degenerate homography. See proto.";
     *success = false;
     return Homography();
   }
@@ -584,8 +582,8 @@ std::string ModelAdapter<Homography>::ToString(const Homography& model) {
 }
 
 AffineModel ModelAdapter<Homography>::ToAffine(const Homography& model) {
-  ABSL_DCHECK_EQ(model.h_20(), 0);
-  ABSL_DCHECK_EQ(model.h_21(), 0);
+  DCHECK_EQ(model.h_20(), 0);
+  DCHECK_EQ(model.h_21(), 0);
   AffineModel affine_model;
   affine_model.set_a(model.h_00());
   affine_model.set_b(model.h_01());
@@ -606,7 +604,7 @@ bool ModelAdapter<Homography>::IsAffine(const Homography& model) {
 
 void ModelAdapter<Homography>::GetJacobianAtPoint(const Vector2_f& pt,
                                                   float* jacobian) {
-  ABSL_DCHECK(jacobian);
+  DCHECK(jacobian);
   // First row.
   jacobian[0] = pt.x();
   jacobian[1] = pt.y();
@@ -631,7 +629,7 @@ void ModelAdapter<Homography>::GetJacobianAtPoint(const Vector2_f& pt,
 Homography ModelAdapter<Homography>::NormalizationTransform(
     float frame_width, float frame_height) {
   const float scale = std::hypot(frame_width, frame_height);
-  ABSL_DCHECK_NE(scale, 0);
+  DCHECK_NE(scale, 0);
   return HomographyAdapter::FromArgs(1.0f / scale, 0, 0, 0, 1.0f / scale, 0, 0,
                                      0);
 }
@@ -732,7 +730,7 @@ float ModelMethods<Model>::NormalizedIntersectionArea(const Model& model_1,
                                                       const Vector2_f& rect) {
   const float rect_area = rect.x() * rect.y();
   if (rect_area <= 0) {
-    ABSL_LOG(WARNING) << "Empty rectangle passed -> empty intersection.";
+    LOG(WARNING) << "Empty rectangle passed -> empty intersection.";
     return 0.0f;
   }
 
@@ -758,7 +756,7 @@ float ModelMethods<Model>::NormalizedIntersectionArea(const Model& model_1,
 
   const float average_area = 0.5f * (model_1_area + model_2_area);
   if (average_area <= 0) {
-    ABSL_LOG(WARNING) << "Degenerative models passed -> empty intersection.";
+    LOG(WARNING) << "Degenerative models passed -> empty intersection.";
     return 0.0f;
   }
 
@@ -766,7 +764,7 @@ float ModelMethods<Model>::NormalizedIntersectionArea(const Model& model_1,
   bool success = true;
   Model diff = ModelDiffChecked(model_2, model_1, &success);
   if (!success) {
-    ABSL_LOG(WARNING) << "Model difference is singular -> empty intersection.";
+    LOG(WARNING) << "Model difference is singular -> empty intersection.";
     return 0.0f;
   }
 
@@ -788,7 +786,7 @@ float ModelMethods<Model>::NormalizedIntersectionArea(const Model& model_1,
   // Second, clip transformed rectangle against origin defined by model_2.
   Model inv_diff = Adapter::InvertChecked(diff, &success);
   if (!success) {
-    ABSL_LOG(WARNING) << "Model difference is singular -> empty intersection.";
+    LOG(WARNING) << "Model difference is singular -> empty intersection.";
     return 0.0f;
   }
 
@@ -831,11 +829,10 @@ MixtureRowWeights::MixtureRowWeights(int frame_height, int margin, float sigma,
 
     // No margin support for splines.
     if (margin_ > 0) {
-      ABSL_LOG(WARNING)
-          << "No margin support when flag catmull_rom_mixture_weights "
-          << "is set. Margin is reset to zero, it is recommended "
-          << "that RowWeightsBoundChecked is used to prevent "
-          << "segfaults.";
+      LOG(WARNING) << "No margin support when flag catmull_rom_mixture_weights "
+                   << "is set. Margin is reset to zero, it is recommended "
+                   << "that RowWeightsBoundChecked is used to prevent "
+                   << "segfaults.";
       margin_ = 0;
     }
 
@@ -863,7 +860,7 @@ MixtureRowWeights::MixtureRowWeights(int frame_height, int margin, float sigma,
         weight_ptr[int_pos] += spline_weights[0];  // Double knot.
       }
 
-      ABSL_CHECK_LT(int_pos, num_models - 1);
+      CHECK_LT(int_pos, num_models - 1);
       weight_ptr[int_pos + 1] += spline_weights[2];
       if (int_pos + 1 < num_models - 1) {
         weight_ptr[int_pos + 2] += spline_weights[3];
@@ -900,7 +897,7 @@ MixtureRowWeights::MixtureRowWeights(int frame_height, int margin, float sigma,
       }
 
       // Normalize.
-      ABSL_DCHECK_GT(weight_sum, 0);
+      DCHECK_GT(weight_sum, 0);
       const float inv_weight_sum = 1.0f / weight_sum;
       for (int j = 0; j < num_models; ++j) {
         weight_ptr[j] *= inv_weight_sum;

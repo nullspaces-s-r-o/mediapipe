@@ -1,5 +1,3 @@
-# Placeholder: load py_test
-
 package(
     default_visibility = ["//visibility:public"],
     features = ["-use_header_modules"],
@@ -16,15 +14,14 @@ cc_library(
     name = "builder",
     hdrs = ["builder.h"],
     deps = [
+        ":const_str",
+        ":contract",
+        ":node",
+        ":packet",
         ":port",
         "//mediapipe/framework:calculator_base",
         "//mediapipe/framework:calculator_contract",
-        "//mediapipe/framework/port:any_proto",
-        "//mediapipe/framework/port:ret_check",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 
@@ -41,8 +38,6 @@ cc_test(
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/framework/port:parse_text_proto",
-        "//mediapipe/framework/testdata:night_light_calculator_cc_proto",
-        "//mediapipe/framework/testdata:sky_light_calculator_cc_proto",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -115,7 +110,6 @@ cc_test(
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/framework/port:parse_text_proto",
         "//mediapipe/framework/port:status",
-        "@com_google_absl//absl/log:absl_log",
     ],
 )
 
@@ -127,7 +121,6 @@ cc_library(
         ":tuple",
         "//mediapipe/framework:packet",
         "//mediapipe/framework/port:logging",
-        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/meta:type_traits",
     ],
 )
@@ -157,7 +150,6 @@ cc_library(
         "//mediapipe/framework:output_side_packet",
         "//mediapipe/framework/port:logging",
         "//mediapipe/framework/tool:type_util",
-        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -171,7 +163,6 @@ cc_test(
     deps = [
         ":port",
         "//mediapipe/framework/port:gtest_main",
-        "@com_google_absl//absl/strings",
     ],
 )
 

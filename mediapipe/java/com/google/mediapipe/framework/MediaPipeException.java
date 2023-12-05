@@ -40,7 +40,7 @@ public class MediaPipeException extends RuntimeException {
     return statusMessage;
   }
 
-  /** The 18 canonical status codes. */
+  /** The 17 canonical status codes. */
   public enum StatusCode {
     OK("ok"),
     CANCELLED("canceled"),
@@ -58,8 +58,7 @@ public class MediaPipeException extends RuntimeException {
     INTERNAL("internal"),
     UNAVAILABLE("unavailable"),
     DATA_LOSS("data loss"),
-    UNAUTHENTICATED("unauthenticated"),
-    IO_EXCEPTION("i/o exception");
+    UNAUTHENTICATED("unauthenticated");
 
     StatusCode(String description) {
       this.description = description;

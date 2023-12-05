@@ -24,7 +24,6 @@ package(
 
 mediapipe_files(srcs = [
     "corrupted_mobilenet_v1_0.25_224_1_default_1.tflite",
-    "dummy_gesture_recognizer.task",
     "mobilenet_v1_0.25_224_quant.tflite",
     "test_model_add_op.tflite",
     "test_model_with_custom_op.tflite",
@@ -37,7 +36,6 @@ filegroup(
     name = "test_models",
     srcs = [
         "corrupted_mobilenet_v1_0.25_224_1_default_1.tflite",
-        "dummy_gesture_recognizer.task",
         "mobilenet_v1_0.25_224_quant.tflite",
         "test_model_add_op.tflite",
         "test_model_with_custom_op.tflite",

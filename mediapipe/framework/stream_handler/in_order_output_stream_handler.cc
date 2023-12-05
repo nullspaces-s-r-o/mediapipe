@@ -14,7 +14,6 @@
 
 #include "mediapipe/framework/stream_handler/in_order_output_stream_handler.h"
 
-#include "absl/log/absl_check.h"
 #include "mediapipe/framework/collection.h"
 #include "mediapipe/framework/collection_item_id.h"
 #include "mediapipe/framework/output_stream_shard.h"
@@ -24,7 +23,7 @@ namespace mediapipe {
 REGISTER_OUTPUT_STREAM_HANDLER(InOrderOutputStreamHandler);
 
 void InOrderOutputStreamHandler::PropagationLoop() {
-  ABSL_CHECK_EQ(propagation_state_, kIdle);
+  CHECK_EQ(propagation_state_, kIdle);
   Timestamp context_timestamp;
   CalculatorContext* calculator_context;
   if (!calculator_context_manager_->HasActiveContexts()) {
@@ -35,7 +34,7 @@ void InOrderOutputStreamHandler::PropagationLoop() {
     if (!completed_input_timestamps_.empty()) {
       Timestamp completed_timestamp = *completed_input_timestamps_.begin();
       if (context_timestamp != completed_timestamp) {
-        ABSL_CHECK_LT(context_timestamp, completed_timestamp);
+        CHECK_LT(context_timestamp, completed_timestamp);
         return;
       }
       propagation_state_ = kPropagatingPackets;
@@ -46,7 +45,7 @@ void InOrderOutputStreamHandler::PropagationLoop() {
     if (propagation_state_ == kPropagatingPackets) {
       PropagatePackets(&calculator_context, &context_timestamp);
     } else {
-      ABSL_CHECK_EQ(kPropagatingBound, propagation_state_);
+      CHECK_EQ(kPropagatingBound, propagation_state_);
       PropagationBound(&calculator_context, &context_timestamp);
     }
   }
@@ -106,12 +105,12 @@ void InOrderOutputStreamHandler::PropagationBound(
   }
   // Some recent changes require the propagation thread to recheck if any
   // new packets can be propagated.
-  ABSL_CHECK_EQ(propagation_state_, kPropagationPending);
+  CHECK_EQ(propagation_state_, kPropagationPending);
   // task_timestamp_bound_ was updated while the propagation thread was
   // doing timestamp propagation. This thread will redo timestamp
   // propagation for the new task_timestamp_bound_.
   if (!calculator_context_manager_->HasActiveContexts()) {
-    ABSL_CHECK_LT(bound_to_propagate, task_timestamp_bound_);
+    CHECK_LT(bound_to_propagate, task_timestamp_bound_);
     propagation_state_ = kPropagatingBound;
     return;
   }

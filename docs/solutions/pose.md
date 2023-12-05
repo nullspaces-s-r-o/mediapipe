@@ -1,8 +1,7 @@
 ---
-layout: forward
-target: https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/
+layout: default
 title: Pose
-parent: MediaPipe Legacy Solutions
+parent: Solutions
 has_children: true
 has_toc: false
 nav_order: 5
@@ -20,14 +19,6 @@ nav_order: 5
 {:toc}
 </details>
 ---
-
-**Attention:** *Thank you for your interest in MediaPipe Solutions.
-As of May 10, 2023, this solution was upgraded to a new MediaPipe
-Solution. For more information, see the
-[MediaPipe Solutions](https://developers.google.com/mediapipe/solutions/vision/pose_landmarker)
-site.*
-
-----
 
 ## Overview
 
@@ -143,7 +134,7 @@ The landmark model in MediaPipe Pose predicts the location of 33 pose landmarks
 :----------------------------------------------------------------------------------------------: |
 *Fig 4. 33 pose landmarks.*                                                                      |
 
-Optionally, MediaPipe Pose can predict a full-body
+Optionally, MediaPipe Pose can predicts a full-body
 [segmentation mask](#segmentation_mask) represented as a two-class segmentation
 (human or background).
 
@@ -226,7 +217,7 @@ A list of pose landmarks. Each landmark consists of the following:
 
 *Fig 5. Example of MediaPipe Pose real-world 3D coordinates.* |
 :-----------------------------------------------------------: |
-<video autoplay muted loop preload style="height: auto; width: 480px"><source src="https://mediapipe.dev/images/mobile/pose_world_landmarks.mp4" type="video/mp4"></video> |
+<video autoplay muted loop preload style="height: auto; width: 480px"><source src="../images/mobile/pose_world_landmarks.mp4" type="video/mp4"></video> |
 
 Another list of pose landmarks in world coordinates. Each landmark consists of
 the following:
@@ -247,7 +238,7 @@ for usage details.
 
 *Fig 6. Example of MediaPipe Pose segmentation mask.* |
 :---------------------------------------------------: |
-<video autoplay muted loop preload style="height: auto; width: 480px"><source src="https://mediapipe.dev/images/mobile/pose_segmentation.mp4" type="video/mp4"></video> |
+<video autoplay muted loop preload style="height: auto; width: 480px"><source src="../images/mobile/pose_segmentation.mp4" type="video/mp4"></video> |
 
 ### Python Solution API
 
@@ -268,7 +259,6 @@ Supported configuration options:
 ```python
 import cv2
 import mediapipe as mp
-import numpy as np
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_pose = mp.solutions.pose

@@ -123,10 +123,7 @@ class PreviousLoopbackCalculator : public Node {
           // However, LOOP packet is empty.
           kPrevLoop(cc).SetNextTimestampBound(main_spec.timestamp + 1);
         } else {
-          // Avoids sending leftovers to a stream that's already closed.
-          if (!kPrevLoop(cc).IsClosed()) {
-            kPrevLoop(cc).Send(loop_candidate.At(main_spec.timestamp));
-          }
+          kPrevLoop(cc).Send(loop_candidate.At(main_spec.timestamp));
         }
         loop_packets_.pop_front();
         main_packet_specs_.pop_front();

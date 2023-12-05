@@ -16,11 +16,12 @@ load("//mediapipe/framework/port:build_config.bzl", "mediapipe_proto_library")
 
 licenses(["notice"])
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 mediapipe_proto_library(
     name = "opencv_image_encoder_calculator_proto",
     srcs = ["opencv_image_encoder_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -30,6 +31,7 @@ mediapipe_proto_library(
 mediapipe_proto_library(
     name = "scale_image_calculator_proto",
     srcs = ["scale_image_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -40,6 +42,7 @@ mediapipe_proto_library(
 mediapipe_proto_library(
     name = "set_alpha_calculator_proto",
     srcs = ["set_alpha_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -49,6 +52,7 @@ mediapipe_proto_library(
 mediapipe_proto_library(
     name = "image_cropping_calculator_proto",
     srcs = ["image_cropping_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -58,6 +62,7 @@ mediapipe_proto_library(
 mediapipe_proto_library(
     name = "bilateral_filter_calculator_proto",
     srcs = ["bilateral_filter_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -67,6 +72,7 @@ mediapipe_proto_library(
 mediapipe_proto_library(
     name = "recolor_calculator_proto",
     srcs = ["recolor_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -77,6 +83,7 @@ mediapipe_proto_library(
 mediapipe_proto_library(
     name = "segmentation_smoothing_calculator_proto",
     srcs = ["segmentation_smoothing_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -86,6 +93,7 @@ mediapipe_proto_library(
 cc_library(
     name = "color_convert_calculator",
     srcs = ["color_convert_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:timestamp",
@@ -97,7 +105,6 @@ cc_library(
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:source_location",
         "//mediapipe/framework/port:status",
-        "@com_google_absl//absl/log:absl_check",
     ],
     alwayslink = 1,
 )
@@ -105,6 +112,7 @@ cc_library(
 cc_library(
     name = "opencv_encoded_image_to_image_frame_calculator",
     srcs = ["opencv_encoded_image_to_image_frame_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":opencv_encoded_image_to_image_frame_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
@@ -119,6 +127,7 @@ cc_library(
 cc_library(
     name = "opencv_image_encoder_calculator",
     srcs = ["opencv_image_encoder_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":opencv_image_encoder_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
@@ -126,7 +135,6 @@ cc_library(
         "//mediapipe/framework/port:opencv_imgcodecs",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:status",
-        "@com_google_absl//absl/log:absl_check",
     ],
     alwayslink = 1,
 )
@@ -134,9 +142,11 @@ cc_library(
 cc_library(
     name = "opencv_put_text_calculator",
     srcs = ["opencv_put_text_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:opencv_imgcodecs",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:status",
     ],
@@ -146,57 +156,40 @@ cc_library(
 cc_library(
     name = "set_alpha_calculator",
     srcs = ["set_alpha_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":set_alpha_calculator_cc_proto",
-        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:calculator_options_cc_proto",
         "//mediapipe/framework/formats:image_format_cc_proto",
+        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:opencv_core",
-        "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/port:vector",
-        "@com_google_absl//absl/log:absl_log",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
             "//mediapipe/gpu:gl_calculator_helper",
-            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:gl_simple_shaders",
+            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:shader_util",
         ],
     }),
     alwayslink = 1,
 )
 
-cc_test(
-    name = "set_alpha_calculator_test",
-    srcs = ["set_alpha_calculator_test.cc"],
-    deps = [
-        ":set_alpha_calculator",
-        ":set_alpha_calculator_cc_proto",
-        "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework:calculator_runner",
-        "//mediapipe/framework/formats:image_frame_opencv",
-        "//mediapipe/framework/formats:rect_cc_proto",
-        "//mediapipe/framework/port:gtest_main",
-        "//mediapipe/framework/port:opencv_core",
-        "//mediapipe/framework/port:opencv_imgproc",
-        "//mediapipe/framework/port:parse_text_proto",
-        "//mediapipe/framework/port:status",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
 cc_library(
     name = "bilateral_filter_calculator",
     srcs = ["bilateral_filter_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":bilateral_filter_calculator_cc_proto",
-        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:calculator_options_cc_proto",
         "//mediapipe/framework/formats:image_format_cc_proto",
+        "@com_google_absl//absl/strings",
+        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/formats:image_frame_opencv",
         "//mediapipe/framework/port:logging",
@@ -204,14 +197,12 @@ cc_library(
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/port:vector",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/strings",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
             "//mediapipe/gpu:gl_calculator_helper",
-            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:gl_simple_shaders",
+            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:shader_util",
         ],
     }),
@@ -219,15 +210,10 @@ cc_library(
 )
 
 mediapipe_proto_library(
-    name = "rotation_mode_proto",
-    srcs = ["rotation_mode.proto"],
-)
-
-mediapipe_proto_library(
     name = "image_transformation_calculator_proto",
     srcs = ["image_transformation_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
-        ":rotation_mode_proto",
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
         "//mediapipe/gpu:scale_mode_proto",
@@ -250,12 +236,13 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
+    visibility = ["//visibility:public"],
     deps = [
         ":image_transformation_calculator_cc_proto",
-        ":rotation_mode_cc_proto",
-        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:packet",
         "//mediapipe/framework:timestamp",
+        "//mediapipe/gpu:scale_mode_cc_proto",
+        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/formats:image_frame_opencv",
         "//mediapipe/framework/formats:video_stream_header",
@@ -263,50 +250,16 @@ cc_library(
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
-        "//mediapipe/gpu:scale_mode_cc_proto",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
-            "//mediapipe/gpu:gl_base_hdr",
             "//mediapipe/gpu:gl_calculator_helper",
-            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:gl_simple_shaders",
+            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:shader_util",
         ],
     }),
     alwayslink = 1,
-)
-
-cc_test(
-    name = "image_transformation_calculator_test",
-    srcs = ["image_transformation_calculator_test.cc"],
-    data = ["//mediapipe/calculators/image/testdata:test_images"],
-    tags = [
-        "desktop_only_test",
-    ],
-    deps = [
-        ":image_transformation_calculator",
-        "//mediapipe/framework:calculator_cc_proto",
-        "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework:calculator_runner",
-        "//mediapipe/framework/deps:file_path",
-        "//mediapipe/framework/formats:image_format_cc_proto",
-        "//mediapipe/framework/formats:image_frame",
-        "//mediapipe/framework/formats:image_frame_opencv",
-        "//mediapipe/framework/port:gtest",
-        "//mediapipe/framework/port:opencv_imgcodecs",
-        "//mediapipe/framework/port:opencv_imgproc",
-        "//mediapipe/framework/port:parse_text_proto",
-        "//mediapipe/gpu:gpu_buffer_to_image_frame_calculator",
-        "//mediapipe/gpu:image_frame_to_gpu_buffer_calculator",
-        "//third_party:opencv",
-        "@com_google_absl//absl/container:flat_hash_set",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
-        "@com_google_googletest//:gtest_main",
-    ],
 )
 
 cc_library(
@@ -326,6 +279,7 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
+    visibility = ["//visibility:public"],
     deps = [
         ":image_cropping_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
@@ -336,13 +290,12 @@ cc_library(
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
-        "@com_google_absl//absl/log:absl_log",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
             "//mediapipe/gpu:gl_calculator_helper",
-            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:gl_simple_shaders",
+            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:gpu_buffer",
             "//mediapipe/gpu:shader_util",
         ],
@@ -353,29 +306,23 @@ cc_library(
 cc_test(
     name = "image_cropping_calculator_test",
     srcs = ["image_cropping_calculator_test.cc"],
-    tags = ["not_run:arm"],
     deps = [
         ":image_cropping_calculator",
         ":image_cropping_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
-        "//mediapipe/framework:calculator_runner",
-        "//mediapipe/framework/formats:image_frame_opencv",
         "//mediapipe/framework/formats:rect_cc_proto",
         "//mediapipe/framework/port:gtest_main",
-        "//mediapipe/framework/port:opencv_core",
-        "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:parse_text_proto",
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/tool:tag_map",
         "//mediapipe/framework/tool:tag_map_helper",
-        "//mediapipe/gpu:gpu_buffer_to_image_frame_calculator",
-        "//mediapipe/gpu:image_frame_to_gpu_buffer_calculator",
     ],
 )
 
 cc_library(
     name = "luminance_calculator",
     srcs = ["luminance_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
@@ -389,6 +336,7 @@ cc_library(
 cc_library(
     name = "sobel_edges_calculator",
     srcs = ["sobel_edges_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
@@ -402,22 +350,23 @@ cc_library(
 cc_library(
     name = "recolor_calculator",
     srcs = ["recolor_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":recolor_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/util:color_cc_proto",
         "//mediapipe/framework/port:opencv_core",
         "//mediapipe/framework/port:opencv_imgproc",
-        "//mediapipe/framework/port:ret_check",
-        "//mediapipe/framework/port:status",
-        "//mediapipe/util:color_cc_proto",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
             "//mediapipe/gpu:gl_calculator_helper",
-            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:gl_simple_shaders",
+            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:shader_util",
         ],
     }),
@@ -428,12 +377,14 @@ cc_library(
     name = "scale_image_utils",
     srcs = ["scale_image_utils.cc"],
     hdrs = ["scale_image_utils.h"],
+    visibility = [
+        "//mediapipe:__subpackages__",
+    ],
     deps = [
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
-        "@com_google_absl//absl/log:absl_check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -441,9 +392,12 @@ cc_library(
 cc_library(
     name = "scale_image_calculator",
     srcs = ["scale_image_calculator.cc"],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
-        ":scale_image_calculator_cc_proto",
         ":scale_image_utils",
+        "//mediapipe/calculators/image:scale_image_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image_format_cc_proto",
         "//mediapipe/framework/formats:image_frame",
@@ -458,8 +412,6 @@ cc_library(
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
         "//mediapipe/util:image_frame_util",
-        "@com_google_absl//absl/log:absl_check",
-        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/strings",
         "@libyuv",
     ],
@@ -469,6 +421,7 @@ cc_library(
 mediapipe_proto_library(
     name = "image_clone_calculator_proto",
     srcs = ["image_clone_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -478,10 +431,11 @@ mediapipe_proto_library(
 cc_library(
     name = "image_clone_calculator",
     srcs = ["image_clone_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":image_clone_calculator_cc_proto",
-        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/api2:node",
+        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image",
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
@@ -497,9 +451,10 @@ cc_library(
 cc_library(
     name = "image_properties_calculator",
     srcs = ["image_properties_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
-        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/api2:node",
+        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image",
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/port:ret_check",
@@ -561,6 +516,7 @@ cc_test(
 mediapipe_proto_library(
     name = "mask_overlay_calculator_proto",
     srcs = ["mask_overlay_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -570,6 +526,7 @@ mediapipe_proto_library(
 mediapipe_proto_library(
     name = "opencv_encoded_image_to_image_frame_calculator_proto",
     srcs = ["opencv_encoded_image_to_image_frame_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -579,6 +536,7 @@ mediapipe_proto_library(
 mediapipe_proto_library(
     name = "feature_detector_calculator_proto",
     srcs = ["feature_detector_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -588,6 +546,7 @@ mediapipe_proto_library(
 cc_library(
     name = "mask_overlay_calculator",
     srcs = ["mask_overlay_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":mask_overlay_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
@@ -603,6 +562,7 @@ cc_library(
 cc_library(
     name = "feature_detector_calculator",
     srcs = ["feature_detector_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":feature_detector_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
@@ -629,6 +589,7 @@ cc_library(
 cc_library(
     name = "image_file_properties_calculator",
     srcs = ["image_file_properties_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image_file_properties_cc_proto",
@@ -658,22 +619,23 @@ cc_test(
 cc_library(
     name = "segmentation_smoothing_calculator",
     srcs = ["segmentation_smoothing_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         ":segmentation_smoothing_calculator_cc_proto",
-        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework:calculator_options_cc_proto",
-        "//mediapipe/framework/formats:image",
         "//mediapipe/framework/formats:image_format_cc_proto",
+        "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:image",
+        "//mediapipe/framework/port:logging",
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/port:vector",
-        "@com_google_absl//absl/log:absl_log",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
             "//mediapipe/gpu:gl_calculator_helper",
-            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:gl_simple_shaders",
+            "//mediapipe/gpu:gl_quad_renderer",
             "//mediapipe/gpu:shader_util",
         ],
     }) + select({
@@ -690,7 +652,6 @@ cc_library(
 cc_test(
     name = "segmentation_smoothing_calculator_test",
     srcs = ["segmentation_smoothing_calculator_test.cc"],
-    tags = ["not_run:arm"],
     deps = [
         ":image_clone_calculator",
         ":image_clone_calculator_cc_proto",
@@ -705,7 +666,6 @@ cc_test(
         "//mediapipe/framework/port:opencv_imgcodecs",
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:parse_text_proto",
-        "@com_google_absl//absl/log:absl_log",
     ],
 )
 
@@ -728,7 +688,6 @@ cc_library(
         "//mediapipe/gpu:gpu_buffer",
         "//mediapipe/gpu:gpu_origin_cc_proto",
         "//mediapipe/gpu:shader_util",
-        "@com_google_absl//absl/log:absl_log",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
@@ -757,6 +716,7 @@ cc_library(
 mediapipe_proto_library(
     name = "warp_affine_calculator_proto",
     srcs = ["warp_affine_calculator.proto"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_options_proto",
         "//mediapipe/framework:calculator_proto",
@@ -768,9 +728,12 @@ cc_library(
     name = "warp_affine_calculator",
     srcs = ["warp_affine_calculator.cc"],
     hdrs = ["warp_affine_calculator.h"],
+    visibility = ["//visibility:public"],
     deps = [
         ":affine_transformation",
         ":warp_affine_calculator_cc_proto",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/api2:node",
         "//mediapipe/framework/api2:port",
@@ -778,15 +741,12 @@ cc_library(
         "//mediapipe/framework/formats:image_frame",
         "//mediapipe/framework/port:ret_check",
         "//mediapipe/framework/port:status",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
     ] + select({
         "//mediapipe/gpu:disable_gpu": [],
         "//conditions:default": [
-            ":affine_transformation_runner_gl",
             "//mediapipe/gpu:gl_calculator_helper",
             "//mediapipe/gpu:gpu_buffer",
-            "//mediapipe/gpu:gpu_service",
+            ":affine_transformation_runner_gl",
         ],
     }) + select({
         "//mediapipe/framework/port:disable_opencv": [],
@@ -812,17 +772,13 @@ cc_test(
         "//mediapipe/calculators/tensor:testdata/image_to_tensor/medium_sub_rect_keep_aspect_with_rotation_border_zero.png",
         "//mediapipe/calculators/tensor:testdata/image_to_tensor/medium_sub_rect_with_rotation.png",
         "//mediapipe/calculators/tensor:testdata/image_to_tensor/medium_sub_rect_with_rotation_border_zero.png",
-        "//mediapipe/calculators/tensor:testdata/image_to_tensor/medium_sub_rect_with_rotation_border_zero_interp_cubic.png",
         "//mediapipe/calculators/tensor:testdata/image_to_tensor/noop_except_range.png",
     ],
-    tags = [
-        "desktop_only_test",
-        "not_run:arm",
-    ],
+    tags = ["desktop_only_test"],
     deps = [
         ":affine_transformation",
-        ":image_transformation_calculator",
         ":warp_affine_calculator",
+        "//mediapipe/calculators/image:image_transformation_calculator",
         "//mediapipe/calculators/tensor:image_to_tensor_converter",
         "//mediapipe/calculators/tensor:image_to_tensor_utils",
         "//mediapipe/calculators/util:from_image_calculator",
@@ -853,6 +809,7 @@ cc_test(
 cc_library(
     name = "yuv_to_image_calculator",
     srcs = ["yuv_to_image_calculator.cc"],
+    visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework:calculator_context",
         "//mediapipe/framework:calculator_framework",

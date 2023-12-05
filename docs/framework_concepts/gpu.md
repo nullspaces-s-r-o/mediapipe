@@ -1,6 +1,5 @@
 ---
-layout: forward
-target: https://developers.google.com/mediapipe/framework/framework_concepts/gpu
+layout: default
 title: GPU
 parent: Framework Concepts
 nav_order: 5
@@ -12,12 +11,6 @@ nav_order: 5
 1. TOC
 {:toc}
 ---
-
-**Attention:** *Thanks for your interest in MediaPipe! We have moved to
-[https://developers.google.com/mediapipe](https://developers.google.com/mediapipe)
-as the primary developer documentation site for MediaPipe as of April 3, 2023.*
-
-----
 
 ## Overview
 

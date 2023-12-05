@@ -1,4 +1,4 @@
-/* Copyright 2022 The MediaPipe Authors.
+/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,7 +57,6 @@ enum class SchemaMembers {
   kContentPropertiesAudioProperties = 8,
   kAssociatedFileTypeScannIndexFile = 9,
   kAssociatedFileVersion = 10,
-  kCustomMetadata = 11,
 };
 
 // Helper class to compare semantic versions in terms of three integers, major,
@@ -126,8 +125,6 @@ Version GetMemberVersion(SchemaMembers member) {
       return Version(1, 4, 0);
     case SchemaMembers::kAssociatedFileVersion:
       return Version(1, 4, 1);
-    case SchemaMembers::kCustomMetadata:
-      return Version(1, 5, 0);
     default:
       // Should never happen.
       TFLITE_LOG(FATAL) << "Unsupported schema member: "
@@ -213,7 +210,7 @@ void UpdateMinimumVersionForTable<tflite::Content>(const tflite::Content* table,
                                                    Version* min_version) {
   if (table == nullptr) return;
 
-  // Checks the ContentProperties field.
+  // Checks the ContenProperties field.
   if (table->content_properties_type() == ContentProperties_AudioProperties) {
     UpdateMinimumVersion(
         GetMemberVersion(SchemaMembers::kContentPropertiesAudioProperties),
@@ -283,12 +280,6 @@ void UpdateMinimumVersionForTable<tflite::SubGraphMetadata>(
     UpdateMinimumVersion(
         GetMemberVersion(SchemaMembers::kSubGraphMetadataOutputTensorGroups),
         min_version);
-  }
-
-  // Checks for the custom metadata field.
-  if (table->custom_metadata() != nullptr) {
-    UpdateMinimumVersion(GetMemberVersion(SchemaMembers::kCustomMetadata),
-                         min_version);
   }
 }
 

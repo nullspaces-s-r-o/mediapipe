@@ -19,7 +19,6 @@
 #include "mediapipe/framework/port/integral_types.h"
 #include "mediapipe/framework/port/proto_ns.h"
 #include "mediapipe/framework/port/status.h"
-#include "mediapipe/framework/port/status_macros.h"
 #include "mediapipe/util/label_map.pb.h"
 #include "mediapipe/util/resource_util.h"
 
@@ -58,10 +57,9 @@ class DetectionLabelIdToTextCalculator : public CalculatorBase {
  private:
   // Local label map built from the calculator options' `label_map_path` or
   // `label` field.
-  proto_ns::Map<int64_t, LabelMapItem> local_label_map_;
+  proto_ns::Map<int64, LabelMapItem> local_label_map_;
   bool keep_label_id_;
-  const proto_ns::Map<int64_t, LabelMapItem>& GetLabelMap(
-      CalculatorContext* cc);
+  const proto_ns::Map<int64, LabelMapItem>& GetLabelMap(CalculatorContext* cc);
 };
 REGISTER_CALCULATOR(DetectionLabelIdToTextCalculator);
 
@@ -83,11 +81,10 @@ absl::Status DetectionLabelIdToTextCalculator::Open(CalculatorContext* cc) {
         << "Only can set one of the following fields in the CalculatorOptions: "
            "label_map_path, label, and label_items.";
     std::string string_path;
-    MP_ASSIGN_OR_RETURN(string_path,
-                        PathToResourceAsFile(options.label_map_path()));
+    ASSIGN_OR_RETURN(string_path,
+                     PathToResourceAsFile(options.label_map_path()));
     std::string label_map_string;
-    MP_RETURN_IF_ERROR(
-        mediapipe::GetResourceContents(string_path, &label_map_string));
+    MP_RETURN_IF_ERROR(file::GetContents(string_path, &label_map_string));
 
     std::istringstream stream(label_map_string);
     std::string line;
@@ -118,7 +115,7 @@ absl::Status DetectionLabelIdToTextCalculator::Process(CalculatorContext* cc) {
     output_detections.push_back(input_detection);
     Detection& output_detection = output_detections.back();
     bool has_text_label = false;
-    for (const int32_t label_id : output_detection.label_id()) {
+    for (const int32 label_id : output_detection.label_id()) {
       if (GetLabelMap(cc).contains(label_id)) {
         auto item = GetLabelMap(cc).at(label_id);
         output_detection.add_label(item.name());
@@ -139,7 +136,7 @@ absl::Status DetectionLabelIdToTextCalculator::Process(CalculatorContext* cc) {
   return absl::OkStatus();
 }
 
-const proto_ns::Map<int64_t, LabelMapItem>&
+const proto_ns::Map<int64, LabelMapItem>&
 DetectionLabelIdToTextCalculator::GetLabelMap(CalculatorContext* cc) {
   return !local_label_map_.empty()
              ? local_label_map_

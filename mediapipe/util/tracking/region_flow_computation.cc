@@ -28,11 +28,8 @@
 #include "Eigen/Core"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/node_hash_set.h"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "mediapipe/framework/port/logging.h"
-#include "mediapipe/framework/port/opencv_core_inc.h"
 #include "mediapipe/framework/port/opencv_features2d_inc.h"
 #include "mediapipe/framework/port/opencv_imgproc_inc.h"
 #include "mediapipe/framework/port/opencv_video_inc.h"
@@ -120,13 +117,21 @@ void InvertFeatureList(const TrackedFeatureList& list,
   }
 }
 
+// Allocates pyramid images of sufficient size (suggested OpenCV settings,
+// independent of number of pyramid levels).
+void AllocatePyramid(int frame_width, int frame_height, cv::Mat* pyramid) {
+  const int pyramid_width = frame_width + 8;
+  const int pyramid_height = frame_height / 2 + 1;
+  pyramid->create(pyramid_height, pyramid_width, CV_8UC1);
+}
+
 namespace {
 
 // lab_window is used as scratch space only, to avoid allocations.
 void GetPatchDescriptorAtPoint(const cv::Mat& rgb_frame, const Vector2_i& pt,
                                const int radius, cv::Mat* lab_window,
                                PatchDescriptor* descriptor) {
-  ABSL_CHECK(descriptor);
+  CHECK(descriptor);
   descriptor->clear_data();
 
   // Reserve enough data for mean and upper triangular part of
@@ -143,7 +148,7 @@ void GetPatchDescriptorAtPoint(const cv::Mat& rgb_frame, const Vector2_i& pt,
   // Compute channel sums and means.
   int sum[3] = {0, 0, 0};
   for (int y = 0; y < diameter; ++y) {
-    const uint8_t* data = rgb_window.ptr<uint8_t>(y);
+    const uint8* data = rgb_window.ptr<uint8>(y);
     for (int x = 0; x < diameter; ++x, data += 3) {
       for (int c = 0; c < 3; ++c) {
         sum[c] += data[c];
@@ -169,7 +174,7 @@ void GetPatchDescriptorAtPoint(const cv::Mat& rgb_frame, const Vector2_i& pt,
       // using N = diameter * diameter and sum[c] = N * mean[c].
       product[c][d] = -sum[c] * sum[d] * denom;
       for (int y = 0; y < diameter; ++y) {
-        const uint8_t* data = rgb_window.ptr<uint8_t>(y);
+        const uint8* data = rgb_window.ptr<uint8>(y);
         for (int x = 0; x < diameter; ++x, data += 3) {
           product[c][d] += static_cast<int>(data[c]) * data[d];
         }
@@ -201,19 +206,19 @@ class PatchDescriptorInvoker {
          ++feature_idx) {
       RegionFlowFeature* feature = features_->mutable_feature(feature_idx);
       Vector2_i pt(FeatureIntLocation(*feature));
-      ABSL_DCHECK_GE(pt.x(), radius_);
-      ABSL_DCHECK_GE(pt.y(), radius_);
-      ABSL_DCHECK_LT(pt.x(), rgb_frame_.cols - radius_);
-      ABSL_DCHECK_LT(pt.y(), rgb_frame_.rows - radius_);
+      DCHECK_GE(pt.x(), radius_);
+      DCHECK_GE(pt.y(), radius_);
+      DCHECK_LT(pt.x(), rgb_frame_.cols - radius_);
+      DCHECK_LT(pt.y(), rgb_frame_.rows - radius_);
       GetPatchDescriptorAtPoint(rgb_frame_, pt, radius_, &lab_window,
                                 feature->mutable_feature_descriptor());
 
       if (prev_rgb_frame_) {
         Vector2_i pt_match(FeatureMatchIntLocation(*feature));
-        ABSL_DCHECK_GE(pt_match.x(), radius_);
-        ABSL_DCHECK_GE(pt_match.y(), radius_);
-        ABSL_DCHECK_LT(pt_match.x(), rgb_frame_.cols - radius_);
-        ABSL_DCHECK_LT(pt_match.y(), rgb_frame_.rows - radius_);
+        DCHECK_GE(pt_match.x(), radius_);
+        DCHECK_GE(pt_match.y(), radius_);
+        DCHECK_LT(pt_match.x(), rgb_frame_.cols - radius_);
+        DCHECK_LT(pt_match.y(), rgb_frame_.rows - radius_);
         GetPatchDescriptorAtPoint(*prev_rgb_frame_, pt_match, radius_,
                                   &lab_window,
                                   feature->mutable_feature_match_descriptor());
@@ -241,18 +246,17 @@ void ComputeRegionFlowFeatureDescriptors(
     int patch_descriptor_radius, RegionFlowFeatureList* flow_feature_list) {
   const int rows = rgb_frame.rows;
   const int cols = rgb_frame.cols;
-  ABSL_CHECK_EQ(rgb_frame.depth(), CV_8U);
-  ABSL_CHECK_EQ(rgb_frame.channels(), 3);
+  CHECK_EQ(rgb_frame.depth(), CV_8U);
+  CHECK_EQ(rgb_frame.channels(), 3);
 
   if (prev_rgb_frame) {
-    ABSL_CHECK_EQ(prev_rgb_frame->depth(), CV_8U);
-    ABSL_CHECK_EQ(prev_rgb_frame->channels(), 3);
-    ABSL_CHECK_EQ(prev_rgb_frame->rows, rows);
-    ABSL_CHECK_EQ(prev_rgb_frame->cols, cols);
+    CHECK_EQ(prev_rgb_frame->depth(), CV_8U);
+    CHECK_EQ(prev_rgb_frame->channels(), 3);
+    CHECK_EQ(prev_rgb_frame->rows, rows);
+    CHECK_EQ(prev_rgb_frame->cols, cols);
   }
 
-  ABSL_CHECK_LE(patch_descriptor_radius,
-                flow_feature_list->distance_from_border());
+  CHECK_LE(patch_descriptor_radius, flow_feature_list->distance_from_border());
 
   ParallelFor(
       0, flow_feature_list->feature_size(), 1,
@@ -350,7 +354,7 @@ struct RegionFlowComputation::FrameTrackingData {
   int frame_num = 0;
 
   // Timestamp of the underlying frame.
-  int64_t timestamp_usec = 0;
+  int64 timestamp_usec = 0;
 
   // Difference of this FrameTrackingData's tiny_image w.r.t. previous one,
   // i.e. one frame earlier.
@@ -362,7 +366,11 @@ struct RegionFlowComputation::FrameTrackingData {
 
   ORBFeatureDescriptors orb;
 
-  FrameTrackingData(int width, int height, int extraction_levels) {
+  bool use_cv_tracking = false;
+
+  FrameTrackingData(int width, int height, int extraction_levels,
+                    bool _use_cv_tracking)
+      : use_cv_tracking(_use_cv_tracking) {
     // Extraction pyramid.
     extraction_pyramid.clear();
     for (int i = 0, iwidth = width, iheight = height; i < extraction_levels;
@@ -371,22 +379,34 @@ struct RegionFlowComputation::FrameTrackingData {
       iwidth = (iwidth + 1) / 2;
       iheight = (iheight + 1) / 2;
     }
-    ABSL_CHECK_GE(extraction_levels, 1);
+    CHECK_GE(extraction_levels, 1);
     // Frame is the same as first extraction level.
     frame = extraction_pyramid[0];
+
+    if (!use_cv_tracking) {
+      // Tracking pyramid for old c-interface.
+      pyramid.resize(1);
+      AllocatePyramid(width, height, &pyramid[0]);
+    }
   }
 
   void BuildPyramid(int levels, int window_size, bool with_derivative) {
+    if (use_cv_tracking) {
 #if CV_MAJOR_VERSION >= 3
-    cv::buildOpticalFlowPyramid(
-        frame, pyramid, cv::Size(2 * window_size + 1, 2 * window_size + 1),
-        levels, with_derivative);
-    // Store max level for above pyramid.
-    pyramid_levels = levels;
+      // No-op if not called for opencv 3.0 (c interface computes
+      // pyramids in place).
+      // OpenCV changed how window size gets specified from our radius setting
+      // < 2.2 to diameter in 2.2+.
+      cv::buildOpticalFlowPyramid(
+          frame, pyramid, cv::Size(2 * window_size + 1, 2 * window_size + 1),
+          levels, with_derivative);
+      // Store max level for above pyramid.
+      pyramid_levels = levels;
 #endif
+    }
   }
 
-  void Reset(int frame_num_, int64_t timestamp_) {
+  void Reset(int frame_num_, int64 timestamp_) {
     frame_num = frame_num_;
     timestamp_usec = timestamp_;
     pyramid_levels = 0;
@@ -437,7 +457,7 @@ struct RegionFlowComputation::FrameTrackingData {
   }
 
   void RemoveFeature(int pos) {
-    ABSL_DCHECK_LT(pos, features.size());
+    DCHECK_LT(pos, features.size());
     features.erase(features.begin() + pos);
     feature_source_map.erase(feature_source_map.begin() + pos);
     corner_responses.erase(corner_responses.begin() + pos);
@@ -451,7 +471,7 @@ struct RegionFlowComputation::FrameTrackingData {
   // Stores grayscale square patch with length patch_size extracted at center in
   // image frame and stores result in patch.
   void ExtractPatch(const cv::Point2f& center, int patch_size, cv::Mat* patch) {
-    ABSL_CHECK(patch != nullptr);
+    CHECK(patch != nullptr);
     patch->create(patch_size, patch_size, CV_8UC1);
     cv::getRectSubPix(frame, cv::Size(patch_size, patch_size), center, *patch);
   }
@@ -469,10 +489,9 @@ struct RegionFlowComputation::LongTrackData {
     // Advance.
     ++next_track_id;
     if (next_track_id < 0) {
-      ABSL_LOG(ERROR)
-          << "Exhausted maximum possible ids. RegionFlowComputation "
-          << "instance lifetime is likely to be too long. Consider "
-          << "chunking the input.";
+      LOG(ERROR) << "Exhausted maximum possible ids. RegionFlowComputation "
+                 << "instance lifetime is likely to be too long. Consider "
+                 << "chunking the input.";
       next_track_id = 0;
     }
 
@@ -511,13 +530,13 @@ struct RegionFlowComputation::LongTrackData {
 
   float MotionMagForId(int id) const {
     auto id_iter = track_info.find(id);
-    ABSL_DCHECK(id_iter != track_info.end());
+    DCHECK(id_iter != track_info.end());
     return id_iter->second.motion_mag;
   }
 
   void UpdateMotion(int id, float motion_mag) {
     auto id_iter = track_info.find(id);
-    ABSL_DCHECK(id_iter != track_info.end());
+    DCHECK(id_iter != track_info.end());
     if (id_iter->second.motion_mag >= 0) {
       id_iter->second.motion_mag =
           id_iter->second.motion_mag * 0.5f + 0.5f * motion_mag;
@@ -596,8 +615,8 @@ RegionFlowComputation::RegionFlowComputation(
     }
   }
 
-  ABSL_CHECK_NE(options.tracking_options().output_flow_direction(),
-                TrackingOptions::CONSECUTIVELY)
+  CHECK_NE(options.tracking_options().output_flow_direction(),
+           TrackingOptions::CONSECUTIVELY)
       << "Output direction must be either set to FORWARD or BACKWARD.";
   use_downsampling_ = options_.downsample_mode() !=
                       RegionFlowComputationOptions::DOWNSAMPLE_NONE;
@@ -630,7 +649,7 @@ RegionFlowComputation::RegionFlowComputation(
     }
     case RegionFlowComputationOptions::DOWNSAMPLE_BY_FACTOR:
     case RegionFlowComputationOptions::DOWNSAMPLE_TO_INPUT_SIZE: {
-      ABSL_CHECK_GE(options_.downsample_factor(), 1);
+      CHECK_GE(options_.downsample_factor(), 1);
       downsample_scale_ = options_.downsample_factor();
       break;
     }
@@ -663,7 +682,7 @@ RegionFlowComputation::RegionFlowComputation(
     frame_width_ += frame_width_ % 2;
     frame_height_ += frame_height_ % 2;
 
-    ABSL_LOG(INFO) << "Using a downsampling scale of " << downsample_scale_;
+    LOG(INFO) << "Using a downsampling scale of " << downsample_scale_;
   }
 
   // Make sure value is equal to local variable, in case someone uses that on
@@ -700,32 +719,31 @@ RegionFlowComputation::RegionFlowComputation(
   switch (options_.tracking_options().tracking_policy()) {
     case TrackingOptions::POLICY_SINGLE_FRAME:
       if (options_.tracking_options().multi_frames_to_track() > 1) {
-        ABSL_LOG(ERROR) << "TrackingOptions::multi_frames_to_track is > 1, "
-                        << "but tracking_policy is set to POLICY_SINGLE_FRAME. "
-                        << "Consider using POLICY_MULTI_FRAME instead.";
+        LOG(ERROR) << "TrackingOptions::multi_frames_to_track is > 1, "
+                   << "but tracking_policy is set to POLICY_SINGLE_FRAME. "
+                   << "Consider using POLICY_MULTI_FRAME instead.";
       }
 
       frames_to_track_ = 1;
       break;
     case TrackingOptions::POLICY_MULTI_FRAME:
-      ABSL_CHECK_GT(options_.tracking_options().multi_frames_to_track(), 0);
+      CHECK_GT(options_.tracking_options().multi_frames_to_track(), 0);
       frames_to_track_ = options_.tracking_options().multi_frames_to_track();
       break;
     case TrackingOptions::POLICY_LONG_TRACKS:
       if (options_.tracking_options().multi_frames_to_track() > 1) {
-        ABSL_LOG(ERROR) << "TrackingOptions::multi_frames_to_track is > 1, "
-                        << "but tracking_policy is set to POLICY_LONG_TRACKS. "
-                        << "Use TrackingOptions::long_tracks_max_frames to set "
-                        << "length of long feature tracks.";
+        LOG(ERROR) << "TrackingOptions::multi_frames_to_track is > 1, "
+                   << "but tracking_policy is set to POLICY_LONG_TRACKS. "
+                   << "Use TrackingOptions::long_tracks_max_frames to set "
+                   << "length of long feature tracks.";
       }
 
       if (options_.tracking_options().internal_tracking_direction() !=
           TrackingOptions::FORWARD) {
-        ABSL_LOG(ERROR)
-            << "Long tracks are only supported if tracking direction "
-            << "is set to FORWARD. Adjusting direction to FORWARD. "
-            << "This does not affect the expected "
-            << "output_flow_direction";
+        LOG(ERROR) << "Long tracks are only supported if tracking direction "
+                   << "is set to FORWARD. Adjusting direction to FORWARD. "
+                   << "This does not affect the expected "
+                   << "output_flow_direction";
         options_.mutable_tracking_options()->set_internal_tracking_direction(
             TrackingOptions::FORWARD);
       }
@@ -737,18 +755,26 @@ RegionFlowComputation::RegionFlowComputation(
       break;
   }
 
-  ABSL_CHECK(!options_.gain_correction() || !IsVerifyLongFeatures())
+  CHECK(!options_.gain_correction() || !IsVerifyLongFeatures())
       << "Gain correction mode with verification of long features is not "
       << "supported.";
 
   // Tracking algorithm dependent on cv support and flag.
+  use_cv_tracking_ = options_.tracking_options().use_cv_tracking_algorithm();
 #if CV_MAJOR_VERSION < 3
-  ABSL_LOG(WARNING) << "Tracking is not supported with OpenCV < 3.0";
-  return;
+  if (use_cv_tracking_) {
+    LOG(WARNING) << "Compiled without OpenCV 3.0 but cv_tracking_algorithm "
+                 << "was requested. Falling back to older algorithm";
+    use_cv_tracking_ = false;
+  }
 #endif
 
   if (options_.gain_correction()) {
     gain_image_.reset(new cv::Mat(frame_height_, frame_width_, CV_8UC1));
+    if (!use_cv_tracking_) {
+      gain_pyramid_.reset(new cv::Mat());
+      AllocatePyramid(frame_width_, frame_height_, gain_pyramid_.get());
+    }
   }
 
   // Determine number of levels at which to extract features. If lowest image
@@ -781,7 +807,7 @@ RegionFlowComputation::RegionFlowComputation(
 
   // Compute settings for block based flow.
   const float block_size = options_.fast_estimation_block_size();
-  ABSL_CHECK_GT(block_size, 0) << "Need positive block size";
+  CHECK_GT(block_size, 0) << "Need positive block size";
 
   block_width_ = block_size < 1 ? block_size * original_width_ : block_size;
   block_height_ = block_size < 1 ? block_size * original_height_ : block_size;
@@ -807,19 +833,19 @@ RegionFlowComputation::RegionFlowComputation(
 RegionFlowComputation::~RegionFlowComputation() {}
 
 bool RegionFlowComputation::AddImage(const cv::Mat& source,
-                                     int64_t timestamp_usec) {
+                                     int64 timestamp_usec) {
   return AddImageAndTrack(source, cv::Mat(), timestamp_usec, Homography());
 }
 
 bool RegionFlowComputation::AddImageWithSeed(
-    const cv::Mat& source, int64_t timestamp_usec,
+    const cv::Mat& source, int64 timestamp_usec,
     const Homography& initial_transform) {
   return AddImageAndTrack(source, cv::Mat(), timestamp_usec, initial_transform);
 }
 
 bool RegionFlowComputation::AddImageWithMask(const cv::Mat& source,
                                              const cv::Mat& source_mask,
-                                             int64_t timestamp_usec) {
+                                             int64 timestamp_usec) {
   return AddImageAndTrack(source, source_mask, timestamp_usec, Homography());
 }
 
@@ -842,18 +868,18 @@ RegionFlowComputation::RetrieveRegionFlowFeatureListImpl(
     int track_index, bool compute_feature_descriptor,
     bool compute_match_descriptor, const cv::Mat* curr_color_image,
     const cv::Mat* prev_color_image) {
-  ABSL_CHECK_GT(region_flow_results_.size(), track_index);
-  ABSL_CHECK(region_flow_results_[track_index].get());
+  CHECK_GT(region_flow_results_.size(), track_index);
+  CHECK(region_flow_results_[track_index].get());
 
   std::unique_ptr<RegionFlowFeatureList> feature_list(
       std::move(region_flow_results_[track_index]));
 
   if (compute_feature_descriptor) {
-    ABSL_CHECK(curr_color_image != nullptr);
-    ABSL_CHECK_EQ(3, curr_color_image->channels());
+    CHECK(curr_color_image != nullptr);
+    CHECK_EQ(3, curr_color_image->channels());
     if (compute_match_descriptor) {
-      ABSL_CHECK(prev_color_image != nullptr);
-      ABSL_CHECK_EQ(3, prev_color_image->channels());
+      CHECK(prev_color_image != nullptr);
+      CHECK_EQ(3, prev_color_image->channels());
     }
 
     ComputeRegionFlowFeatureDescriptors(
@@ -861,9 +887,8 @@ RegionFlowComputation::RetrieveRegionFlowFeatureListImpl(
         compute_match_descriptor ? prev_color_image : nullptr,
         options_.patch_descriptor_radius(), feature_list.get());
   } else {
-    ABSL_CHECK(!compute_match_descriptor)
-        << "Set compute_feature_descriptor also "
-        << "if setting compute_match_descriptor";
+    CHECK(!compute_match_descriptor) << "Set compute_feature_descriptor also "
+                                     << "if setting compute_match_descriptor";
   }
 
   return feature_list;
@@ -910,13 +935,12 @@ bool RegionFlowComputation::InitFrame(const cv::Mat& source,
     // Area based method best for downsampling.
     // For color images to temporary buffer.
     cv::Mat& resized = source.channels() == 1 ? dest_frame : *curr_color_image_;
-    cv::resize(source, resized, resized.size(), 0, 0, cv::INTER_AREA);
+    cv::resize(source, resized, resized.size(), 0, 0, CV_INTER_AREA);
     source_ptr = &resized;
     // Resize feature extraction mask if needed.
     if (!source_mask.empty()) {
       dest_mask.create(resized.rows, resized.cols, CV_8UC1);
-      cv::resize(source_mask, dest_mask, dest_mask.size(), 0, 0,
-                 cv::INTER_NEAREST);
+      cv::resize(source_mask, dest_mask, dest_mask.size(), 0, 0, CV_INTER_NN);
     }
   } else if (!source_mask.empty()) {
     source_mask.copyTo(dest_mask);
@@ -930,22 +954,22 @@ bool RegionFlowComputation::InitFrame(const cv::Mat& source,
     const int dimension = visual_options.tiny_image_dimension();
     data->tiny_image.create(dimension, dimension, type);
     cv::resize(*source_ptr, data->tiny_image, data->tiny_image.size(), 0, 0,
-               cv::INTER_AREA);
+               CV_INTER_AREA);
   }
 
   if (source_ptr->channels() == 1 &&
       options_.image_format() !=
           RegionFlowComputationOptions::FORMAT_GRAYSCALE) {
     options_.set_image_format(RegionFlowComputationOptions::FORMAT_GRAYSCALE);
-    ABSL_LOG(WARNING) << "#channels = 1, but image_format was not set to "
-                         "FORMAT_GRAYSCALE. Assuming GRAYSCALE input.";
+    LOG(WARNING) << "#channels = 1, but image_format was not set to "
+                    "FORMAT_GRAYSCALE. Assuming GRAYSCALE input.";
   }
 
   // Convert image to grayscale.
   switch (options_.image_format()) {
     case RegionFlowComputationOptions::FORMAT_RGB:
       if (3 != source_ptr->channels()) {
-        ABSL_LOG(ERROR) << "Expecting 3 channel input for RGB.";
+        LOG(ERROR) << "Expecting 3 channel input for RGB.";
         return false;
       }
       cv::cvtColor(*source_ptr, dest_frame, cv::COLOR_RGB2GRAY);
@@ -953,7 +977,7 @@ bool RegionFlowComputation::InitFrame(const cv::Mat& source,
 
     case RegionFlowComputationOptions::FORMAT_BGR:
       if (3 != source_ptr->channels()) {
-        ABSL_LOG(ERROR) << "Expecting 3 channel input for BGR.";
+        LOG(ERROR) << "Expecting 3 channel input for BGR.";
         return false;
       }
       cv::cvtColor(*source_ptr, dest_frame, cv::COLOR_BGR2GRAY);
@@ -961,7 +985,7 @@ bool RegionFlowComputation::InitFrame(const cv::Mat& source,
 
     case RegionFlowComputationOptions::FORMAT_RGBA:
       if (4 != source_ptr->channels()) {
-        ABSL_LOG(ERROR) << "Expecting 4 channel input for RGBA.";
+        LOG(ERROR) << "Expecting 4 channel input for RGBA.";
         return false;
       }
       cv::cvtColor(*source_ptr, dest_frame, cv::COLOR_RGBA2GRAY);
@@ -969,7 +993,7 @@ bool RegionFlowComputation::InitFrame(const cv::Mat& source,
 
     case RegionFlowComputationOptions::FORMAT_BGRA:
       if (4 != source_ptr->channels()) {
-        ABSL_LOG(ERROR) << "Expecting 4 channel input for BGRA.";
+        LOG(ERROR) << "Expecting 4 channel input for BGRA.";
         return false;
       }
       cv::cvtColor(*source_ptr, dest_frame, cv::COLOR_BGRA2GRAY);
@@ -977,10 +1001,10 @@ bool RegionFlowComputation::InitFrame(const cv::Mat& source,
 
     case RegionFlowComputationOptions::FORMAT_GRAYSCALE:
       if (1 != source_ptr->channels()) {
-        ABSL_LOG(ERROR) << "Expecting 1 channel input for GRAYSCALE.";
+        LOG(ERROR) << "Expecting 1 channel input for GRAYSCALE.";
         return false;
       }
-      ABSL_CHECK_EQ(1, source_ptr->channels());
+      CHECK_EQ(1, source_ptr->channels());
       if (source_ptr != &dest_frame) {
         source_ptr->copyTo(dest_frame);
       }
@@ -998,8 +1022,8 @@ bool RegionFlowComputation::InitFrame(const cv::Mat& source,
   }
 
   // Consistency checks; not input governed.
-  ABSL_CHECK_EQ(dest_frame.cols, frame_width_);
-  ABSL_CHECK_EQ(dest_frame.rows, frame_height_);
+  CHECK_EQ(dest_frame.cols, frame_width_);
+  CHECK_EQ(dest_frame.rows, frame_height_);
 
   data->BuildPyramid(pyramid_levels_,
                      options_.tracking_options().tracking_window_size(),
@@ -1009,7 +1033,7 @@ bool RegionFlowComputation::InitFrame(const cv::Mat& source,
 }
 
 bool RegionFlowComputation::AddImageAndTrack(
-    const cv::Mat& source, const cv::Mat& source_mask, int64_t timestamp_usec,
+    const cv::Mat& source, const cv::Mat& source_mask, int64 timestamp_usec,
     const Homography& initial_transform) {
   VLOG(1) << "Processing frame " << frame_num_ << " at " << timestamp_usec;
   MEASURE_TIME << "AddImageAndTrack";
@@ -1017,33 +1041,33 @@ bool RegionFlowComputation::AddImageAndTrack(
   if (options_.downsample_mode() ==
       RegionFlowComputationOptions::DOWNSAMPLE_TO_INPUT_SIZE) {
     if (frame_width_ != source.cols || frame_height_ != source.rows) {
-      ABSL_LOG(ERROR) << "Source input dimensions incompatible with "
-                      << "DOWNSAMPLE_TO_INPUT_SIZE. frame_width_: "
-                      << frame_width_ << ", source.cols: " << source.cols
-                      << ", frame_height_: " << frame_height_
-                      << ", source.rows: " << source.rows;
+      LOG(ERROR) << "Source input dimensions incompatible with "
+                 << "DOWNSAMPLE_TO_INPUT_SIZE. frame_width_: " << frame_width_
+                 << ", source.cols: " << source.cols
+                 << ", frame_height_: " << frame_height_
+                 << ", source.rows: " << source.rows;
       return false;
     }
 
     if (!source_mask.empty()) {
       if (frame_width_ != source_mask.cols ||
           frame_height_ != source_mask.rows) {
-        ABSL_LOG(ERROR) << "Input mask dimensions incompatible with "
-                        << "DOWNSAMPLE_TO_INPUT_SIZE";
+        LOG(ERROR) << "Input mask dimensions incompatible with "
+                   << "DOWNSAMPLE_TO_INPUT_SIZE";
         return false;
       }
     }
   } else {
     if (original_width_ != source.cols || original_height_ != source.rows) {
-      ABSL_LOG(ERROR) << "Source input dimensions differ from those specified "
-                      << "in the constructor";
+      LOG(ERROR) << "Source input dimensions differ from those specified "
+                 << "in the constructor";
       return false;
     }
     if (!source_mask.empty()) {
       if (original_width_ != source_mask.cols ||
           original_height_ != source_mask.rows) {
-        ABSL_LOG(ERROR) << "Input mask dimensions incompatible with those "
-                        << "specified in the constructor";
+        LOG(ERROR) << "Input mask dimensions incompatible with those "
+                   << "specified in the constructor";
         return false;
       }
     }
@@ -1056,15 +1080,15 @@ bool RegionFlowComputation::AddImageAndTrack(
     data_queue_.pop_front();
   } else {
     data_queue_.push_back(MakeUnique(new FrameTrackingData(
-        frame_width_, frame_height_, extraction_levels_)));
+        frame_width_, frame_height_, extraction_levels_, use_cv_tracking_)));
   }
 
   FrameTrackingData* curr_data = data_queue_.back().get();
   curr_data->Reset(frame_num_, timestamp_usec);
 
   if (!IsModelIdentity(initial_transform)) {
-    ABSL_CHECK_EQ(1, frames_to_track_) << "Initial transform is not supported "
-                                       << "for multi frame tracking";
+    CHECK_EQ(1, frames_to_track_) << "Initial transform is not supported "
+                                  << "for multi frame tracking";
     Homography transform = initial_transform;
     if (downsample_scale_ != 1) {
       const float scale = 1.0f / downsample_scale_;
@@ -1074,7 +1098,7 @@ bool RegionFlowComputation::AddImageAndTrack(
   }
 
   if (!InitFrame(source, source_mask, curr_data)) {
-    ABSL_LOG(ERROR) << "Could not init frame.";
+    LOG(ERROR) << "Could not init frame.";
     return false;
   }
 
@@ -1178,17 +1202,17 @@ bool RegionFlowComputation::AddImageAndTrack(
 }
 
 cv::Mat RegionFlowComputation::GetGrayscaleFrameFromResults() {
-  ABSL_CHECK_GT(data_queue_.size(), 0) << "Empty queue, was AddImage* called?";
+  CHECK_GT(data_queue_.size(), 0) << "Empty queue, was AddImage* called?";
   FrameTrackingData* curr_data = data_queue_.back().get();
-  ABSL_CHECK(curr_data);
+  CHECK(curr_data);
   return curr_data->frame;
 }
 
 void RegionFlowComputation::GetFeatureTrackInliers(
     bool skip_estimation, TrackedFeatureList* features,
     TrackedFeatureView* inliers) const {
-  ABSL_CHECK(features != nullptr);
-  ABSL_CHECK(inliers != nullptr);
+  CHECK(features != nullptr);
+  CHECK(inliers != nullptr);
   inliers->clear();
   if (skip_estimation) {
     inliers->reserve(features->size());
@@ -1202,9 +1226,9 @@ void RegionFlowComputation::GetFeatureTrackInliers(
 
 float RegionFlowComputation::ComputeVisualConsistency(
     FrameTrackingData* previous, FrameTrackingData* current) const {
-  ABSL_CHECK_EQ(previous->frame_num + 1, current->frame_num);
+  CHECK_EQ(previous->frame_num + 1, current->frame_num);
   const int total = previous->tiny_image.total();
-  ABSL_CHECK_GT(total, 0) << "Tiny image dimension set to zero.";
+  CHECK_GT(total, 0) << "Tiny image dimension set to zero.";
   current->tiny_image_diff =
       FrameDifferenceMedian(previous->tiny_image, current->tiny_image) *
       (1.0f / total);
@@ -1237,10 +1261,10 @@ void RegionFlowComputation::ComputeRegionFlow(
   } else {
     const int index1 = data_queue_.size() + from - 1;
     const int index2 = data_queue_.size() + to - 1;
-    ABSL_CHECK_GE(index1, 0);
-    ABSL_CHECK_LT(index1, data_queue_.size());
-    ABSL_CHECK_GE(index2, 0);
-    ABSL_CHECK_LT(index2, data_queue_.size());
+    CHECK_GE(index1, 0);
+    CHECK_LT(index1, data_queue_.size());
+    CHECK_GE(index2, 0);
+    CHECK_LT(index2, data_queue_.size());
     data1 = data_queue_[index1].get();
     data2 = data_queue_[index2].get();
 
@@ -1272,7 +1296,7 @@ void RegionFlowComputation::ComputeRegionFlow(
     bool track_features = true;
     bool force_feature_extraction_next_frame = false;
     if (options_.tracking_options().wide_baseline_matching()) {
-      ABSL_CHECK(initial_transform == nullptr)
+      CHECK(initial_transform == nullptr)
           << "Can't use wide baseline matching and initial transform as the "
           << "same time.";
 
@@ -1585,23 +1609,23 @@ class GridFeatureLocator {
 // or adds K to the existing mask if add is set to true.
 template <int N, int K, bool add>
 inline void SetMaskNeighborhood(int mask_x, int mask_y, cv::Mat* mask) {
-  ABSL_DCHECK_EQ(mask->type(), CV_8U);
+  DCHECK_EQ(mask->type(), CV_8U);
   const int mask_start_x = max(0, mask_x - N);
   const int mask_end_x = min(mask->cols - 1, mask_x + N);
   const int mask_dx = mask_end_x - mask_start_x + 1;
   const int mask_start_y = max(0, mask_y - N);
   const int mask_end_y = min(mask->rows - 1, mask_y + N);
-  ABSL_DCHECK_LE(mask_start_x, mask_end_x);
-  ABSL_DCHECK_LE(mask_start_y, mask_end_y);
+  DCHECK_LE(mask_start_x, mask_end_x);
+  DCHECK_LE(mask_start_y, mask_end_y);
 
   if (!add) {
     for (int i = mask_start_y; i <= mask_end_y; ++i) {
-      uint8_t* mask_ptr = mask->ptr<uint8_t>(i) + mask_start_x;
+      uint8* mask_ptr = mask->ptr<uint8>(i) + mask_start_x;
       memset(mask_ptr, K, mask_dx * sizeof(*mask_ptr));
     }
   } else {
     for (int i = mask_start_y; i <= mask_end_y; ++i) {
-      uint8_t* mask_ptr = mask->ptr<uint8_t>(i);
+      uint8* mask_ptr = mask->ptr<uint8>(i);
       for (int j = mask_start_x; j <= mask_end_x; ++j) {
         mask_ptr[j] = (mask_ptr[j] & 0x7F) + K;  // Limit to 128.
       }
@@ -1614,9 +1638,9 @@ inline void SetMaskNeighborhood(int mask_x, int mask_y, cv::Mat* mask) {
 void RegionFlowComputation::AdaptiveGoodFeaturesToTrack(
     const std::vector<cv::Mat>& extraction_pyramid, int max_features,
     float mask_scale, cv::Mat* mask, FrameTrackingData* data) {
-  ABSL_CHECK(data != nullptr);
-  ABSL_CHECK(feature_tmp_image_1_.get() != nullptr);
-  ABSL_CHECK(feature_tmp_image_2_.get() != nullptr);
+  CHECK(data != nullptr);
+  CHECK(feature_tmp_image_1_.get() != nullptr);
+  CHECK(feature_tmp_image_2_.get() != nullptr);
 
   cv::Mat* eig_image = feature_tmp_image_1_.get();
   cv::Mat* tmp_image = feature_tmp_image_2_.get();
@@ -1625,7 +1649,7 @@ void RegionFlowComputation::AdaptiveGoodFeaturesToTrack(
 
   // Setup grid information.
   const float block_size = tracking_options.adaptive_features_block_size();
-  ABSL_CHECK_GT(block_size, 0) << "Need positive block size";
+  CHECK_GT(block_size, 0) << "Need positive block size";
 
   int block_width = block_size < 1 ? block_size * frame_width_ : block_size;
   int block_height = block_size < 1 ? block_size * frame_height_ : block_size;
@@ -1677,8 +1701,8 @@ void RegionFlowComputation::AdaptiveGoodFeaturesToTrack(
     std::vector<cv::KeyPoint> fast_keypoints;
     if (e == 0) {
       MEASURE_TIME << "Corner extraction";
-      ABSL_CHECK_EQ(rows, frame_height_);
-      ABSL_CHECK_EQ(cols, frame_width_);
+      CHECK_EQ(rows, frame_height_);
+      CHECK_EQ(cols, frame_width_);
 
       if (use_fast) {
         fast_detector->detect(image, fast_keypoints);
@@ -1690,8 +1714,8 @@ void RegionFlowComputation::AdaptiveGoodFeaturesToTrack(
     } else {
       // Compute corner response on a down-scaled image and upsample.
       step *= 2;
-      ABSL_CHECK_EQ(rows, (extraction_pyramid[e - 1].rows + 1) / 2);
-      ABSL_CHECK_EQ(cols, (extraction_pyramid[e - 1].cols + 1) / 2);
+      CHECK_EQ(rows, (extraction_pyramid[e - 1].rows + 1) / 2);
+      CHECK_EQ(cols, (extraction_pyramid[e - 1].cols + 1) / 2);
 
       if (use_fast) {
         fast_detector->detect(image, fast_keypoints);
@@ -1738,7 +1762,7 @@ void RegionFlowComputation::AdaptiveGoodFeaturesToTrack(
         const int mask_y = corner_y * mask_scale;
 
         // Test if neighboring element is already set.
-        if (mask->at<uint8_t>(mask_y, mask_x) >= 1) {
+        if (mask->at<uint8>(mask_y, mask_x) >= 1) {
           continue;
         }
 
@@ -1803,8 +1827,8 @@ void RegionFlowComputation::AdaptiveGoodFeaturesToTrack(
             }
 
             // Map corner pointer to x and y location.
-            const int offset = reinterpret_cast<const uint8_t*>(corner_ptr) -
-                               eig_image->ptr<const uint8_t>(0);
+            const int offset = reinterpret_cast<const uint8*>(corner_ptr) -
+                               eig_image->ptr<const uint8>(0);
 
             const int corner_y = offset / eig_image->step[0];
             const int corner_x =
@@ -1820,7 +1844,7 @@ void RegionFlowComputation::AdaptiveGoodFeaturesToTrack(
             const int mask_y = corner_y * mask_scale;
 
             // Test if neighboring element is already set.
-            if (mask->at<uint8_t>(mask_y, mask_x) >= 1) {
+            if (mask->at<uint8>(mask_y, mask_x) >= 1) {
               continue;
             }
 
@@ -1859,7 +1883,7 @@ void RegionFlowComputation::AdaptiveGoodFeaturesToTrack(
 
 AffineModel RegionFlowComputation::AffineModelFromFeatures(
     TrackedFeatureList* features) const {
-  ABSL_CHECK(features != nullptr);
+  CHECK(features != nullptr);
 
   // Downscaled domain as output.
   MotionEstimation motion_estimation(MotionEstimationOptions(), frame_width_,
@@ -1882,7 +1906,7 @@ AffineModel RegionFlowComputation::AffineModelFromFeatures(
 void RegionFlowComputation::ZeroMotionGridFeatures(
     int frame_width, int frame_height, float frac_grid_step_x,
     float frac_grid_step_y, RegionFlowFeatureList* result) {
-  ABSL_CHECK(result != nullptr);
+  CHECK(result != nullptr);
   result->Clear();
 
   TrackedFeatureList features;
@@ -1905,7 +1929,7 @@ void RegionFlowComputation::ZeroMotionGridFeatures(
 void RegionFlowComputation::DenseZeroMotionSamples(
     int frame_width, int frame_height, float frac_diameter, float frac_steps_x,
     float frac_steps_y, RegionFlowFeatureList* result) {
-  ABSL_CHECK(result != nullptr);
+  CHECK(result != nullptr);
 
   // Ensure patch fits into frame.
   const int radius =
@@ -1952,7 +1976,7 @@ int RegionFlowComputation::ZeroMotionGridTracks(int frame_width,
                                                 float frac_grid_step_x,
                                                 float frac_grid_step_y,
                                                 TrackedFeatureList* results) {
-  ABSL_CHECK(results);
+  CHECK(results);
   auto& tracked_features = *results;
   tracked_features.clear();
 
@@ -1988,9 +2012,9 @@ bool RegionFlowComputation::GainCorrectFrame(const cv::Mat& reference_frame,
                                              float reference_mean,
                                              float input_mean,
                                              cv::Mat* calibrated_frame) const {
-  ABSL_CHECK(calibrated_frame);
-  ABSL_CHECK_EQ(reference_frame.rows, input_frame.rows);
-  ABSL_CHECK_EQ(reference_frame.cols, input_frame.cols);
+  CHECK(calibrated_frame);
+  CHECK_EQ(reference_frame.rows, input_frame.rows);
+  CHECK_EQ(reference_frame.cols, input_frame.cols);
 
   // Do not attempt gain correction for tiny images.
   if (std::min(reference_frame.rows, reference_frame.cols) < 10) {
@@ -2072,8 +2096,8 @@ void RegionFlowComputation::WideBaselineMatchFeatures(
     TrackedFeatureList* results) {
 #if (defined(__ANDROID__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)) && \
     !defined(CV_WRAPPER_3X)
-  ABSL_LOG(FATAL) << "Supported on only with OpenCV 3.0. "
-                  << "Use bazel build flag : --define CV_WRAPPER=3X";
+  LOG(FATAL) << "Supported on only with OpenCV 3.0. "
+             << "Use bazel build flag : --define CV_WRAPPER=3X";
 #else   // (defined(__ANDROID__) || defined(__APPLE__) ||
         // defined(__EMSCRIPTEN__)) && !defined(CV_WRAPPER_3X)
   results->clear();
@@ -2154,12 +2178,12 @@ void RegionFlowComputation::WideBaselineMatchFeatures(
 
 void RegionFlowComputation::RemoveAbsentFeatures(
     const TrackedFeatureList& prev_result, FrameTrackingData* data) {
-  ABSL_CHECK(long_track_data_ != nullptr);
+  CHECK(long_track_data_ != nullptr);
 
   // Build hash set of track ids.
   absl::node_hash_set<int> track_ids;
   for (const auto& feature : prev_result) {
-    ABSL_DCHECK_NE(feature.track_id, -1);
+    DCHECK_NE(feature.track_id, -1);
     track_ids.insert(feature.track_id);
   }
 
@@ -2182,7 +2206,7 @@ void RegionFlowComputation::RemoveFeaturesOutsideMask(FrameTrackingData* data) {
   for (int k = data->features.size() - 1; k >= 0; --k) {
     const int x = static_cast<int>(data->features[k].x + 0.5);
     const int y = static_cast<int>(data->features[k].y + 0.5);
-    if (data->mask.at<uint8_t>(y, x) == 0) {
+    if (data->mask.at<uint8>(y, x) == 0) {
       data->RemoveFeature(k);
     }
   }
@@ -2192,8 +2216,8 @@ void RegionFlowComputation::ExtractFeatures(
     const TrackedFeatureList* prev_result, FrameTrackingData* data) {
   MEASURE_TIME << "ExtractFeatures";
   if (!options_.tracking_options().adaptive_good_features_to_track()) {
-    ABSL_LOG(FATAL) << "Deprecated! Activate adaptive_good_features_to_track "
-                    << "in TrackingOptions";
+    LOG(FATAL) << "Deprecated! Activate adaptive_good_features_to_track "
+               << "in TrackingOptions";
   }
 
   // Check if features can simply be re-used.
@@ -2207,8 +2231,8 @@ void RegionFlowComputation::ExtractFeatures(
 
     if (data->last_feature_extraction_time == 0) {
       // Features already extracted from this frame.
-      ABSL_CHECK_EQ(data->corner_responses.size(), data->features.size());
-      ABSL_CHECK_EQ(data->octaves.size(), data->features.size());
+      CHECK_EQ(data->corner_responses.size(), data->features.size());
+      CHECK_EQ(data->octaves.size(), data->features.size());
       VLOG(1) << "Features already present (extracted from this frame)";
       return;
     }
@@ -2216,8 +2240,8 @@ void RegionFlowComputation::ExtractFeatures(
     // Remove features that lie outside feature extraction mask.
     RemoveFeaturesOutsideMask(data);
 
-    ABSL_CHECK_EQ(data->corner_responses.size(), data->features.size());
-    ABSL_CHECK_EQ(data->octaves.size(), data->features.size());
+    CHECK_EQ(data->corner_responses.size(), data->features.size());
+    CHECK_EQ(data->octaves.size(), data->features.size());
 
     float feature_fraction = 0;
     if (data->num_original_extracted_and_tracked > 0) {
@@ -2262,9 +2286,9 @@ void RegionFlowComputation::ExtractFeatures(
   // Initialize mask from frame's feature extraction mask, by downsampling and
   // negating the latter mask.
   if (!data->mask.empty()) {
-    cv::resize(data->mask, mask, mask.size(), 0, 0, cv::INTER_NEAREST);
+    cv::resize(data->mask, mask, mask.size(), 0, 0, CV_INTER_NN);
     for (int y = 0; y < mask.rows; ++y) {
-      uint8_t* mask_ptr = mask.ptr<uint8_t>(y);
+      uint8* mask_ptr = mask.ptr<uint8>(y);
       for (int x = 0; x < mask.cols; ++x) {
         mask_ptr[x] = mask_ptr[x] == 0 ? 1 : 0;
       }
@@ -2283,7 +2307,7 @@ void RegionFlowComputation::ExtractFeatures(
     data->neighborhoods->reserve(features_to_allocate);
   }
 
-  ABSL_CHECK_EQ(data->extraction_pyramid.size(), extraction_levels_);
+  CHECK_EQ(data->extraction_pyramid.size(), extraction_levels_);
   for (int i = 1; i < extraction_levels_; ++i) {
     // Need factor 2 as OpenCV stores image + gradient pairs when
     // "with_derivative" is set to true.
@@ -2303,7 +2327,7 @@ void RegionFlowComputation::ExtractFeatures(
 
   if (prev_result) {
     // Seed feature mask and results with tracking ids.
-    ABSL_CHECK(long_track_data_ != nullptr);
+    CHECK(long_track_data_ != nullptr);
     const int max_track_length =
         options_.tracking_options().long_tracks_max_frames();
     // Drop a feature with a propability X, such that all qualifying
@@ -2331,8 +2355,8 @@ void RegionFlowComputation::ExtractFeatures(
     // For FORWARD output flow, we need to add flow to obtain the match
     // position, for BACKWARD output flow, flow is inverted, so that feature
     // locations already point to locations in the current frame.
-    ABSL_CHECK_EQ(options_.tracking_options().internal_tracking_direction(),
-                  TrackingOptions::FORWARD);
+    CHECK_EQ(options_.tracking_options().internal_tracking_direction(),
+             TrackingOptions::FORWARD);
     float match_sign = options_.tracking_options().output_flow_direction() ==
                                TrackingOptions::FORWARD
                            ? 1.0f
@@ -2347,11 +2371,11 @@ void RegionFlowComputation::ExtractFeatures(
       const int track_id = feature.track_id;
       if (track_id < 0) {
         // TODO: Use LOG_FIRST_N here.
-        ABSL_LOG_IF(WARNING,
-                    []() {
-                      static int k = 0;
-                      return k++ < 2;
-                    }())
+        LOG_IF(WARNING,
+               []() {
+                 static int k = 0;
+                 return k++ < 2;
+               }())
             << "Expecting an assigned track id, "
             << "skipping feature.";
         continue;
@@ -2360,7 +2384,7 @@ void RegionFlowComputation::ExtractFeatures(
       // Skip features for which the track would get too long.
       const int start_frame = long_track_data_->StartFrameForId(track_id);
       if (start_frame < 0) {
-        ABSL_LOG(ERROR) << "Id is not present, skipping feature.";
+        LOG(ERROR) << "Id is not present, skipping feature.";
         continue;
       }
 
@@ -2377,7 +2401,7 @@ void RegionFlowComputation::ExtractFeatures(
       // to "join", without having to explicitly represent this.
       // Value of 2 improves number of connected features.
       constexpr int kMaxFeaturesPerBin = 1;
-      if (mask.at<uint8_t>(mask_y, mask_x) >= kMaxFeaturesPerBin) {
+      if (mask.at<uint8>(mask_y, mask_x) >= kMaxFeaturesPerBin) {
         data->actively_discarded_tracked_ids.push_back(track_id);
         continue;
       }
@@ -2400,9 +2424,9 @@ void RegionFlowComputation::ExtractFeatures(
                               mask_scale, &mask, data);
 
   const int num_features = data->features.size();
-  ABSL_CHECK_EQ(num_features, data->octaves.size());
-  ABSL_CHECK_EQ(num_features, data->corner_responses.size());
-  ABSL_CHECK_EQ(num_features, data->track_ids.size());
+  CHECK_EQ(num_features, data->octaves.size());
+  CHECK_EQ(num_features, data->corner_responses.size());
+  CHECK_EQ(num_features, data->track_ids.size());
 }
 
 // Selects features based on lambda evaluator: bool (int index)
@@ -2413,23 +2437,23 @@ int RegionFlowComputation::InplaceFeatureSelection(
     std::vector<std::vector<float>*> float_vecs, const Eval& eval) {
   int num_selected_features = 0;
   const int num_features = data->features.size();
-  ABSL_DCHECK_EQ(num_features, data->corner_responses.size());
-  ABSL_DCHECK_EQ(num_features, data->octaves.size());
-  ABSL_DCHECK_EQ(num_features, data->track_ids.size());
-  ABSL_DCHECK_EQ(num_features, data->feature_source_map.size());
+  DCHECK_EQ(num_features, data->corner_responses.size());
+  DCHECK_EQ(num_features, data->octaves.size());
+  DCHECK_EQ(num_features, data->track_ids.size());
+  DCHECK_EQ(num_features, data->feature_source_map.size());
   if (data->neighborhoods != nullptr) {
-    ABSL_DCHECK_EQ(num_features, data->neighborhoods->size());
+    DCHECK_EQ(num_features, data->neighborhoods->size());
   }
 
   for (const auto vec_ptr : int_vecs) {
-    ABSL_DCHECK_EQ(num_features, vec_ptr->size());
+    DCHECK_EQ(num_features, vec_ptr->size());
   }
   for (const auto vec_ptr : float_vecs) {
-    ABSL_DCHECK_EQ(num_features, vec_ptr->size());
+    DCHECK_EQ(num_features, vec_ptr->size());
   }
 
   for (int i = 0; i < num_features; ++i) {
-    ABSL_DCHECK_LE(num_selected_features, i);
+    DCHECK_LE(num_selected_features, i);
     if (eval(i)) {
       data->features[num_selected_features] = data->features[i];
       data->corner_responses[num_selected_features] = data->corner_responses[i];
@@ -2523,14 +2547,14 @@ void RegionFlowComputation::TrackFeatures(FrameTrackingData* from_data_ptr,
     octaves2.resize(num_features);
     data2.source = from_data_ptr;
   } else {
-    ABSL_CHECK_EQ(data2.source, from_data_ptr);
-    ABSL_CHECK_EQ(num_features, features2.size());
+    CHECK_EQ(data2.source, from_data_ptr);
+    CHECK_EQ(num_features, features2.size());
     tracking_flags |= cv::OPTFLOW_USE_INITIAL_FLOW;
   }
 
   const int track_win_size = options_.tracking_options().tracking_window_size();
-  ABSL_CHECK_GT(track_win_size, 1) << "Needs to be at least 2 pixels in each "
-                                   << "direction";
+  CHECK_GT(track_win_size, 1) << "Needs to be at least 2 pixels in each "
+                              << "direction";
 
   // Proceed with gain correction only if it succeeds, and set flag accordingly.
   bool frame1_gain_reference = true;
@@ -2566,31 +2590,39 @@ void RegionFlowComputation::TrackFeatures(FrameTrackingData* from_data_ptr,
   cv::_InputArray input_frame2(data2.pyramid);
 #endif
 
+  // Using old c-interface for OpenCV's 2.2 tracker.
+  CvTermCriteria criteria;
+  criteria.type = CV_TERMCRIT_EPS | CV_TERMCRIT_ITER;
+  criteria.max_iter = options_.tracking_options().tracking_iterations();
+  criteria.epsilon = 0.02f;
+
   feature_track_error_.resize(num_features);
   feature_status_.resize(num_features);
+  if (use_cv_tracking_) {
 #if CV_MAJOR_VERSION >= 3
-  if (gain_correction) {
-    if (!frame1_gain_reference) {
-      input_frame1 = cv::_InputArray(*gain_image_);
-    } else {
-      input_frame2 = cv::_InputArray(*gain_image_);
+    if (gain_correction) {
+      if (!frame1_gain_reference) {
+        input_frame1 = cv::_InputArray(*gain_image_);
+      } else {
+        input_frame2 = cv::_InputArray(*gain_image_);
+      }
     }
-  }
 
-  if (options_.tracking_options().klt_tracker_implementation() ==
-      TrackingOptions::KLT_OPENCV) {
-    cv::calcOpticalFlowPyrLK(input_frame1, input_frame2, features1, features2,
-                             feature_status_, feature_track_error_,
-                             cv_window_size, pyramid_levels_, cv_criteria,
-                             tracking_flags);
+    if (options_.tracking_options().klt_tracker_implementation() ==
+        TrackingOptions::KLT_OPENCV) {
+      cv::calcOpticalFlowPyrLK(input_frame1, input_frame2, features1, features2,
+                               feature_status_, feature_track_error_,
+                               cv_window_size, pyramid_levels_, cv_criteria,
+                               tracking_flags);
+    } else {
+      LOG(ERROR) << "Tracking method unspecified.";
+      return;
+    }
+#endif
   } else {
-    ABSL_LOG(ERROR) << "Tracking method unspecified.";
+    LOG(ERROR) << "only cv tracking is supported.";
     return;
   }
-#else
-  ABSL_LOG(ERROR) << "Only OpenCV >= 3.0 supports tracking.";
-  return;
-#endif
 
   // Inherit corner response and octaves from extracted features.
   corner_responses2 = corner_responses1;
@@ -2612,7 +2644,7 @@ void RegionFlowComputation::TrackFeatures(FrameTrackingData* from_data_ptr,
   // Init neighborhoods if needed.
   if (IsVerifyLongFeatures()) {
     // data1 should be initialized at this point.
-    ABSL_CHECK(data1.neighborhoods != nullptr);
+    CHECK(data1.neighborhoods != nullptr);
     if (data2.neighborhoods == nullptr) {
       data2.neighborhoods.reset(new std::vector<cv::Mat>());
       data2.neighborhoods->resize(num_valid_features);
@@ -2755,15 +2787,17 @@ void RegionFlowComputation::TrackFeatures(FrameTrackingData* from_data_ptr,
     std::vector<float> verify_track_error(num_to_verify);
     feature_status_.resize(num_to_verify);
 
+    if (use_cv_tracking_) {
 #if CV_MAJOR_VERSION >= 3
-    cv::calcOpticalFlowPyrLK(input_frame2, input_frame1, verify_features,
-                             verify_features_tracked, feature_status_,
-                             verify_track_error, cv_window_size,
-                             pyramid_levels_, cv_criteria, tracking_flags);
-#else
-    ABSL_LOG(ERROR) << "Only OpenCV >= 3.0 supports tracking.";
-    return;
+      cv::calcOpticalFlowPyrLK(input_frame2, input_frame1, verify_features,
+                               verify_features_tracked, feature_status_,
+                               verify_track_error, cv_window_size,
+                               pyramid_levels_, cv_criteria, tracking_flags);
 #endif
+    } else {
+      LOG(ERROR) << "only cv tracking is supported.";
+      return;
+    }
 
     // Check feature destinations, that when tracked back to from data1 to
     // data2, don't differ more than a threshold from their original location
@@ -2916,17 +2950,17 @@ void RegionFlowComputation::InitializeFeatureLocationsFromTransform(
 
 void RegionFlowComputation::InitializeFeatureLocationsFromPreviousResult(
     int from, int to) {
-  ABSL_CHECK_NE(from, to) << "Cannot initialize FrameTrackingData from itself.";
+  CHECK_NE(from, to) << "Cannot initialize FrameTrackingData from itself.";
 
   const int index1 = data_queue_.size() + from - 1;
   const int index2 = data_queue_.size() + to - 1;
-  ABSL_CHECK_GE(index1, 0);
-  ABSL_CHECK_LT(index1, data_queue_.size());
-  ABSL_CHECK_GE(index2, 0);
-  ABSL_CHECK_LT(index2, data_queue_.size());
+  CHECK_GE(index1, 0);
+  CHECK_LT(index1, data_queue_.size());
+  CHECK_GE(index2, 0);
+  CHECK_LT(index2, data_queue_.size());
   const FrameTrackingData& data1 = *data_queue_[index1];
   FrameTrackingData* data2 = data_queue_[index2].get();
-  ABSL_CHECK(data1.source != nullptr);
+  CHECK(data1.source != nullptr);
 
   if (!data1.features_initialized) {
     data2->features = data1.source->features;
@@ -2935,7 +2969,7 @@ void RegionFlowComputation::InitializeFeatureLocationsFromPreviousResult(
     }
   } else {
     data2->features = data1.features;
-    ABSL_CHECK_EQ(data1.features.size(), data1.source->features.size());
+    CHECK_EQ(data1.features.size(), data1.source->features.size());
   }
   data2->source = data1.source;
   data2->features_initialized = true;
@@ -3108,7 +3142,7 @@ void RegionFlowComputation::ComputeBlockBasedFlow(
 void RegionFlowComputation::DetermineRegionFlowInliers(
     const TrackedFeatureMap& region_feature_map,
     TrackedFeatureView* inliers) const {
-  ABSL_CHECK(inliers);
+  CHECK(inliers);
   inliers->clear();
 
   // Run RANSAC on each region.
@@ -3211,7 +3245,7 @@ int RegionFlowComputation::GetMinNumFeatureInliers(
     total_features += region_features.size();
   }
 
-  ABSL_CHECK(!region_feature_map.empty())
+  CHECK(!region_feature_map.empty())
       << "Empty grid passed. Check input dimensions";
 
   const float threshold =
@@ -3224,7 +3258,7 @@ int RegionFlowComputation::GetMinNumFeatureInliers(
 
 void RegionFlowComputation::RegionFlowFeatureListToRegionFlow(
     const RegionFlowFeatureList& feature_list, RegionFlowFrame* frame) const {
-  ABSL_CHECK(frame != nullptr);
+  CHECK(frame != nullptr);
 
   frame->set_num_total_features(feature_list.feature_size());
   frame->set_unstable_frame(feature_list.unstable());

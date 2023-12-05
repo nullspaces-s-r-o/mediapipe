@@ -4,7 +4,6 @@
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "absl/log/absl_check.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
@@ -119,14 +118,14 @@ class DescriptorReader {
 
   static FileDescriptorSet ReadFileDescriptorSet(const std::string& path) {
     std::string contents;
-    ABSL_CHECK_OK(file::GetContents(path, &contents));
+    CHECK_OK(file::GetContents(path, &contents));
     proto_ns::FileDescriptorSet result;
     result.ParseFromString(contents);
     return result;
   }
 
   static void WriteFile(const std::string& path, const std::string& contents) {
-    ABSL_CHECK_OK(file::SetContents(path, contents));
+    CHECK_OK(file::SetContents(path, contents));
   }
 
   static void WriteMessageTypeName(const std::string& path,

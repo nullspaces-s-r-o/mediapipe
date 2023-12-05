@@ -1,4 +1,4 @@
-# Copyright 2022 The MediaPipe Authors.
+# Copyright 2022 The MediaPipe Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Placeholder for internal Python strict library and test compatibility macro.
+# Placeholder for internal Python strict library compatibility macro.
 
 package(default_visibility = ["//mediapipe/tasks:internal"])
 
 licenses(["notice"])
 
 py_library(
-    name = "test_utils",
+    name = "test_util",
     testonly = 1,
-    srcs = ["test_utils.py"],
+    srcs = ["test_util.py"],
     srcs_version = "PY3",
-    visibility = [
-        "//mediapipe/model_maker/python:__subpackages__",
-        "//mediapipe/tasks:internal",
-    ],
     deps = [
         "//mediapipe/python:_framework_bindings",
-        "@com_google_protobuf//:protobuf_python",
     ],
 )

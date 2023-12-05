@@ -17,8 +17,6 @@
 
 #include <vector>
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "mediapipe/util/tracking/camera_motion.pb.h"
 #include "mediapipe/util/tracking/motion_models.h"
 #include "mediapipe/util/tracking/region_flow.pb.h"
@@ -167,7 +165,7 @@ Model UnstableCameraMotionToModel(const CameraMotion& camera_motion,
     }
 
     case CameraMotion::VALID:
-      ABSL_LOG(FATAL) << "Specify a type != VALID";
+      LOG(FATAL) << "Specify a type != VALID";
       return Model();
   }
 }
@@ -227,7 +225,7 @@ Model ProjectToTypeModel(const Model& model, float frame_width,
 template <>
 inline MixtureHomography ProjectToTypeModel(const MixtureHomography&, float,
                                             float, CameraMotion::Type) {
-  ABSL_LOG(FATAL) << "Projection not supported for mixtures.";
+  LOG(FATAL) << "Projection not supported for mixtures.";
   return MixtureHomography();
 }
 
@@ -238,11 +236,11 @@ void DownsampleMotionModels(
     std::vector<Model>* downsampled_models,
     std::vector<CameraMotion::Type>* downsampled_types) {
   if (model_type) {
-    ABSL_CHECK_EQ(models.size(), model_type->size());
-    ABSL_CHECK(downsampled_models) << "Expecting output models.";
+    CHECK_EQ(models.size(), model_type->size());
+    CHECK(downsampled_models) << "Expecting output models.";
   }
 
-  ABSL_CHECK(downsampled_models);
+  CHECK(downsampled_models);
   downsampled_models->clear();
   if (downsampled_types) {
     downsampled_types->clear();
@@ -278,7 +276,7 @@ void DownsampleMotionModels(
 template <class Container>
 void SubsampleEntities(const Container& input, int downsample_factor,
                        Container* output) {
-  ABSL_CHECK(output);
+  CHECK(output);
   output->clear();
 
   if (input.empty()) {

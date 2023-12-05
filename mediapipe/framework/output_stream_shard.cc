@@ -14,7 +14,6 @@
 
 #include "mediapipe/framework/output_stream_shard.h"
 
-#include "absl/log/absl_check.h"
 #include "mediapipe/framework/port/source_location.h"
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/port/status_builder.h"
@@ -24,7 +23,7 @@ namespace mediapipe {
 OutputStreamShard::OutputStreamShard() : closed_(false) {}
 
 void OutputStreamShard::SetSpec(OutputStreamSpec* output_stream_spec) {
-  ABSL_CHECK(output_stream_spec);
+  CHECK(output_stream_spec);
   output_stream_spec_ = output_stream_spec;
 }
 
@@ -95,7 +94,7 @@ const Packet& OutputStreamShard::Header() const {
 // binary.  This function can be defined in the .cc file because only two
 // versions are ever instantiated, and all call sites are within this .cc file.
 template <typename T>
-absl::Status OutputStreamShard::AddPacketInternal(T&& packet) {
+Status OutputStreamShard::AddPacketInternal(T&& packet) {
   if (IsClosed()) {
     return mediapipe::FailedPreconditionErrorBuilder(MEDIAPIPE_LOC)
            << "Packet sent to closed stream \"" << Name() << "\".";
@@ -114,7 +113,7 @@ absl::Status OutputStreamShard::AddPacketInternal(T&& packet) {
            << timestamp.DebugString();
   }
 
-  absl::Status result = output_stream_spec_->packet_type->Validate(packet);
+  Status result = output_stream_spec_->packet_type->Validate(packet);
   if (!result.ok()) {
     return StatusBuilder(result, MEDIAPIPE_LOC).SetPrepend() << absl::StrCat(
                "Packet type mismatch on calculator outputting to stream \"",
@@ -133,14 +132,14 @@ absl::Status OutputStreamShard::AddPacketInternal(T&& packet) {
 }
 
 void OutputStreamShard::AddPacket(const Packet& packet) {
-  absl::Status status = AddPacketInternal(packet);
+  Status status = AddPacketInternal(packet);
   if (!status.ok()) {
     output_stream_spec_->TriggerErrorCallback(status);
   }
 }
 
 void OutputStreamShard::AddPacket(Packet&& packet) {
-  absl::Status status = AddPacketInternal(std::move(packet));
+  Status status = AddPacketInternal(std::move(packet));
   if (!status.ok()) {
     output_stream_spec_->TriggerErrorCallback(status);
   }

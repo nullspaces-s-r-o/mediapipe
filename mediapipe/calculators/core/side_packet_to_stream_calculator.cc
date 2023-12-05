@@ -17,7 +17,6 @@
 #include <set>
 #include <string>
 
-#include "absl/status/status.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -33,7 +32,6 @@ namespace {
 constexpr char kTagAtPreStream[] = "AT_PRESTREAM";
 constexpr char kTagAtPostStream[] = "AT_POSTSTREAM";
 constexpr char kTagAtZero[] = "AT_ZERO";
-constexpr char kTagAtFirstTick[] = "AT_FIRST_TICK";
 constexpr char kTagAtTick[] = "AT_TICK";
 constexpr char kTagTick[] = "TICK";
 constexpr char kTagAtTimestamp[] = "AT_TIMESTAMP";
@@ -45,7 +43,6 @@ static std::map<std::string, Timestamp>* kTimestampMap = []() {
   res->emplace(kTagAtPostStream, Timestamp::PostStream());
   res->emplace(kTagAtZero, Timestamp(0));
   res->emplace(kTagAtTick, Timestamp::Unset());
-  res->emplace(kTagAtFirstTick, Timestamp::Unset());
   res->emplace(kTagAtTimestamp, Timestamp::Unset());
   return res;
 }();
@@ -62,8 +59,8 @@ std::string GetOutputTag(const CC& cc) {
 // timestamp, depending on the tag used to define output stream(s). (One tag can
 // be used only.)
 //
-// Valid tags are AT_PRESTREAM, AT_POSTSTREAM, AT_ZERO, AT_TICK, AT_FIRST_TICK,
-// AT_TIMESTAMP and corresponding timestamps are Timestamp::PreStream(),
+// Valid tags are AT_PRESTREAM, AT_POSTSTREAM, AT_ZERO, AT_TICK, AT_TIMESTAMP
+// and corresponding timestamps are Timestamp::PreStream(),
 // Timestamp::PostStream(), Timestamp(0), timestamp of a packet received in TICK
 // input, and timestamp received from a side input.
 //
@@ -99,7 +96,6 @@ class SidePacketToStreamCalculator : public CalculatorBase {
 
  private:
   bool is_tick_processing_ = false;
-  bool close_on_first_tick_ = false;
   std::string output_tag_;
 };
 REGISTER_CALCULATOR(SidePacketToStreamCalculator);
@@ -107,16 +103,13 @@ REGISTER_CALCULATOR(SidePacketToStreamCalculator);
 absl::Status SidePacketToStreamCalculator::GetContract(CalculatorContract* cc) {
   const auto& tags = cc->Outputs().GetTags();
   RET_CHECK(tags.size() == 1 && kTimestampMap->count(*tags.begin()) == 1)
-      << "Only one of AT_PRESTREAM, AT_POSTSTREAM, AT_ZERO, AT_TICK, "
-         "AT_FIRST_TICK and AT_TIMESTAMP tags is allowed and required to "
-         "specify output stream(s).";
-  const bool has_tick_output =
-      cc->Outputs().HasTag(kTagAtTick) || cc->Outputs().HasTag(kTagAtFirstTick);
-  const bool has_tick_input = cc->Inputs().HasTag(kTagTick);
-  RET_CHECK((has_tick_output && has_tick_input) ||
-            (!has_tick_output && !has_tick_input))
-      << "Either both TICK input and tick (AT_TICK/AT_FIRST_TICK) output "
-         "should be used or none of them.";
+      << "Only one of AT_PRESTREAM, AT_POSTSTREAM, AT_ZERO, AT_TICK and "
+         "AT_TIMESTAMP tags is allowed and required to specify output "
+         "stream(s).";
+  RET_CHECK(
+      (cc->Outputs().HasTag(kTagAtTick) && cc->Inputs().HasTag(kTagTick)) ||
+      (!cc->Outputs().HasTag(kTagAtTick) && !cc->Inputs().HasTag(kTagTick)))
+      << "Either both of TICK and AT_TICK should be used or none of them.";
   RET_CHECK((cc->Outputs().HasTag(kTagAtTimestamp) &&
              cc->InputSidePackets().HasTag(kTagSideInputTimestamp)) ||
             (!cc->Outputs().HasTag(kTagAtTimestamp) &&
@@ -128,7 +121,7 @@ absl::Status SidePacketToStreamCalculator::GetContract(CalculatorContract* cc) {
   if (cc->Outputs().HasTag(kTagAtTimestamp)) {
     RET_CHECK_EQ(num_entries + 1, cc->InputSidePackets().NumEntries())
         << "For AT_TIMESTAMP tag, 2 input side packets are required.";
-    cc->InputSidePackets().Tag(kTagSideInputTimestamp).Set<int64_t>();
+    cc->InputSidePackets().Tag(kTagSideInputTimestamp).Set<int64>();
   } else {
     RET_CHECK_EQ(num_entries, cc->InputSidePackets().NumEntries())
         << "Same number of input side packets and output streams is required.";
@@ -155,17 +148,11 @@ absl::Status SidePacketToStreamCalculator::Open(CalculatorContext* cc) {
     // timestamp bound update.
     cc->SetOffset(TimestampDiff(0));
   }
-  if (output_tag_ == kTagAtFirstTick) {
-    close_on_first_tick_ = true;
-  }
   return absl::OkStatus();
 }
 
 absl::Status SidePacketToStreamCalculator::Process(CalculatorContext* cc) {
   if (is_tick_processing_) {
-    if (cc->Outputs().Get(output_tag_, 0).IsClosed()) {
-      return absl::OkStatus();
-    }
     // TICK input is guaranteed to be non-empty, as it's the only input stream
     // for this calculator.
     const auto& timestamp = cc->Inputs().Tag(kTagTick).Value().Timestamp();
@@ -173,9 +160,6 @@ absl::Status SidePacketToStreamCalculator::Process(CalculatorContext* cc) {
       cc->Outputs()
           .Get(output_tag_, i)
           .AddPacket(cc->InputSidePackets().Index(i).At(timestamp));
-      if (close_on_first_tick_) {
-        cc->Outputs().Get(output_tag_, i).Close();
-      }
     }
 
     return absl::OkStatus();
@@ -186,7 +170,6 @@ absl::Status SidePacketToStreamCalculator::Process(CalculatorContext* cc) {
 
 absl::Status SidePacketToStreamCalculator::Close(CalculatorContext* cc) {
   if (!cc->Outputs().HasTag(kTagAtTick) &&
-      !cc->Outputs().HasTag(kTagAtFirstTick) &&
       !cc->Outputs().HasTag(kTagAtTimestamp)) {
     const auto& timestamp = kTimestampMap->at(output_tag_);
     for (int i = 0; i < cc->Outputs().NumEntries(output_tag_); ++i) {
@@ -195,8 +178,8 @@ absl::Status SidePacketToStreamCalculator::Close(CalculatorContext* cc) {
           .AddPacket(cc->InputSidePackets().Index(i).At(timestamp));
     }
   } else if (cc->Outputs().HasTag(kTagAtTimestamp)) {
-    int64_t timestamp =
-        cc->InputSidePackets().Tag(kTagSideInputTimestamp).Get<int64_t>();
+    int64 timestamp =
+        cc->InputSidePackets().Tag(kTagSideInputTimestamp).Get<int64>();
     for (int i = 0; i < cc->Outputs().NumEntries(output_tag_); ++i) {
       cc->Outputs()
           .Get(output_tag_, i)

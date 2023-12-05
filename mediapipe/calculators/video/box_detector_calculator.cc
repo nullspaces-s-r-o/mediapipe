@@ -17,8 +17,6 @@
 #include <memory>
 #include <unordered_set>
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/numbers.h"
 #include "mediapipe/calculators/video/box_detector_calculator.pb.h"
@@ -27,6 +25,7 @@
 #include "mediapipe/framework/formats/image_frame_opencv.h"
 #include "mediapipe/framework/formats/video_stream_header.h"
 #include "mediapipe/framework/port/integral_types.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/framework/port/opencv_core_inc.h"
 #include "mediapipe/framework/port/opencv_features2d_inc.h"
 #include "mediapipe/framework/port/ret_check.h"
@@ -199,20 +198,19 @@ absl::Status BoxDetectorCalculator::Open(CalculatorContext* cc) {
     if (!predefined_index.ParseFromString(cc->InputSidePackets()
                                               .Tag(kIndexProtoStringTag)
                                               .Get<std::string>())) {
-      ABSL_LOG(FATAL)
-          << "failed to parse BoxDetectorIndex from INDEX_PROTO_STRING";
+      LOG(FATAL) << "failed to parse BoxDetectorIndex from INDEX_PROTO_STRING";
     }
     box_detector_->AddBoxDetectorIndex(predefined_index);
   }
 
   for (const auto& filename : options_.index_proto_filename()) {
     std::string string_path;
-    MP_ASSIGN_OR_RETURN(string_path, PathToResourceAsFile(filename));
+    ASSIGN_OR_RETURN(string_path, PathToResourceAsFile(filename));
     std::string index_string;
     MP_RETURN_IF_ERROR(file::GetContents(string_path, &index_string));
     BoxDetectorIndex predefined_index;
     if (!predefined_index.ParseFromString(index_string)) {
-      ABSL_LOG(FATAL)
+      LOG(FATAL)
           << "failed to parse BoxDetectorIndex from index_proto_filename";
     }
     box_detector_->AddBoxDetectorIndex(predefined_index);
@@ -250,7 +248,7 @@ absl::Status BoxDetectorCalculator::Process(CalculatorContext* cc) {
     BoxDetectorIndex predefined_index;
     if (!predefined_index.ParseFromString(
             add_index_stream->Get<std::string>())) {
-      ABSL_LOG(FATAL) << "failed to parse BoxDetectorIndex from ADD_INDEX";
+      LOG(FATAL) << "failed to parse BoxDetectorIndex from ADD_INDEX";
     }
     box_detector_->AddBoxDetectorIndex(predefined_index);
   }
@@ -278,8 +276,8 @@ absl::Status BoxDetectorCalculator::Process(CalculatorContext* cc) {
                                        ? &(cc->Inputs().Tag(kDescriptorsTag))
                                        : nullptr;
 
-  ABSL_CHECK(track_stream != nullptr || video_stream != nullptr ||
-             (feature_stream != nullptr && descriptor_stream != nullptr))
+  CHECK(track_stream != nullptr || video_stream != nullptr ||
+        (feature_stream != nullptr && descriptor_stream != nullptr))
       << "One and only one of {tracking_data, input image frame, "
          "feature/descriptor} need to be valid.";
 
@@ -297,7 +295,7 @@ absl::Status BoxDetectorCalculator::Process(CalculatorContext* cc) {
 
     const TrackingData& tracking_data = track_stream->Get<TrackingData>();
 
-    ABSL_CHECK(tracked_boxes_stream != nullptr) << "tracked_boxes needed.";
+    CHECK(tracked_boxes_stream != nullptr) << "tracked_boxes needed.";
 
     const TimedBoxProtoList tracked_boxes =
         tracked_boxes_stream->Get<TimedBoxProtoList>();
@@ -361,7 +359,7 @@ absl::Status BoxDetectorCalculator::Process(CalculatorContext* cc) {
 
     const auto& descriptors = descriptor_stream->Get<std::vector<float>>();
     const int dims = options_.detector_options().descriptor_dims();
-    ABSL_CHECK_GE(descriptors.size(), feature_size * dims);
+    CHECK_GE(descriptors.size(), feature_size * dims);
     cv::Mat descriptors_mat(feature_size, dims, CV_32F);
     for (int j = 0; j < feature_size; ++j) {
       features_vec[j].Set(features[j].pt.x * inv_scale,

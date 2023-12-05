@@ -12,25 +12,10 @@ namespace mediapipe {
 
 class GlContext;
 
-namespace internal {
-
-template <>
-class ViewProvider<CVPixelBufferRef> {
- public:
-  virtual ~ViewProvider() = default;
-  virtual CFHolder<CVPixelBufferRef> GetReadView(
-      internal::types<CVPixelBufferRef>) const = 0;
-  virtual CFHolder<CVPixelBufferRef> GetWriteView(
-      internal::types<CVPixelBufferRef>) = 0;
-};
-
-}  // namespace internal
-
 class GpuBufferStorageCvPixelBuffer
     : public internal::GpuBufferStorageImpl<
           GpuBufferStorageCvPixelBuffer, internal::ViewProvider<GlTextureView>,
-          internal::ViewProvider<ImageFrame>,
-          internal::ViewProvider<CVPixelBufferRef>>,
+          internal::ViewProvider<ImageFrame>>,
       public CFHolder<CVPixelBufferRef> {
  public:
   using CFHolder<CVPixelBufferRef>::CFHolder;
@@ -48,31 +33,23 @@ class GpuBufferStorageCvPixelBuffer
         CVPixelBufferGetPixelFormatType(**this));
   }
   GlTextureView GetReadView(internal::types<GlTextureView>,
+                            std::shared_ptr<GpuBuffer> gpu_buffer,
                             int plane) const override;
   GlTextureView GetWriteView(internal::types<GlTextureView>,
+                             std::shared_ptr<GpuBuffer> gpu_buffer,
                              int plane) override;
   std::shared_ptr<const ImageFrame> GetReadView(
-      internal::types<ImageFrame>) const override;
+      internal::types<ImageFrame>,
+      std::shared_ptr<GpuBuffer> gpu_buffer) const override;
   std::shared_ptr<ImageFrame> GetWriteView(
-      internal::types<ImageFrame>) override;
-  CFHolder<CVPixelBufferRef> GetReadView(
-      internal::types<CVPixelBufferRef>) const override;
-  CFHolder<CVPixelBufferRef> GetWriteView(
-      internal::types<CVPixelBufferRef>) override;
+      internal::types<ImageFrame>,
+      std::shared_ptr<GpuBuffer> gpu_buffer) override;
 
  private:
-  GlTextureView GetTexture(int plane,
+  GlTextureView GetTexture(std::shared_ptr<GpuBuffer> gpu_buffer, int plane,
                            GlTextureView::DoneWritingFn done_writing) const;
+  void ViewDoneWriting(const GlTextureView& view);
 };
-
-inline CFHolder<CVPixelBufferRef> GpuBufferStorageCvPixelBuffer::GetReadView(
-    internal::types<CVPixelBufferRef>) const {
-  return *this;
-}
-inline CFHolder<CVPixelBufferRef> GpuBufferStorageCvPixelBuffer::GetWriteView(
-    internal::types<CVPixelBufferRef>) {
-  return *this;
-}
 
 namespace internal {
 // These functions enable backward-compatible construction of a GpuBuffer from

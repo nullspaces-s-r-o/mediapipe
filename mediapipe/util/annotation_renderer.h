@@ -96,11 +96,6 @@ class AnnotationRenderer {
 
   // Draws a point on the image as described in the annotation.
   void DrawPoint(const RenderAnnotation& annotation);
-  void DrawPoint(const RenderAnnotation::Point& point,
-                 const RenderAnnotation& annotation);
-
-  // Draws scribbles on the image as described in the annotation.
-  void DrawScribble(const RenderAnnotation& annotation);
 
   // Draws a line segment on the image as described in the annotation.
   void DrawLine(const RenderAnnotation& annotation);

@@ -22,8 +22,6 @@
 
 namespace mediapipe {
 
-using ::mediapipe::NormalizedRect;
-
 namespace {
 
 constexpr char kLandmarksTag[] = "LANDMARKS";

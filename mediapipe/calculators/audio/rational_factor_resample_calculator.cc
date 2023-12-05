@@ -16,8 +16,6 @@
 
 #include "mediapipe/calculators/audio/rational_factor_resample_calculator.h"
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "audio/dsp/resampler_q.h"
 
 using audio_dsp::Resampler;
@@ -47,9 +45,9 @@ void CopyVectorToChannel(const std::vector<float>& vec, Matrix* matrix,
   if (matrix->cols() == 0) {
     matrix->resize(matrix->rows(), vec.size());
   } else {
-    ABSL_CHECK_EQ(vec.size(), matrix->cols());
+    CHECK_EQ(vec.size(), matrix->cols());
   }
-  ABSL_CHECK_LT(channel, matrix->rows());
+  CHECK_LT(channel, matrix->rows());
   matrix->row(channel) =
       Eigen::Map<const Eigen::ArrayXf>(vec.data(), vec.size());
 }
@@ -79,7 +77,7 @@ absl::Status RationalFactorResampleCalculator::Open(CalculatorContext* cc) {
       r = ResamplerFromOptions(source_sample_rate_, target_sample_rate_,
                                resample_options);
       if (!r) {
-        ABSL_LOG(ERROR) << "Failed to initialize resampler.";
+        LOG(ERROR) << "Failed to initialize resampler.";
         return absl::UnknownError("Failed to initialize resampler.");
       }
     }

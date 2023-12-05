@@ -71,8 +71,8 @@ std::vector<FocusPointFrame> GetDefaultFocusPointFrames() {
   return GetFocusPointFrames(kNumSceneFrames);
 }
 
-std::vector<int64_t> GetTimestamps(const int num_frames) {
-  std::vector<int64_t> timestamps;
+std::vector<int64> GetTimestamps(const int num_frames) {
+  std::vector<int64> timestamps;
   for (int i = 0; i < num_frames; ++i) {
     timestamps.push_back(i * 100000);
   }

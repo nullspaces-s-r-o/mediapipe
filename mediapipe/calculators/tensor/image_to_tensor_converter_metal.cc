@@ -36,10 +36,6 @@
 #include "tensorflow/lite/delegates/gpu/common/shape.h"
 #include "tensorflow/lite/delegates/gpu/common/types.h"
 
-#if MEDIAPIPE_METAL_ENABLED
-#include "mediapipe/framework/formats/tensor_mtl_buffer_view.h"
-#endif  // MEDIAPIPE_METAL_ENABLED
-
 namespace mediapipe {
 
 namespace {
@@ -179,13 +175,13 @@ class SubRectExtractorMetal {
   }
 
   absl::Status Execute(id<MTLTexture> input_texture,
-                       const RotatedRect& sub_rect, bool flip_horizontally,
+                       const RotatedRect& sub_rect, bool flip_horizontaly,
                        float alpha, float beta,
                        const tflite::gpu::HW& destination_size,
                        id<MTLCommandBuffer> command_buffer,
                        id<MTLBuffer> destination) {
     auto output_texture = MTLTextureWithBuffer(destination_size, destination);
-    return InternalExecute(input_texture, sub_rect, flip_horizontally, alpha,
+    return InternalExecute(input_texture, sub_rect, flip_horizontaly, alpha,
                            beta, destination_size, command_buffer,
                            output_texture);
   }
@@ -211,7 +207,7 @@ class SubRectExtractorMetal {
 
   absl::Status InternalExecute(id<MTLTexture> input_texture,
                                const RotatedRect& sub_rect,
-                               bool flip_horizontally, float alpha, float beta,
+                               bool flip_horizontaly, float alpha, float beta,
                                const tflite::gpu::HW& destination_size,
                                id<MTLCommandBuffer> command_buffer,
                                id<MTLTexture> output_texture) {
@@ -223,7 +219,7 @@ class SubRectExtractorMetal {
     std::array<float, 16> transform_mat;
     GetRotatedSubRectToRectTransformMatrix(sub_rect, input_texture.width,
                                            input_texture.height,
-                                           flip_horizontally, &transform_mat);
+                                           flip_horizontaly, &transform_mat);
     id<MTLBuffer> transform_mat_buffer =
         [device_ newBufferWithBytes:&transform_mat
                              length:sizeof(transform_mat)
@@ -266,6 +262,7 @@ class SubRectExtractorMetal {
     RET_CHECK(pipeline_state != nil);
 
     std::string output_type_def;
+    MTLPixelFormat pixel_format;
     switch (output_format) {
       case OutputFormat::kF16C4:
         output_type_def = R"(
@@ -345,16 +342,16 @@ class MetalProcessor : public ImageToTensorConverter {
   absl::Status Init(CalculatorContext* cc, BorderMode border_mode) {
     metal_helper_ = [[MPPMetalHelper alloc] initWithCalculatorContext:cc];
     RET_CHECK(metal_helper_);
-    MP_ASSIGN_OR_RETURN(extractor_, SubRectExtractorMetal::Make(
-                                        metal_helper_.mtlDevice,
-                                        OutputFormat::kF32C4, border_mode));
+    ASSIGN_OR_RETURN(extractor_, SubRectExtractorMetal::Make(
+                                     metal_helper_.mtlDevice,
+                                     OutputFormat::kF32C4, border_mode));
     return absl::OkStatus();
   }
 
-  absl::Status Convert(const mediapipe::Image& input, const RotatedRect& roi,
-                       float range_min, float range_max,
-                       int tensor_buffer_offset,
-                       Tensor& output_tensor) override {
+  absl::StatusOr<Tensor> Convert(const mediapipe::Image& input,
+                                 const RotatedRect& roi,
+                                 const Size& output_dims, float range_min,
+                                 float range_max) override {
     if (input.format() != mediapipe::GpuBufferFormat::kBGRA32 &&
         input.format() != mediapipe::GpuBufferFormat::kRGBAHalf64 &&
         input.format() != mediapipe::GpuBufferFormat::kRGBAFloat128) {
@@ -362,47 +359,36 @@ class MetalProcessor : public ImageToTensorConverter {
           "Only 4-channel texture input formats are supported, passed format: ",
           static_cast<uint32_t>(input.format())));
     }
-    RET_CHECK_EQ(tensor_buffer_offset, 0)
-        << "The non-zero tensor_buffer_offset input is not supported yet.";
-    const auto& output_shape = output_tensor.shape();
-    MP_RETURN_IF_ERROR(ValidateTensorShape(output_shape));
 
     @autoreleasepool {
       id<MTLTexture> texture =
           [metal_helper_ metalTextureWithGpuBuffer:input.GetGpuBuffer()];
 
+      constexpr int kNumChannels = 4;
+      Tensor tensor(Tensor::ElementType::kFloat32,
+                    Tensor::Shape{1, output_dims.height, output_dims.width,
+                                  kNumChannels});
+
       constexpr float kInputImageRangeMin = 0.0f;
       constexpr float kInputImageRangeMax = 1.0f;
-      MP_ASSIGN_OR_RETURN(
+      ASSIGN_OR_RETURN(
           auto transform,
           GetValueRangeTransformation(kInputImageRangeMin, kInputImageRangeMax,
                                       range_min, range_max));
 
       id<MTLCommandBuffer> command_buffer = [metal_helper_ commandBuffer];
-      const auto& buffer_view =
-          MtlBufferView::GetWriteView(output_tensor, command_buffer);
+      const auto& buffer_view = tensor.GetMtlBufferWriteView(command_buffer);
       MP_RETURN_IF_ERROR(extractor_->Execute(
           texture, roi,
-          /*flip_horizontally=*/false, transform.scale, transform.offset,
-          tflite::gpu::HW(output_shape.dims[1], output_shape.dims[2]),
+          /*flip_horizontaly=*/false, transform.scale, transform.offset,
+          tflite::gpu::HW(output_dims.height, output_dims.width),
           command_buffer, buffer_view.buffer()));
       [command_buffer commit];
-      return absl::OkStatus();
+      return tensor;
     }
   }
 
  private:
-  absl::Status ValidateTensorShape(const Tensor::Shape& output_shape) {
-    RET_CHECK_EQ(output_shape.dims.size(), 4)
-        << "Wrong output dims size: " << output_shape.dims.size();
-    RET_CHECK_EQ(output_shape.dims[0], 1)
-        << "Handling batch dimension not equal to 1 is not implemented in this "
-           "converter.";
-    RET_CHECK_EQ(output_shape.dims[3], 4)
-        << "Wrong output channel: " << output_shape.dims[3];
-    return absl::OkStatus();
-  }
-
   MPPMetalHelper* metal_helper_ = nil;
   std::unique_ptr<SubRectExtractorMetal> extractor_;
 };

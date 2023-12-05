@@ -14,7 +14,6 @@
 
 #include <memory>
 
-#include "absl/log/absl_log.h"
 #include "mediapipe/calculators/image/segmentation_smoothing_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/calculator_runner.h"
@@ -170,7 +169,7 @@ void RunTest(bool use_gpu, float mix_ratio, cv::Mat& test_result) {
       }
     }
   } else {
-    ABSL_LOG(ERROR) << "invalid ratio";
+    LOG(ERROR) << "invalid ratio";
   }
 }
 

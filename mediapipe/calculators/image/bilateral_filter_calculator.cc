@@ -15,7 +15,6 @@
 #include <memory>
 #include <string>
 
-#include "absl/log/absl_check.h"
 #include "absl/strings/str_replace.h"
 #include "mediapipe/calculators/image/bilateral_filter_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
@@ -113,7 +112,7 @@ class BilateralFilterCalculator : public CalculatorBase {
 REGISTER_CALCULATOR(BilateralFilterCalculator);
 
 absl::Status BilateralFilterCalculator::GetContract(CalculatorContract* cc) {
-  RET_CHECK_GE(cc->Inputs().NumEntries(), 1);
+  CHECK_GE(cc->Inputs().NumEntries(), 1);
 
   if (cc->Inputs().HasTag(kInputFrameTag) &&
       cc->Inputs().HasTag(kInputFrameTagGpu)) {
@@ -184,8 +183,8 @@ absl::Status BilateralFilterCalculator::Open(CalculatorContext* cc) {
 
   sigma_color_ = options_.sigma_color();
   sigma_space_ = options_.sigma_space();
-  ABSL_CHECK_GE(sigma_color_, 0.0);
-  ABSL_CHECK_GE(sigma_space_, 0.0);
+  CHECK_GE(sigma_color_, 0.0);
+  CHECK_GE(sigma_space_, 0.0);
   if (!use_gpu_) sigma_color_ *= 255.0;
 
   if (use_gpu_) {

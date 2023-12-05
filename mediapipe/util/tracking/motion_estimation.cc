@@ -31,9 +31,8 @@
 #include "Eigen/SVD"
 #include "absl/container/node_hash_map.h"
 #include "absl/container/node_hash_set.h"
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/util/tracking/camera_motion.h"
 #include "mediapipe/util/tracking/measure_time.h"
 #include "mediapipe/util/tracking/motion_models.h"
@@ -174,9 +173,9 @@ class InlierMask {
   // estimated translation.
   void MotionPrior(const RegionFlowFeatureList& feature_list,
                    std::vector<float>* motion_prior) {
-    ABSL_CHECK(motion_prior != nullptr);
+    CHECK(motion_prior != nullptr);
     const int num_features = feature_list.feature_size();
-    ABSL_CHECK_EQ(num_features, motion_prior->size());
+    CHECK_EQ(num_features, motion_prior->size());
 
     // Return, if prior is too low.
     const float kMinTranslationPrior = 0.5f;
@@ -186,7 +185,7 @@ class InlierMask {
     }
     const float prev_magnitude = translation_.Norm();
 
-    ABSL_CHECK_EQ(num_features, motion_prior->size());
+    CHECK_EQ(num_features, motion_prior->size());
     const float inv_prev_magnitude =
         prev_magnitude < options_.min_translation_norm()
             ? (1.0f / options_.min_translation_norm())
@@ -351,7 +350,7 @@ struct MotionEstimation::SingleTrackClipData {
   // feature's irls weight. If weight_backup is set, allocates storage
   // to backup and reset irls weights.
   void AllocateIRLSWeightStorage(bool weight_backup) {
-    ABSL_CHECK(feature_lists != nullptr);
+    CHECK(feature_lists != nullptr);
     const int num_frames = feature_lists->size();
     if (weight_backup) {
       irls_weight_backup = &irls_backup_storage;
@@ -381,7 +380,7 @@ struct MotionEstimation::SingleTrackClipData {
 
   // Returns number of frames in this clip.
   int num_frames() const {
-    ABSL_DCHECK(feature_lists);
+    DCHECK(feature_lists);
     return feature_lists->size();
   }
 
@@ -397,23 +396,23 @@ struct MotionEstimation::SingleTrackClipData {
 
   // Checks that SingleTrackClipData is properly initialized.
   void CheckInitialization() const {
-    ABSL_CHECK(feature_lists != nullptr);
-    ABSL_CHECK(camera_motions != nullptr);
-    ABSL_CHECK_EQ(feature_lists->size(), camera_motions->size());
+    CHECK(feature_lists != nullptr);
+    CHECK(camera_motions != nullptr);
+    CHECK_EQ(feature_lists->size(), camera_motions->size());
     if (feature_lists->empty()) {
       return;
     }
 
-    ABSL_CHECK_EQ(num_frames(), irls_weight_input.size());
-    ABSL_CHECK_EQ(num_frames(), homog_irls_weight_input.size());
+    CHECK_EQ(num_frames(), irls_weight_input.size());
+    CHECK_EQ(num_frames(), homog_irls_weight_input.size());
     if (irls_weight_backup) {
-      ABSL_CHECK_EQ(num_frames(), irls_weight_backup->size());
+      CHECK_EQ(num_frames(), irls_weight_backup->size());
     }
 
     for (int k = 0; k < num_frames(); ++k) {
       const int num_features = (*feature_lists)[k]->feature_size();
-      ABSL_CHECK_EQ(num_features, irls_weight_input[k].size());
-      ABSL_CHECK_EQ(num_features, homog_irls_weight_input[k].size());
+      CHECK_EQ(num_features, irls_weight_input[k].size());
+      CHECK_EQ(num_features, homog_irls_weight_input[k].size());
     }
   }
 
@@ -487,31 +486,29 @@ void MotionEstimation::InitializeWithOptions(
           MotionEstimationOptions::ESTIMATION_HOMOG_NONE &&
       options.linear_similarity_estimation() ==
           MotionEstimationOptions::ESTIMATION_LS_NONE) {
-    ABSL_LOG(FATAL)
-        << "Invalid MotionEstimationOptions. "
-        << "Homography estimation requires similarity to be estimated";
+    LOG(FATAL) << "Invalid MotionEstimationOptions. "
+               << "Homography estimation requires similarity to be estimated";
   }
 
   if (options.mix_homography_estimation() !=
           MotionEstimationOptions::ESTIMATION_HOMOG_MIX_NONE &&
       options.homography_estimation() ==
           MotionEstimationOptions::ESTIMATION_HOMOG_NONE) {
-    ABSL_LOG(FATAL)
-        << "Invalid MotionEstimationOptions. "
-        << "Mixture homography estimation requires homography to be "
-        << "estimated.";
+    LOG(FATAL) << "Invalid MotionEstimationOptions. "
+               << "Mixture homography estimation requires homography to be "
+               << "estimated.";
   }
 
   // Check for deprecated options.
-  ABSL_CHECK_NE(options.estimate_similarity(), true)
+  CHECK_NE(options.estimate_similarity(), true)
       << "Option estimate_similarity is deprecated, use static function "
       << "EstimateSimilarityModelL2 instead.";
-  ABSL_CHECK_NE(options.linear_similarity_estimation(),
-                MotionEstimationOptions::ESTIMATION_LS_L2_RANSAC)
+  CHECK_NE(options.linear_similarity_estimation(),
+           MotionEstimationOptions::ESTIMATION_LS_L2_RANSAC)
       << "Option ESTIMATION_LS_L2_RANSAC is deprecated, use "
       << "ESTIMATION_LS_IRLS instead.";
-  ABSL_CHECK_NE(options.linear_similarity_estimation(),
-                MotionEstimationOptions::ESTIMATION_LS_L1)
+  CHECK_NE(options.linear_similarity_estimation(),
+           MotionEstimationOptions::ESTIMATION_LS_L1)
       << "Option ESTIMATION_LS_L1 is deprecated, use static function "
       << "EstimateLinearSimilarityL1 instead.";
 
@@ -566,7 +563,7 @@ void MotionEstimation::InitializeWithOptions(
     }
 
     case MotionEstimationOptions::TEMPORAL_IRLS_MASK:
-      ABSL_CHECK(options.irls_initialization().activated())
+      CHECK(options.irls_initialization().activated())
           << "To use dependent_initialization, irls_initialization has to "
           << "be activated. ";
       inlier_mask_.reset(new InlierMask(options.irls_mask_options(),
@@ -581,11 +578,11 @@ void MotionEstimation::EstimateMotion(const RegionFlowFrame& region_flow_frame,
                                       const int* intensity_frame,       // null
                                       const int* prev_intensity_frame,  // null
                                       CameraMotion* camera_motion) const {
-  ABSL_CHECK(camera_motion);
+  CHECK(camera_motion);
 
-  ABSL_CHECK(intensity_frame == NULL)
+  CHECK(intensity_frame == NULL)
       << "Parameter intensity_frame is deprecated, must be NULL.";
-  ABSL_CHECK(prev_intensity_frame == NULL)
+  CHECK(prev_intensity_frame == NULL)
       << "Parameter prev_intensity_frame is deprecated, must be NULL.";
 
   RegionFlowFeatureList feature_list;
@@ -799,7 +796,7 @@ class EstimateMotionIRLSInvoker {
         break;
 
       case MotionEstimation::MODEL_NUM_VALUES:
-        ABSL_LOG(FATAL) << "Function should not be called with this value";
+        LOG(FATAL) << "Function should not be called with this value";
         break;
     }
   }
@@ -824,11 +821,11 @@ void MotionEstimation::EstimateMotionsParallelImpl(
     std::vector<CameraMotion>* camera_motions) const {
   MEASURE_TIME << "Estimate motions: " << feature_lists->size();
 
-  ABSL_CHECK(feature_lists != nullptr);
-  ABSL_CHECK(camera_motions != nullptr);
+  CHECK(feature_lists != nullptr);
+  CHECK(camera_motions != nullptr);
 
   const int num_frames = feature_lists->size();
-  ABSL_CHECK_EQ(num_frames, camera_motions->size());
+  CHECK_EQ(num_frames, camera_motions->size());
 
   // Initialize camera_motions.
   for (int f = 0; f < num_frames; ++f) {
@@ -869,7 +866,7 @@ void MotionEstimation::EstimateMotionsParallelImpl(
   const int num_motion_models =
       use_joint_tracks ? options_.joint_track_estimation().num_motion_models()
                        : 1;
-  ABSL_CHECK_GT(num_motion_models, 0);
+  CHECK_GT(num_motion_models, 0);
 
   // Several single track clip datas, we seek to process.
   std::vector<SingleTrackClipData> clip_datas(num_motion_models);
@@ -944,8 +941,8 @@ void MotionEstimation::EstimateMotionsParallelImpl(
 
     if (options_.long_feature_initialization().activated()) {
       if (!feature_list.long_tracks()) {
-        ABSL_LOG(ERROR) << "Requesting long feature initialization but "
-                        << "input is not computed with long features.";
+        LOG(ERROR) << "Requesting long feature initialization but "
+                   << "input is not computed with long features.";
       } else {
         LongFeatureInitialization(feature_list, long_feature_info,
                                   track_length_importance, &irls_weight_input);
@@ -1083,8 +1080,7 @@ void MotionEstimation::EstimateMotionsParallelImpl(
   // Estimate mixtures across a spectrum a different regularizers, from the
   // weakest to the most regularized one.
   const int num_mixture_levels = options_.mixture_regularizer_levels();
-  ABSL_CHECK_LE(num_mixture_levels, 10)
-      << "Only up to 10 mixtures are supported.";
+  CHECK_LE(num_mixture_levels, 10) << "Only up to 10 mixtures are supported.";
 
   // Initialize to weakest regularizer.
   float regularizer = options_.mixture_regularizer();
@@ -1128,8 +1124,8 @@ void MotionEstimation::EstimateMotionsParallelImpl(
   // Check that mixture spectrum has sufficient entries.
   for (const CameraMotion& motion : *camera_motions) {
     if (motion.mixture_homography_spectrum_size() > 0) {
-      ABSL_CHECK_EQ(motion.mixture_homography_spectrum_size(),
-                    options_.mixture_regularizer_levels());
+      CHECK_EQ(motion.mixture_homography_spectrum_size(),
+               options_.mixture_regularizer_levels());
     }
   }
 
@@ -1168,7 +1164,7 @@ bool MotionEstimation::EstimateMotionModels(
     const EstimateModelOptions& model_options,
     const MotionEstimationThreadStorage* thread_storage,
     std::vector<SingleTrackClipData>* clip_datas) const {
-  ABSL_CHECK(clip_datas != nullptr);
+  CHECK(clip_datas != nullptr);
 
   const int num_datas = clip_datas->size();
   if (num_datas == 0) {
@@ -1270,7 +1266,7 @@ bool MotionEstimation::EstimateMotionModels(
         // Traverse frames in order.
         for (int k = 0; k < clip_data.num_frames(); ++k) {
           if (clip_data.feature_lists->at(k)->feature_size() > 0) {
-            ABSL_CHECK(clip_data.feature_lists->at(k)->long_tracks())
+            CHECK(clip_data.feature_lists->at(k)->long_tracks())
                 << "Estimation policy TEMPORAL_LONG_FEATURE_BIAS requires "
                 << "tracking with long tracks.";
           }
@@ -1285,7 +1281,7 @@ bool MotionEstimation::EstimateMotionModels(
           }
 
           if (clip_data.camera_motions->at(k).type() <= max_unstable_type) {
-            ABSL_CHECK(clip_data.prior_weights[k].use_full_prior);
+            CHECK(clip_data.prior_weights[k].use_full_prior);
             clip_data.prior_weights[k].alphas.assign(irls_per_round, 1.0f);
             clip_data.prior_weights[k].alphas.back() = 0.0;
           }
@@ -1574,7 +1570,7 @@ class IrlsInitializationInvoker {
 
       // Initialize priors from irls weights.
       if (use_prior_weights) {
-        ABSL_CHECK_LT(frame, clip_data_->prior_weights.size());
+        CHECK_LT(frame, clip_data_->prior_weights.size());
 
         if (clip_data_->prior_weights[frame].priors.empty()) {
           clip_data_->prior_weights[frame].priors.resize(
@@ -1608,13 +1604,13 @@ void MotionEstimation::LongFeatureInitialization(
     const LongFeatureInfo& feature_info,
     const std::vector<float>& track_length_importance,
     std::vector<float>* irls_weights) const {
-  ABSL_CHECK(irls_weights);
+  CHECK(irls_weights);
   const int num_features = feature_list.feature_size();
   if (num_features == 0) {
     return;
   }
 
-  ABSL_CHECK_EQ(num_features, irls_weights->size());
+  CHECK_EQ(num_features, irls_weights->size());
 
   // Determine actual scale to be applied to each feature.
   std::vector<float> feature_scales(num_features);
@@ -1646,9 +1642,9 @@ void MotionEstimation::LongFeatureInitialization(
 void MotionEstimation::FeatureDensityNormalization(
     const RegionFlowFeatureList& feature_list,
     std::vector<float>* irls_weights) const {
-  ABSL_CHECK(irls_weights);
+  CHECK(irls_weights);
   const int num_features = feature_list.feature_size();
-  ABSL_CHECK_EQ(num_features, irls_weights->size());
+  CHECK_EQ(num_features, irls_weights->size());
 
   // Compute mask index for each feature.
   std::vector<int> bin_indices;
@@ -1711,13 +1707,13 @@ void MotionEstimation::FeatureDensityNormalization(
 
     float normalizer = 0;
     int bin_idx = int_grid_y * mask_size + int_grid_x;
-    ABSL_CHECK_LT(bin_idx, max_bins);
+    CHECK_LT(bin_idx, max_bins);
     // See above.
     normalizer += bin_normalizer[bin_idx] * (1 - dx_plus_dy + dxdy);
     normalizer += bin_normalizer[bin_idx + inc_x] * (dx - dxdy);
 
     bin_idx += mask_size * inc_y;
-    ABSL_CHECK_LT(bin_idx, max_bins);
+    CHECK_LT(bin_idx, max_bins);
     normalizer += bin_normalizer[bin_idx] * (dy - dxdy);
     normalizer += bin_normalizer[bin_idx + inc_x] * dxdy;
 
@@ -1742,8 +1738,8 @@ void MotionEstimation::IrlsInitialization(
     SingleTrackClipData* clip_data) const {
   if (options_.estimation_policy() ==
       MotionEstimationOptions::TEMPORAL_LONG_FEATURE_BIAS) {
-    ABSL_CHECK_NE(frame, -1) << "Only per frame processing for this policy "
-                             << "supported.";
+    CHECK_NE(frame, -1) << "Only per frame processing for this policy "
+                        << "supported.";
   }
 
   IrlsInitializationInvoker invoker(type, max_unstable_type, model_options,
@@ -1767,8 +1763,8 @@ void MotionEstimation::IrlsInitialization(
 
     for_function(0, clip_data->num_frames(), 1, invoker);
   } else {
-    ABSL_CHECK_GE(frame, 0);
-    ABSL_CHECK_LT(frame, clip_data->num_frames());
+    CHECK_GE(frame, 0);
+    CHECK_LT(frame, clip_data->num_frames());
     invoker(BlockedRange(frame, frame + 1, 1));
   }
 }
@@ -1847,7 +1843,7 @@ void MotionEstimation::MinFilterIrlsWeightByTrack(
 
 void MotionEstimation::EnforceTrackConsistency(
     std::vector<SingleTrackClipData>* clip_datas) const {
-  ABSL_CHECK(clip_datas != nullptr);
+  CHECK(clip_datas != nullptr);
   if (clip_datas->empty()) {
     return;
   }
@@ -1892,7 +1888,7 @@ void MotionEstimation::EnforceTrackConsistency(
 void MotionEstimation::BiasFromFeatures(
     const RegionFlowFeatureList& feature_list, MotionType type,
     const EstimateModelOptions& model_options, std::vector<float>* bias) const {
-  ABSL_CHECK(bias);
+  CHECK(bias);
   const int num_features = feature_list.feature_size();
   bias->resize(num_features);
 
@@ -1932,8 +1928,8 @@ void MotionEstimation::BiasLongFeatures(
     RegionFlowFeatureList* feature_list, MotionType type,
     const EstimateModelOptions& model_options,
     PriorFeatureWeights* prior_weights) const {
-  ABSL_CHECK(prior_weights);
-  ABSL_CHECK(feature_list);
+  CHECK(prior_weights);
+  CHECK(feature_list);
 
   // Don't bias duplicated frames -> should be identity transform.
   if (feature_list->is_duplicated()) {
@@ -1947,11 +1943,11 @@ void MotionEstimation::BiasLongFeatures(
 
   // Bias along long tracks.
   if (!prior_weights->use_full_prior) {
-    ABSL_LOG_IF(WARNING,
-                []() {
-                  static int k = 0;
-                  return k++ < 2;
-                }())
+    LOG_IF(WARNING,
+           []() {
+             static int k = 0;
+             return k++ < 2;
+           }())
         << "Use full prior overridden to true, no initialization used. "
         << "Atypical usage.";
     prior_weights->use_full_prior = true;
@@ -1959,13 +1955,12 @@ void MotionEstimation::BiasLongFeatures(
 
   const int num_features = feature_list->feature_size();
   if (prior_weights->priors.empty() && num_features > 0) {
-    ABSL_LOG(WARNING)
-        << "BiasLongFeatures without using IrlsOutlierInitialization "
-        << "or LongFeatureInitialization.";
+    LOG(WARNING) << "BiasLongFeatures without using IrlsOutlierInitialization "
+                 << "or LongFeatureInitialization.";
     prior_weights->priors.resize(num_features, 1.0f);
   }
 
-  ABSL_CHECK_EQ(num_features, prior_weights->priors.size());
+  CHECK_EQ(num_features, prior_weights->priors.size());
   for (int k = 0; k < num_features; ++k) {
     prior_weights->priors[k] *= bias[k];
     auto* feature = feature_list->mutable_feature(k);
@@ -1998,7 +1993,7 @@ void MotionEstimation::ComputeSpatialBias(
   BuildFeatureGrid(NormalizedDomain().x(), NormalizedDomain().y(),
                    bias_options.grid_size(), {feature_view}, FeatureLocation,
                    &feature_taps_3, nullptr, nullptr, &feature_grids);
-  ABSL_CHECK_EQ(1, feature_grids.size());
+  CHECK_EQ(1, feature_grids.size());
   const FeatureGrid<RegionFlowFeature>& single_grid = feature_grids[0];
 
   const float long_track_threshold = bias_options.long_track_threshold();
@@ -2064,8 +2059,8 @@ void MotionEstimation::ComputeSpatialBias(
         }
       }
 
-      ABSL_DCHECK(spatial_bias->find(feature_ptr->track_id()) ==
-                  spatial_bias->end());
+      DCHECK(spatial_bias->find(feature_ptr->track_id()) ==
+             spatial_bias->end());
 
       // Threshold such that few similar tracks do not count.
       // Set to 0.25% of features.
@@ -2123,7 +2118,7 @@ void MotionEstimation::UpdateLongFeatureBias(
   const auto& bias_options = options_.long_feature_bias_options();
   const int num_irls_observations = bias_options.num_irls_observations();
 
-  ABSL_CHECK_GT(num_irls_observations, 0) << "Specify value > 0";
+  CHECK_GT(num_irls_observations, 0) << "Specify value > 0";
   const float inv_num_irls_observations = 1.0f / num_irls_observations;
 
   SpatialBiasMap spatial_bias;
@@ -2142,7 +2137,7 @@ void MotionEstimation::UpdateLongFeatureBias(
 
   // Scale applied to irls weight for linear interpolation between inlier and
   // outlier bias.
-  ABSL_CHECK_GT(bias_options.inlier_irls_weight(), 0);
+  CHECK_GT(bias_options.inlier_irls_weight(), 0);
   const float irls_scale = 1.0f / bias_options.inlier_irls_weight();
   const float long_track_scale =
       1.0f / bias_options.long_track_confidence_fraction();
@@ -2236,8 +2231,7 @@ void MotionEstimation::UpdateLongFeatureBias(
       // Update feature's weight as well.
       feature.set_irls_weight(1.0f / (biased_weight + kIrlsEps));
     } else {
-      ABSL_CHECK(!update_irls_observation)
-          << "Should never happen on >= 2nd round";
+      CHECK(!update_irls_observation) << "Should never happen on >= 2nd round";
 
       // Not present, reset to spatial bias.
       const float biased_weight = spatial_bias[feature.track_id()].first;
@@ -2262,7 +2256,7 @@ void MotionEstimation::UpdateLongFeatureBias(
 }
 
 void MotionEstimation::SmoothIRLSWeights(std::deque<float>* irls) const {
-  ABSL_CHECK(irls != nullptr);
+  CHECK(irls != nullptr);
   if (irls->empty()) {
     return;
   }
@@ -2322,7 +2316,7 @@ int MotionEstimation::IRLSRoundsFromSettings(const MotionType& type) const {
   const int irls_rounds = options_.irls_rounds();
   switch (type) {
     case MODEL_AVERAGE_MAGNITUDE:
-      ABSL_LOG(WARNING) << "Called with irls free motion type. Returning zero.";
+      LOG(WARNING) << "Called with irls free motion type. Returning zero.";
       return 0;
 
     case MODEL_TRANSLATION:
@@ -2346,8 +2340,7 @@ int MotionEstimation::IRLSRoundsFromSettings(const MotionType& type) const {
 
         case MotionEstimationOptions::ESTIMATION_LS_L2_RANSAC:
         case MotionEstimationOptions::ESTIMATION_LS_L1:
-          ABSL_LOG(FATAL)
-              << "Deprecated options, use ESTIMATION_LS_IRLS instead.";
+          LOG(FATAL) << "Deprecated options, use ESTIMATION_LS_IRLS instead.";
           return -1;
       }
       break;
@@ -2392,19 +2385,18 @@ int MotionEstimation::IRLSRoundsFromSettings(const MotionType& type) const {
       break;
 
     case MODEL_NUM_VALUES:
-      ABSL_LOG(FATAL) << "Function should never be called with this value";
+      LOG(FATAL) << "Function should never be called with this value";
       break;
   }
 
-  ABSL_LOG(FATAL)
-      << "All branches above return, execution can not reach this point";
+  LOG(FATAL) << "All branches above return, execution can not reach this point";
   return -1;
 }
 
 void MotionEstimation::PolicyToIRLSRounds(int irls_rounds, int* total_rounds,
                                           int* irls_per_round) const {
-  ABSL_CHECK(total_rounds != nullptr);
-  ABSL_CHECK(irls_per_round != nullptr);
+  CHECK(total_rounds != nullptr);
+  CHECK(irls_per_round != nullptr);
 
   // Small optimization: irls_rounds == 0 -> total_rounds = 0 regardless of
   // settings.
@@ -2438,13 +2430,13 @@ void MotionEstimation::CheckModelStability(
     const std::vector<std::vector<float>>* reset_irls_weights,
     std::vector<RegionFlowFeatureList*>* feature_lists,
     std::vector<CameraMotion>* camera_motions) const {
-  ABSL_CHECK(feature_lists != nullptr);
-  ABSL_CHECK(camera_motions != nullptr);
+  CHECK(feature_lists != nullptr);
+  CHECK(camera_motions != nullptr);
   const int num_frames = feature_lists->size();
   if (reset_irls_weights) {
-    ABSL_DCHECK_EQ(num_frames, reset_irls_weights->size());
+    DCHECK_EQ(num_frames, reset_irls_weights->size());
   }
-  ABSL_DCHECK_EQ(num_frames, camera_motions->size());
+  DCHECK_EQ(num_frames, camera_motions->size());
 
   for (int f = 0; f < num_frames; ++f) {
     CameraMotion& camera_motion = (*camera_motions)[f];
@@ -2470,7 +2462,7 @@ void MotionEstimation::CheckSingleModelStability(
 
   switch (type) {
     case MODEL_AVERAGE_MAGNITUDE:
-      ABSL_LOG(WARNING) << "Nothing to check for requested model type.";
+      LOG(WARNING) << "Nothing to check for requested model type.";
       return;
 
     case MODEL_TRANSLATION:
@@ -2478,7 +2470,7 @@ void MotionEstimation::CheckSingleModelStability(
                               camera_motion->translation_variance(),
                               *feature_list)) {
         // Translation can never be singular.
-        ABSL_CHECK_EQ(
+        CHECK_EQ(
             0, camera_motion->flags() & CameraMotion::FLAG_SINGULAR_ESTIMATION);
       } else {
         // Invalid model.
@@ -2559,8 +2551,8 @@ void MotionEstimation::CheckSingleModelStability(
 
           case CameraMotion::INVALID:
           case CameraMotion::UNSTABLE_HOMOG:
-            ABSL_LOG(FATAL)
-                << "Unexpected CameraMotion::Type: " << camera_motion->type();
+            LOG(FATAL) << "Unexpected CameraMotion::Type: "
+                       << camera_motion->type();
             break;
         }
 
@@ -2583,21 +2575,21 @@ void MotionEstimation::CheckSingleModelStability(
     }
 
     case MODEL_NUM_VALUES:
-      ABSL_LOG(FATAL) << "Function should not be called with this value";
+      LOG(FATAL) << "Function should not be called with this value";
       break;
   }
 }
 
 void MotionEstimation::ProjectMotionsDown(
     const MotionType& type, std::vector<CameraMotion>* camera_motions) const {
-  ABSL_CHECK(camera_motions != nullptr);
+  CHECK(camera_motions != nullptr);
   for (auto& camera_motion : *camera_motions) {
     switch (type) {
       case MODEL_AVERAGE_MAGNITUDE:
       case MODEL_TRANSLATION:
       case MODEL_MIXTURE_HOMOGRAPHY:
       case MODEL_AFFINE:
-        ABSL_LOG(WARNING) << "Nothing to project for requested model type";
+        LOG(WARNING) << "Nothing to project for requested model type";
         return;
 
       case MODEL_HOMOGRAPHY:
@@ -2628,7 +2620,7 @@ void MotionEstimation::ProjectMotionsDown(
         break;
 
       case MODEL_NUM_VALUES:
-        ABSL_LOG(FATAL) << "Function should not be called with this value";
+        LOG(FATAL) << "Function should not be called with this value";
         break;
     }
   }
@@ -2636,7 +2628,7 @@ void MotionEstimation::ProjectMotionsDown(
 
 void MotionEstimation::IRLSWeightFilter(
     std::vector<RegionFlowFeatureList*>* feature_lists) const {
-  ABSL_CHECK(feature_lists != nullptr);
+  CHECK(feature_lists != nullptr);
   for (auto feature_ptr : *feature_lists) {
     switch (options_.irls_weight_filter()) {
       case MotionEstimationOptions::IRLS_FILTER_TEXTURE:
@@ -2663,7 +2655,7 @@ void MotionEstimation::EstimateMotionsParallel(
     bool post_irls_weight_smoothing,
     std::vector<RegionFlowFeatureList*>* feature_lists,
     std::vector<CameraMotion>* camera_motions) const {
-  ABSL_CHECK(camera_motions != nullptr);
+  CHECK(camera_motions != nullptr);
   camera_motions->clear();
   camera_motions->resize(feature_lists->size());
 
@@ -2704,8 +2696,8 @@ void MotionEstimation::EstimateMotionsParallel(
 void MotionEstimation::DetermineShotBoundaries(
     const std::vector<RegionFlowFeatureList*>& feature_lists,
     std::vector<CameraMotion>* camera_motions) const {
-  ABSL_CHECK(camera_motions != nullptr);
-  ABSL_CHECK_EQ(feature_lists.size(), camera_motions->size());
+  CHECK(camera_motions != nullptr);
+  CHECK_EQ(feature_lists.size(), camera_motions->size());
   const auto& shot_options = options_.shot_boundary_options();
 
   // Verify empty feature frames and invalid models via visual consistency.
@@ -2766,7 +2758,7 @@ void MotionEstimation::DetermineShotBoundaries(
 
 void MotionEstimation::ResetMotionModels(const MotionEstimationOptions& options,
                                          CameraMotion* camera_motion) {
-  ABSL_CHECK(camera_motion);
+  CHECK(camera_motion);
 
   // Clear models.
   camera_motion->clear_translation();
@@ -3019,8 +3011,8 @@ Vector2_f EstimateTranslationModelDouble(
 void MotionEstimation::ComputeFeatureMask(
     const RegionFlowFeatureList& feature_list, std::vector<int>* mask_indices,
     std::vector<float>* bin_normalizer) const {
-  ABSL_CHECK(mask_indices != nullptr);
-  ABSL_CHECK(bin_normalizer != nullptr);
+  CHECK(mask_indices != nullptr);
+  CHECK(bin_normalizer != nullptr);
 
   const int num_features = feature_list.feature_size();
   mask_indices->clear();
@@ -3055,7 +3047,7 @@ bool MotionEstimation::GetTranslationIrlsInitialization(
     RegionFlowFeatureList* feature_list,
     const EstimateModelOptions& model_options, float avg_camera_motion,
     InlierMask* inlier_mask, TranslationModel* best_model) const {
-  ABSL_CHECK(best_model != nullptr);
+  CHECK(best_model != nullptr);
 
   const int num_features = feature_list->feature_size();
   if (!num_features) {
@@ -3064,8 +3056,8 @@ bool MotionEstimation::GetTranslationIrlsInitialization(
 
   // Bool indicator which features agree with model in each round.
   // In case no RANSAC rounds are performed considered all features inliers.
-  std::vector<uint8_t> best_features(num_features, 1);
-  std::vector<uint8_t> curr_features(num_features);
+  std::vector<uint8> best_features(num_features, 1);
+  std::vector<uint8> curr_features(num_features);
   float best_sum = 0;
 
   unsigned int seed = 900913;  // = Google in leet :)
@@ -3103,7 +3095,7 @@ bool MotionEstimation::GetTranslationIrlsInitialization(
     for (int i = 0; i < num_features; ++i) {
       const Feature& feature = feature_list->feature(i);
       const Vector2_f diff = FeatureFlow(feature) - flow;
-      curr_features[i] = static_cast<uint8_t>(diff.Norm2() < sq_cutoff);
+      curr_features[i] = static_cast<uint8>(diff.Norm2() < sq_cutoff);
       if (curr_features[i]) {
         float score = feature.irls_weight();
         if (inlier_mask) {
@@ -3171,7 +3163,7 @@ void MotionEstimation::EstimateTranslationModelIRLS(
     CameraMotion* camera_motion) const {
   if (prior_weights && !prior_weights->HasCorrectDimension(
                            irls_rounds, flow_feature_list->feature_size())) {
-    ABSL_LOG(ERROR) << "Prior weights incorrectly initialized, ignoring.";
+    LOG(ERROR) << "Prior weights incorrectly initialized, ignoring.";
     prior_weights = nullptr;
   }
 
@@ -3277,9 +3269,9 @@ LinearSimilarityModel LinearSimilarityL2SolveSystem(
     const RegionFlowFeatureList& feature_list, Eigen::Matrix<T, 4, 4>* matrix,
     Eigen::Matrix<T, 4, 1>* rhs, Eigen::Matrix<T, 4, 1>* solution,
     bool* success) {
-  ABSL_CHECK(matrix != nullptr);
-  ABSL_CHECK(rhs != nullptr);
-  ABSL_CHECK(solution != nullptr);
+  CHECK(matrix != nullptr);
+  CHECK(rhs != nullptr);
+  CHECK(solution != nullptr);
 
   *matrix = Eigen::Matrix<T, 4, 4>::Zero();
   *rhs = Eigen::Matrix<T, 4, 1>::Zero();
@@ -3360,7 +3352,7 @@ bool MotionEstimation::GetSimilarityIrlsInitialization(
     RegionFlowFeatureList* feature_list,
     const EstimateModelOptions& model_options, float avg_camera_motion,
     InlierMask* inlier_mask, LinearSimilarityModel* best_model) const {
-  ABSL_CHECK(best_model != nullptr);
+  CHECK(best_model != nullptr);
 
   const int num_features = feature_list->feature_size();
   if (!num_features) {
@@ -3374,8 +3366,8 @@ bool MotionEstimation::GetSimilarityIrlsInitialization(
 
   // Bool indicator which features agree with model in each round.
   // In case no RANSAC rounds are performed considered all features inliers.
-  std::vector<uint8_t> best_features(num_features, 1);
-  std::vector<uint8_t> curr_features(num_features);
+  std::vector<uint8> best_features(num_features, 1);
+  std::vector<uint8> curr_features(num_features);
   float best_sum = 0;
 
   unsigned int seed = 900913;  // = Google in leet :)
@@ -3425,7 +3417,7 @@ bool MotionEstimation::GetSimilarityIrlsInitialization(
       const Vector2_f trans_location = LinearSimilarityAdapter::TransformPoint(
           similarity, FeatureLocation(feature));
       const Vector2_f diff = FeatureMatchLocation(feature) - trans_location;
-      curr_features[i] = static_cast<uint8_t>(diff.Norm2() < sq_cutoff);
+      curr_features[i] = static_cast<uint8>(diff.Norm2() < sq_cutoff);
       if (curr_features[i]) {
         float score = feature.irls_weight();
         if (inlier_mask) {
@@ -3491,8 +3483,8 @@ bool MotionEstimation::GetSimilarityIrlsInitialization(
 void MotionEstimation::ComputeSimilarityInliers(
     const RegionFlowFeatureList& feature_list, int* num_inliers,
     int* num_strict_inliers) const {
-  ABSL_CHECK(num_inliers);
-  ABSL_CHECK(num_strict_inliers);
+  CHECK(num_inliers);
+  CHECK(num_strict_inliers);
 
   const auto& similarity_bounds = options_.stable_similarity_bounds();
 
@@ -3501,11 +3493,11 @@ void MotionEstimation::ComputeSimilarityInliers(
   float threshold = std::max<float>(similarity_bounds.inlier_threshold(),
                                     similarity_bounds.frac_inlier_threshold() *
                                         hypot(frame_width_, frame_height_));
-  ABSL_CHECK_GT(threshold, 0);
+  CHECK_GT(threshold, 0);
 
   threshold = 1.0f / threshold;
   float strict_threshold = similarity_bounds.strict_inlier_threshold();
-  ABSL_CHECK_GT(strict_threshold, 0);
+  CHECK_GT(strict_threshold, 0);
   strict_threshold = 1.0f / strict_threshold;
 
   if (!options_.irls_use_l0_norm()) {
@@ -3532,7 +3524,7 @@ bool MotionEstimation::EstimateLinearSimilarityModelIRLS(
     CameraMotion* camera_motion) const {
   if (prior_weights && !prior_weights->HasCorrectDimension(
                            irls_rounds, flow_feature_list->feature_size())) {
-    ABSL_LOG(ERROR) << "Prior weights incorrectly initialized, ignoring.";
+    LOG(ERROR) << "Prior weights incorrectly initialized, ignoring.";
     prior_weights = nullptr;
   }
 
@@ -3767,14 +3759,14 @@ bool HomographyL2QRSolve(
     float perspective_regularizer,
     Eigen::Matrix<T, Eigen::Dynamic, 8>* matrix,  // tmp matrix
     Eigen::Matrix<T, 8, 1>* solution) {
-  ABSL_CHECK(matrix);
-  ABSL_CHECK(solution);
-  ABSL_CHECK_EQ(8, matrix->cols());
+  CHECK(matrix);
+  CHECK(solution);
+  CHECK_EQ(8, matrix->cols());
   const int num_rows =
       2 * feature_list.feature_size() + (perspective_regularizer == 0 ? 0 : 1);
-  ABSL_CHECK_EQ(num_rows, matrix->rows());
-  ABSL_CHECK_EQ(1, solution->cols());
-  ABSL_CHECK_EQ(8, solution->rows());
+  CHECK_EQ(num_rows, matrix->rows());
+  CHECK_EQ(1, solution->cols());
+  CHECK_EQ(8, solution->rows());
 
   // Compute homography from features (H * location = prev_location).
   *matrix = Eigen::Matrix<T, Eigen::Dynamic, 8>::Zero(matrix->rows(), 8);
@@ -3856,9 +3848,9 @@ Homography HomographyL2NormalEquationSolve(
     float perspective_regularizer, Eigen::Matrix<T, 8, 8>* matrix,
     Eigen::Matrix<T, 8, 1>* rhs, Eigen::Matrix<T, 8, 1>* solution,
     bool* success) {
-  ABSL_CHECK(matrix != nullptr);
-  ABSL_CHECK(rhs != nullptr);
-  ABSL_CHECK(solution != nullptr);
+  CHECK(matrix != nullptr);
+  CHECK(rhs != nullptr);
+  CHECK(solution != nullptr);
 
   *matrix = Eigen::Matrix<T, 8, 8>::Zero();
   *rhs = Eigen::Matrix<T, 8, 1>::Zero();
@@ -4062,8 +4054,8 @@ bool MixtureHomographyL2DLTSolve(
     const MixtureRowWeights& row_weights, float regularizer_lambda,
     Eigen::MatrixXf* matrix,  // least squares matrix
     Eigen::MatrixXf* solution) {
-  ABSL_CHECK(matrix);
-  ABSL_CHECK(solution);
+  CHECK(matrix);
+  CHECK(solution);
 
   // cv::solve can hang for really bad conditioned systems.
   const double feature_irls_sum = RegionFlowFeatureIRLSSum(feature_list);
@@ -4074,12 +4066,11 @@ bool MixtureHomographyL2DLTSolve(
   const int num_dof = 8 * num_models;
   const int num_constraints = num_dof - 8;
 
-  ABSL_CHECK_EQ(matrix->cols(), num_dof);
+  CHECK_EQ(matrix->cols(), num_dof);
   // 2 Rows (x,y) per feature.
-  ABSL_CHECK_EQ(matrix->rows(),
-                2 * feature_list.feature_size() + num_constraints);
-  ABSL_CHECK_EQ(solution->cols(), 1);
-  ABSL_CHECK_EQ(solution->rows(), num_dof);
+  CHECK_EQ(matrix->rows(), 2 * feature_list.feature_size() + num_constraints);
+  CHECK_EQ(solution->cols(), 1);
+  CHECK_EQ(solution->rows(), num_dof);
 
   // Compute homography from features. (H * location = prev_location)
   *matrix = Eigen::MatrixXf::Zero(matrix->rows(), matrix->cols());
@@ -4159,8 +4150,8 @@ bool TransMixtureHomographyL2DLTSolve(
     const MixtureRowWeights& row_weights, float regularizer_lambda,
     Eigen::MatrixXf* matrix,  // least squares matrix
     Eigen::MatrixXf* solution) {
-  ABSL_CHECK(matrix);
-  ABSL_CHECK(solution);
+  CHECK(matrix);
+  CHECK(solution);
 
   // cv::solve can hang for really bad conditioned systems.
   const double feature_irls_sum = RegionFlowFeatureIRLSSum(feature_list);
@@ -4171,12 +4162,11 @@ bool TransMixtureHomographyL2DLTSolve(
   const int num_dof = 6 + 2 * num_models;
   const int num_constraints = 2 * (num_models - 1);
 
-  ABSL_CHECK_EQ(matrix->cols(), num_dof);
+  CHECK_EQ(matrix->cols(), num_dof);
   // 2 Rows (x,y) per feature.
-  ABSL_CHECK_EQ(matrix->rows(),
-                2 * feature_list.feature_size() + num_constraints);
-  ABSL_CHECK_EQ(solution->cols(), 1);
-  ABSL_CHECK_EQ(solution->rows(), num_dof);
+  CHECK_EQ(matrix->rows(), 2 * feature_list.feature_size() + num_constraints);
+  CHECK_EQ(solution->cols(), 1);
+  CHECK_EQ(solution->rows(), num_dof);
 
   // Compute homography from features. (H * location = prev_location)
   *matrix = Eigen::MatrixXf::Zero(matrix->rows(), matrix->cols());
@@ -4259,8 +4249,8 @@ bool SkewRotMixtureHomographyL2DLTSolve(
     const MixtureRowWeights& row_weights, float regularizer_lambda,
     Eigen::MatrixXf* matrix,  // least squares matrix
     Eigen::MatrixXf* solution) {
-  ABSL_CHECK(matrix);
-  ABSL_CHECK(solution);
+  CHECK(matrix);
+  CHECK(solution);
 
   // cv::solve can hang for really bad conditioned systems.
   const double feature_irls_sum = RegionFlowFeatureIRLSSum(feature_list);
@@ -4271,12 +4261,11 @@ bool SkewRotMixtureHomographyL2DLTSolve(
   const int num_dof = 4 + 4 * num_models;
   const int num_constraints = 4 * (num_models - 1);
 
-  ABSL_CHECK_EQ(matrix->cols(), num_dof);
+  CHECK_EQ(matrix->cols(), num_dof);
   // 2 Rows (x,y) per feature.
-  ABSL_CHECK_EQ(matrix->rows(),
-                2 * feature_list.feature_size() + num_constraints);
-  ABSL_CHECK_EQ(solution->cols(), 1);
-  ABSL_CHECK_EQ(solution->rows(), num_dof);
+  CHECK_EQ(matrix->rows(), 2 * feature_list.feature_size() + num_constraints);
+  CHECK_EQ(solution->cols(), 1);
+  CHECK_EQ(solution->rows(), num_dof);
 
   // Compute homography from features. (H * location = prev_location)
   *matrix = Eigen::MatrixXf::Zero(matrix->rows(), matrix->cols());
@@ -4360,7 +4349,7 @@ bool SkewRotMixtureHomographyL2DLTSolve(
 void MotionEstimation::GetHomographyIRLSCenterWeights(
     const RegionFlowFeatureList& feature_list,
     std::vector<float>* weights) const {
-  ABSL_CHECK(weights != nullptr);
+  CHECK(weights != nullptr);
 
   const int num_features = feature_list.feature_size();
   weights->clear();
@@ -4393,7 +4382,7 @@ void MotionEstimation::GetHomographyIRLSCenterWeights(
         weights->push_back(1.0f - weight * 0.5f);
         break;
       default:
-        ABSL_LOG(INFO) << "Unsupported IRLS weighting.";
+        LOG(INFO) << "Unsupported IRLS weighting.";
     }
   }
 }
@@ -4447,7 +4436,7 @@ bool MotionEstimation::IsStableTranslation(
 
 void MotionEstimation::CheckTranslationAcceleration(
     std::vector<CameraMotion>* camera_motions) const {
-  ABSL_CHECK(camera_motions != nullptr);
+  CHECK(camera_motions != nullptr);
   std::vector<float> magnitudes;
   for (const auto& motion : *camera_motions) {
     const float translation_magnitude =
@@ -4669,7 +4658,7 @@ bool MotionEstimation::IsStableMixtureHomography(
 float MotionEstimation::GridCoverage(
     const RegionFlowFeatureList& feature_list, float min_inlier_score,
     MotionEstimationThreadStorage* thread_storage) const {
-  ABSL_CHECK(thread_storage != nullptr);
+  CHECK(thread_storage != nullptr);
 
   // 10x10 grid for coverage estimation.
   const int grid_size = options_.coverage_grid_size();
@@ -4680,7 +4669,7 @@ float MotionEstimation::GridCoverage(
 
   const std::vector<float>& grid_cell_weights =
       thread_storage->GridCoverageInitializationWeights();
-  ABSL_CHECK_EQ(mask_size, grid_cell_weights.size());
+  CHECK_EQ(mask_size, grid_cell_weights.size());
 
   const float max_inlier_score = 1.75f * min_inlier_score;
   const float mid_inlier_score = 0.5 * (min_inlier_score + max_inlier_score);
@@ -4705,7 +4694,7 @@ float MotionEstimation::GridCoverage(
           normalized_domain_.x() / grid_size * overlap_x / num_overlaps;
       std::vector<std::vector<float>>& irls_mask =
           *thread_storage->EmptyGridCoverageIrlsMask();
-      ABSL_CHECK_EQ(mask_size, irls_mask.size());
+      CHECK_EQ(mask_size, irls_mask.size());
 
       // Bin features.
       for (const auto& feature : feature_list.feature()) {
@@ -4749,7 +4738,7 @@ float MotionEstimation::GridCoverage(
 
   const float cell_weight_sum =
       std::accumulate(grid_cell_weights.begin(), grid_cell_weights.end(), 0.0f);
-  ABSL_CHECK_GT(cell_weight_sum, 0);
+  CHECK_GT(cell_weight_sum, 0);
 
   return std::inner_product(max_coverage.begin(), max_coverage.end(),
                             grid_cell_weights.begin(), 0.0f) /
@@ -4874,7 +4863,7 @@ bool MotionEstimation::EstimateHomographyIRLS(
     RegionFlowFeatureList* feature_list, CameraMotion* camera_motion) const {
   if (prior_weights && !prior_weights->HasCorrectDimension(
                            irls_rounds, feature_list->feature_size())) {
-    ABSL_LOG(ERROR) << "Prior weights incorrectly initialized, ignoring.";
+    LOG(ERROR) << "Prior weights incorrectly initialized, ignoring.";
     prior_weights = nullptr;
   }
 
@@ -4972,13 +4961,13 @@ bool MotionEstimation::EstimateHomographyIRLS(
     } else {
       bool success = false;
       if (options_.use_highest_accuracy_for_normal_equations()) {
-        ABSL_CHECK(!use_float);
+        CHECK(!use_float);
         norm_model = HomographyL2NormalEquationSolve<double>(
             *feature_list, prev_solution,
             options_.homography_perspective_regularizer(), &matrix_d, &rhs_d,
             &solution_d, &success);
       } else {
-        ABSL_CHECK(use_float);
+        CHECK(use_float);
         norm_model = HomographyL2NormalEquationSolve<float>(
             *feature_list, prev_solution,
             options_.homography_perspective_regularizer(), &matrix_f, &rhs_f,
@@ -5090,7 +5079,7 @@ bool MotionEstimation::MixtureHomographyFromFeature(
     MixtureHomography* mix_homography) const {
   if (prior_weights && !prior_weights->HasCorrectDimension(
                            irls_rounds, feature_list->feature_size())) {
-    ABSL_LOG(ERROR) << "Prior weights incorrectly initialized, ignoring.";
+    LOG(ERROR) << "Prior weights incorrectly initialized, ignoring.";
     prior_weights = nullptr;
   }
 
@@ -5098,9 +5087,9 @@ bool MotionEstimation::MixtureHomographyFromFeature(
 
   // Compute weights if necessary.
   // Compute scale to index mixture weights from normalization.
-  ABSL_CHECK(row_weights_.get() != nullptr);
-  ABSL_CHECK_EQ(row_weights_->YScale(), frame_height_ / normalized_domain_.y());
-  ABSL_CHECK_EQ(row_weights_->NumModels(), num_mixtures);
+  CHECK(row_weights_.get() != nullptr);
+  CHECK_EQ(row_weights_->YScale(), frame_height_ / normalized_domain_.y());
+  CHECK_EQ(row_weights_->NumModels(), num_mixtures);
 
   const MotionEstimationOptions::MixtureModelMode mixture_mode =
       options_.mixture_model_mode();
@@ -5120,7 +5109,7 @@ bool MotionEstimation::MixtureHomographyFromFeature(
       adjacency_constraints = 4 * (num_mixtures - 1);
       break;
     default:
-      ABSL_LOG(FATAL) << "Unknown MixtureModelMode specified.";
+      LOG(FATAL) << "Unknown MixtureModelMode specified.";
   }
 
   Eigen::MatrixXf matrix(
@@ -5206,7 +5195,7 @@ bool MotionEstimation::MixtureHomographyFromFeature(
         break;
 
       default:
-        ABSL_LOG(FATAL) << "Unknown MixtureModelMode specified.";
+        LOG(FATAL) << "Unknown MixtureModelMode specified.";
     }
 
     norm_model = MixtureHomographyAdapter::FromFloatPointer(
@@ -5275,7 +5264,7 @@ bool MotionEstimation::MixtureHomographyFromFeature(
       mix_homography->set_dof(MixtureHomography::SKEW_ROTATION_DOF);
       break;
     default:
-      ABSL_LOG(FATAL) << "Unknown MixtureModelMode specified.";
+      LOG(FATAL) << "Unknown MixtureModelMode specified.";
   }
   return true;
 }
@@ -5374,8 +5363,8 @@ bool MotionEstimation::EstimateMixtureHomographyIRLS(
   // Cap rolling shutter analysis level to be valid level.
   if (options_.mixture_rs_analysis_level() >=
       options_.mixture_regularizer_levels()) {
-    ABSL_LOG(WARNING) << "Resetting mixture_rs_analysis_level to "
-                      << options_.mixture_regularizer_levels() - 1;
+    LOG(WARNING) << "Resetting mixture_rs_analysis_level to "
+                 << options_.mixture_regularizer_levels() - 1;
   }
 
   const int rs_analysis_level =
@@ -5450,12 +5439,12 @@ bool MotionEstimation::EstimateMixtureHomographyIRLS(
 void MotionEstimation::DetermineOverlayIndices(
     bool irls_weights_preinitialized, std::vector<CameraMotion>* camera_motions,
     std::vector<RegionFlowFeatureList*>* feature_lists) const {
-  ABSL_CHECK(camera_motions != nullptr);
-  ABSL_CHECK(feature_lists != nullptr);
+  CHECK(camera_motions != nullptr);
+  CHECK(feature_lists != nullptr);
   // Two stage estimation: First translation only, followed by
   // overlay analysis.
   const int num_frames = feature_lists->size();
-  ABSL_CHECK_EQ(num_frames, camera_motions->size());
+  CHECK_EQ(num_frames, camera_motions->size());
 
   std::vector<CameraMotion> translation_motions(num_frames);
   const int irls_per_round = options_.irls_rounds();
@@ -5530,9 +5519,9 @@ float MotionEstimation::OverlayAnalysis(
     const std::vector<TranslationModel>& translations,
     std::vector<RegionFlowFeatureList*>* feature_lists,
     std::vector<int>* overlay_indices) const {
-  ABSL_CHECK(feature_lists != nullptr);
-  ABSL_CHECK(overlay_indices != nullptr);
-  ABSL_CHECK_EQ(feature_lists->size(), translations.size());
+  CHECK(feature_lists != nullptr);
+  CHECK(overlay_indices != nullptr);
+  CHECK_EQ(feature_lists->size(), translations.size());
   overlay_indices->clear();
 
   const int grid_size =
@@ -5620,7 +5609,7 @@ float MotionEstimation::OverlayAnalysis(
 void MotionEstimation::PostIRLSSmoothing(
     const std::vector<CameraMotion>& camera_motions,
     std::vector<RegionFlowFeatureList*>* feature_lists) const {
-  ABSL_CHECK(feature_lists != nullptr);
+  CHECK(feature_lists != nullptr);
 
   std::vector<FeatureGrid<RegionFlowFeature>> feature_grids;
   std::vector<std::vector<int>> feature_taps_3;
@@ -5700,7 +5689,7 @@ void TemporalIRLSPush(const FeatureGrid<RegionFlowFeature>& curr_grid,
                       float grid_scale, int grid_dim_x,
                       RegionFlowFeatureView* curr_view,
                       RegionFlowFeatureView* prev_view) {
-  ABSL_CHECK(curr_view != nullptr);
+  CHECK(curr_view != nullptr);
   // Spatial filtering of inverse irls weights and the temporally weighted
   // pushed result from the next frame.
   for (auto& feature : *curr_view) {
@@ -5728,7 +5717,7 @@ void TemporalIRLSPush(const FeatureGrid<RegionFlowFeature>& curr_grid,
     }
 
     // Only zero if spatial AND feature sigma = 0.
-    ABSL_DCHECK_GT(weight_sum, 0);
+    DCHECK_GT(weight_sum, 0);
     feature->mutable_internal_irls()->set_weight_sum(weight_sum);
     feature->mutable_internal_irls()->set_value_sum(value_sum);
   }
@@ -5840,7 +5829,7 @@ void TemporalIRLSPull(const FeatureGrid<RegionFlowFeature>& curr_grid,
       }
     }
 
-    ABSL_CHECK_GT(weight_sum, 0) << feature->irls_weight();
+    CHECK_GT(weight_sum, 0) << feature->irls_weight();
     feature->mutable_internal_irls()->set_weight_sum(weight_sum);
     feature->mutable_internal_irls()->set_value_sum(value_sum);
   }
@@ -5858,7 +5847,7 @@ void TemporalIRLSPull(const FeatureGrid<RegionFlowFeature>& curr_grid,
 void MotionEstimation::InitGaussLUT(float sigma, float max_range,
                                     std::vector<float>* lut,
                                     float* scale) const {
-  ABSL_CHECK(lut);
+  CHECK(lut);
   // Calculate number of bins if scale is non-zero, otherwise use one bin per
   // integer in the domain [0, max_range].
   const int lut_bins = (scale != nullptr) ? (1 << 10) : std::ceil(max_range);

@@ -19,7 +19,6 @@
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_split.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/port/file_helpers.h"
@@ -44,8 +43,8 @@ absl::Status RunMPPGraph() {
   MP_RETURN_IF_ERROR(mediapipe::file::GetContents(
       absl::GetFlag(FLAGS_calculator_graph_config_file),
       &calculator_graph_config_contents));
-  ABSL_LOG(INFO) << "Get calculator graph config contents: "
-                 << calculator_graph_config_contents;
+  LOG(INFO) << "Get calculator graph config contents: "
+            << calculator_graph_config_contents;
   mediapipe::CalculatorGraphConfig config =
       mediapipe::ParseTextProtoOrDie<mediapipe::CalculatorGraphConfig>(
           calculator_graph_config_contents);
@@ -55,19 +54,19 @@ absl::Status RunMPPGraph() {
   for (const std::string& kv_pair : kv_pairs) {
     std::vector<std::string> name_and_value = absl::StrSplit(kv_pair, '=');
     RET_CHECK(name_and_value.size() == 2);
-    RET_CHECK(!input_side_packets.contains(name_and_value[0]));
+    RET_CHECK(!mediapipe::ContainsKey(input_side_packets, name_and_value[0]));
     std::string input_side_packet_contents;
     MP_RETURN_IF_ERROR(mediapipe::file::GetContents(
         name_and_value[1], &input_side_packet_contents));
     input_side_packets[name_and_value[0]] =
         mediapipe::MakePacket<std::string>(input_side_packet_contents);
   }
-  ABSL_LOG(INFO) << "Initialize the calculator graph.";
+  LOG(INFO) << "Initialize the calculator graph.";
   mediapipe::CalculatorGraph graph;
   MP_RETURN_IF_ERROR(graph.Initialize(config, input_side_packets));
-  ABSL_LOG(INFO) << "Start running the calculator graph.";
+  LOG(INFO) << "Start running the calculator graph.";
   MP_RETURN_IF_ERROR(graph.Run());
-  ABSL_LOG(INFO) << "Gathering output side packets.";
+  LOG(INFO) << "Gathering output side packets.";
   kv_pairs = absl::StrSplit(absl::GetFlag(FLAGS_output_side_packets), ',');
   for (const std::string& kv_pair : kv_pairs) {
     std::vector<std::string> name_and_value = absl::StrSplit(kv_pair, '=');
@@ -89,10 +88,10 @@ int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   absl::Status run_status = RunMPPGraph();
   if (!run_status.ok()) {
-    ABSL_LOG(ERROR) << "Failed to run the graph: " << run_status.message();
+    LOG(ERROR) << "Failed to run the graph: " << run_status.message();
     return EXIT_FAILURE;
   } else {
-    ABSL_LOG(INFO) << "Success!";
+    LOG(INFO) << "Success!";
   }
   return EXIT_SUCCESS;
 }

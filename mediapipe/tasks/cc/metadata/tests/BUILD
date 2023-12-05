@@ -16,13 +16,11 @@ cc_test(
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/framework/port:status",
         "//mediapipe/tasks/cc:common",
-        "//mediapipe/tasks/cc/core:utils",
         "//mediapipe/tasks/cc/metadata:metadata_extractor",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:cord",
-        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -43,14 +41,5 @@ cc_test(
     deps = [
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/tasks/cc/metadata:metadata_version",
-    ],
-)
-
-cc_test(
-    name = "metadata_version_utils_test",
-    srcs = ["metadata_version_utils_test.cc"],
-    deps = [
-        "//mediapipe/framework/port:gtest_main",
-        "//mediapipe/tasks/cc/metadata:metadata_version_utils",
     ],
 )

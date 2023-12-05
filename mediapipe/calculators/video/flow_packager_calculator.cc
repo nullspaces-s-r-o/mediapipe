@@ -17,13 +17,12 @@
 #include <fstream>
 #include <memory>
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "mediapipe/calculators/video/flow_packager_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/port/integral_types.h"
+#include "mediapipe/framework/port/logging.h"
 #include "mediapipe/util/tracking/camera_motion.pb.h"
 #include "mediapipe/util/tracking/flow_packager.h"
 #include "mediapipe/util/tracking/region_flow.pb.h"
@@ -161,7 +160,7 @@ absl::Status FlowPackagerCalculator::Process(CalculatorContext* cc) {
           timestamp.Value() / 1000 / options_.caching_chunk_size_msec();
       tracking_chunk_.set_first_chunk(true);
     }
-    ABSL_CHECK_GE(chunk_idx_, 0);
+    CHECK_GE(chunk_idx_, 0);
 
     TrackingDataChunk::Item* item = tracking_chunk_.add_item();
     item->set_frame_idx(frame_idx_);
@@ -228,11 +227,10 @@ absl::Status FlowPackagerCalculator::Close(CalculatorContext* cc) {
 
 void FlowPackagerCalculator::WriteChunk(const TrackingDataChunk& chunk) const {
   if (chunk.item_size() == 0) {
-    ABSL_LOG(ERROR)
-        << "Write chunk called with empty tracking data."
-        << "This can only occur if the spacing between frames "
-        << "is larger than the requested chunk size. Try increasing "
-        << "the chunk size";
+    LOG(ERROR) << "Write chunk called with empty tracking data."
+               << "This can only occur if the spacing between frames "
+               << "is larger than the requested chunk size. Try increasing "
+               << "the chunk size";
     return;
   }
 
@@ -244,7 +242,7 @@ void FlowPackagerCalculator::WriteChunk(const TrackingDataChunk& chunk) const {
     chunk_file =
         cache_dir_ + "/" + absl::StrFormat(*format_runtime, chunk_idx_);
   } else {
-    ABSL_LOG(ERROR) << "chache_file_format wrong. fall back to chunk_%04d.";
+    LOG(ERROR) << "chache_file_format wrong. fall back to chunk_%04d.";
     chunk_file = cache_dir_ + "/" + absl::StrFormat("chunk_%04d", chunk_idx_);
   }
 
@@ -254,23 +252,23 @@ void FlowPackagerCalculator::WriteChunk(const TrackingDataChunk& chunk) const {
   const char* temp_filename = tempnam(cache_dir_.c_str(), nullptr);
   std::ofstream out_file(temp_filename);
   if (!out_file) {
-    ABSL_LOG(ERROR) << "Could not open " << temp_filename;
+    LOG(ERROR) << "Could not open " << temp_filename;
   } else {
     out_file.write(data.data(), data.size());
   }
 
   if (rename(temp_filename, chunk_file.c_str()) != 0) {
-    ABSL_LOG(ERROR) << "Failed to rename to " << chunk_file;
+    LOG(ERROR) << "Failed to rename to " << chunk_file;
   }
 
-  ABSL_LOG(INFO) << "Wrote chunk : " << chunk_file;
+  LOG(INFO) << "Wrote chunk : " << chunk_file;
 }
 
 void FlowPackagerCalculator::PrepareCurrentForNextChunk(
     TrackingDataChunk* chunk) {
-  ABSL_CHECK(chunk);
+  CHECK(chunk);
   if (chunk->item_size() == 0) {
-    ABSL_LOG(ERROR) << "Called with empty chunk. Unexpected.";
+    LOG(ERROR) << "Called with empty chunk. Unexpected.";
     return;
   }
 

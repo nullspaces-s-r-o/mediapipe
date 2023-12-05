@@ -18,8 +18,6 @@
 #include <memory>
 #include <string>
 
-#include "absl/log/absl_check.h"
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
 #include "libyuv/scale.h"
@@ -77,16 +75,16 @@ absl::Status FindInterpolationAlgorithm(
 
 void CropImageFrame(const ImageFrame& original, int col_start, int row_start,
                     int crop_width, int crop_height, ImageFrame* cropped) {
-  const uint8_t* src = original.PixelData();
-  uint8_t* dst = cropped->MutablePixelData();
+  const uint8* src = original.PixelData();
+  uint8* dst = cropped->MutablePixelData();
 
   int des_y = 0;
   for (int y = row_start; y < row_start + crop_height; ++y) {
-    const uint8_t* src_line = src + y * original.WidthStep();
-    const uint8_t* src_pixel = src_line + col_start *
-                                              original.NumberOfChannels() *
-                                              original.ByteDepth();
-    uint8_t* dst_line = dst + des_y * cropped->WidthStep();
+    const uint8* src_line = src + y * original.WidthStep();
+    const uint8* src_pixel = src_line + col_start *
+                                            original.NumberOfChannels() *
+                                            original.ByteDepth();
+    uint8* dst_line = dst + des_y * cropped->WidthStep();
     std::memcpy(
         dst_line, src_pixel,
         crop_width * cropped->NumberOfChannels() * cropped->ByteDepth());
@@ -295,7 +293,7 @@ absl::Status ScaleImageCalculator::InitializeFrameInfo(CalculatorContext* cc) {
     header->width = output_width_;
     header->height = output_height_;
     header->format = output_format_;
-    ABSL_LOG(INFO) << "OUTPUTTING HEADER on stream";
+    LOG(INFO) << "OUTPUTTING HEADER on stream";
     cc->Outputs()
         .Tag("VIDEO_HEADER")
         .Add(header.release(), Timestamp::PreStream());
@@ -395,11 +393,10 @@ absl::Status ScaleImageCalculator::Open(CalculatorContext* cc) {
           .SetHeader(Adopt(output_header.release()));
       has_header_ = true;
     } else {
-      ABSL_LOG(WARNING)
-          << "Stream had a VideoHeader which didn't have sufficient "
-             "information.  "
-             "Dropping VideoHeader and trying to deduce needed "
-             "information.";
+      LOG(WARNING) << "Stream had a VideoHeader which didn't have sufficient "
+                      "information.  "
+                      "Dropping VideoHeader and trying to deduce needed "
+                      "information.";
       input_width_ = 0;
       input_height_ = 0;
       if (!options_.has_input_format()) {
@@ -510,7 +507,7 @@ absl::Status ScaleImageCalculator::ValidateImageFrame(
 
 absl::Status ScaleImageCalculator::ValidateYUVImage(CalculatorContext* cc,
                                                     const YUVImage& yuv_image) {
-  ABSL_CHECK_EQ(input_format_, ImageFormat::YCBCR420P);
+  CHECK_EQ(input_format_, ImageFormat::YCBCR420P);
   if (!has_header_) {
     if (input_width_ != yuv_image.width() ||
         input_height_ != yuv_image.height()) {
@@ -594,9 +591,9 @@ absl::Status ScaleImageCalculator::Process(CalculatorContext* cc) {
       const int y_size = output_width_ * output_height_;
       const int uv_size = output_width_ * output_height_ / 4;
       std::unique_ptr<uint8_t[]> yuv_data(new uint8_t[y_size + uv_size * 2]);
-      uint8_t* y = yuv_data.get();
-      uint8_t* u = y + y_size;
-      uint8_t* v = u + uv_size;
+      uint8* y = yuv_data.get();
+      uint8* u = y + y_size;
+      uint8* v = u + uv_size;
       RET_CHECK_EQ(0, I420Scale(yuv_image->data(0), yuv_image->stride(0),
                                 yuv_image->data(1), yuv_image->stride(1),
                                 yuv_image->data(2), yuv_image->stride(2),

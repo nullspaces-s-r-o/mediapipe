@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/attributes.h"
 #include "absl/base/macros.h"
 #include "mediapipe/framework/executor.h"
 #include "mediapipe/framework/packet.h"

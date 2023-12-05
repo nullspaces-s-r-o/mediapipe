@@ -14,7 +14,6 @@
 
 #include "mediapipe/framework/profiler/graph_profiler.h"
 
-#include "absl/log/absl_log.h"
 #include "absl/status/statusor.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
@@ -40,15 +39,13 @@ constexpr char kDummyTestCalculatorName[] = "DummyTestCalculator";
 CalculatorGraphConfig::Node CreateNodeConfig(
     const std::string& raw_node_config) {
   CalculatorGraphConfig::Node node_config;
-  QCHECK(google::protobuf::TextFormat::ParseFromString(raw_node_config,
-                                                       &node_config));
+  QCHECK(proto2::TextFormat::ParseFromString(raw_node_config, &node_config));
   return node_config;
 }
 
 CalculatorGraphConfig CreateGraphConfig(const std::string& raw_graph_config) {
   CalculatorGraphConfig graph_config;
-  QCHECK(google::protobuf::TextFormat::ParseFromString(raw_graph_config,
-                                                       &graph_config));
+  QCHECK(proto2::TextFormat::ParseFromString(raw_graph_config, &graph_config));
   return graph_config;
 }
 
@@ -60,8 +57,7 @@ CalculatorProfile GetProfileWithName(
       return p;
     }
   }
-  ABSL_LOG(FATAL) << "Cannot find calulator profile with name "
-                  << calculator_name;
+  LOG(FATAL) << "Cannot find calulator profile with name " << calculator_name;
   return CalculatorProfile::default_instance();
 }
 
@@ -446,32 +442,6 @@ TEST_F(GraphProfilerTestPeer, InitializeMultipleTimes) {
                "Cannot initialize .* multiple times.");
 }
 
-// Tests that graph identifiers are not reused, even after destruction.
-TEST_F(GraphProfilerTestPeer, InitializeMultipleProfilers) {
-  auto raw_graph_config = R"(
-    profiler_config {
-      enable_profiler: true
-    }
-    input_stream: "input_stream"
-    node {
-      calculator: "DummyTestCalculator"
-      input_stream: "input_stream"
-    })";
-  const int n_iterations = 100;
-  absl::flat_hash_set<int> seen_ids;
-  for (int i = 0; i < n_iterations; ++i) {
-    std::shared_ptr<ProfilingContext> profiler =
-        std::make_shared<ProfilingContext>();
-    auto graph_config = CreateGraphConfig(raw_graph_config);
-    mediapipe::ValidatedGraphConfig validated_graph;
-    QCHECK_OK(validated_graph.Initialize(graph_config));
-    profiler->Initialize(validated_graph);
-
-    int id = profiler->GetGraphId();
-    ASSERT_THAT(seen_ids, testing::Not(testing::Contains(id)));
-    seen_ids.insert(id);
-  }
-}
 // Tests that Pause(), Resume(), and Reset() works.
 TEST_F(GraphProfilerTestPeer, PauseResumeReset) {
   InitializeProfilerWithGraphConfig(R"(
@@ -1171,7 +1141,7 @@ TEST_F(GraphProfilerTestPeer, AddProcessSampleWithStreamLatency) {
 TEST(GraphProfilerTest, ParallelReads) {
   // A graph that processes a certain number of packets before finishing.
   CalculatorGraphConfig config;
-  QCHECK(google::protobuf::TextFormat::ParseFromString(R"(
+  QCHECK(proto2::TextFormat::ParseFromString(R"(
     profiler_config {
      enable_profiler: true
     }
@@ -1193,7 +1163,7 @@ TEST(GraphProfilerTest, ParallelReads) {
     }
     output_stream: "OUT:0:the_integers"
     )",
-                                                       &config));
+                                             &config));
 
   // Start running the graph on its own threads.
   absl::Mutex out_1_mutex;
@@ -1229,7 +1199,7 @@ TEST(GraphProfilerTest, ParallelReads) {
     EXPECT_EQ(1003, profiles[0].process_runtime().count(0));
     EXPECT_EQ(1000, profiles[1].process_runtime().count(0));
   } else {
-    ABSL_LOG(FATAL) << "Unexpected profile name " << profiles[0].name();
+    LOG(FATAL) << "Unexpected profile name " << profiles[0].name();
   }
   EXPECT_EQ(1001, out_1_packets.size());
 }
@@ -1250,7 +1220,7 @@ std::set<std::string> GetCalculatorNames(const CalculatorGraphConfig& config) {
 
 TEST(GraphProfilerTest, CalculatorProfileFilter) {
   CalculatorGraphConfig config;
-  QCHECK(google::protobuf::TextFormat::ParseFromString(R"(
+  QCHECK(proto2::TextFormat::ParseFromString(R"(
     profiler_config {
      enable_profiler: true
     }
@@ -1272,7 +1242,7 @@ TEST(GraphProfilerTest, CalculatorProfileFilter) {
     }
     output_stream: "OUT:0:the_integers"
     )",
-                                                       &config));
+                                             &config));
 
   std::set<std::string> expected_names;
   expected_names = {"RangeCalculator", "PassThroughCalculator"};
@@ -1299,7 +1269,7 @@ TEST(GraphProfilerTest, CalculatorProfileFilter) {
 
 TEST(GraphProfilerTest, CaptureProfilePopulateConfig) {
   CalculatorGraphConfig config;
-  QCHECK(google::protobuf::TextFormat::ParseFromString(R"(
+  QCHECK(proto2::TextFormat::ParseFromString(R"(
     profiler_config {
       enable_profiler: true
       trace_enabled: true
@@ -1314,7 +1284,7 @@ TEST(GraphProfilerTest, CaptureProfilePopulateConfig) {
       input_stream: "input_stream"
     }
     )",
-                                                       &config));
+                                             &config));
   CalculatorGraph graph;
   MP_ASSERT_OK(graph.Initialize(config));
   GraphProfile profile;

@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/log/absl_log.h"
 #include "absl/strings/str_split.h"
 #include "mediapipe/calculators/video/opencv_video_encoder_calculator.pb.h"
 #include "mediapipe/framework/calculator_framework.h"
@@ -188,10 +187,9 @@ absl::Status OpenCvVideoEncoderCalculator::Close(CalculatorContext* cc) {
     const std::string& audio_file_path =
         cc->InputSidePackets().Tag(kAudioFilePathTag).Get<std::string>();
     if (audio_file_path.empty()) {
-      ABSL_LOG(WARNING)
-          << "OpenCvVideoEncoderCalculator isn't able to attach the "
-             "audio tracks to the generated video because the audio "
-             "file path is not specified.";
+      LOG(WARNING) << "OpenCvVideoEncoderCalculator isn't able to attach the "
+                      "audio tracks to the generated video because the audio "
+                      "file path is not specified.";
     } else {
       // A temp output file is needed because FFmpeg can't do in-place editing.
       const std::string temp_file_path = std::tmpnam(nullptr);

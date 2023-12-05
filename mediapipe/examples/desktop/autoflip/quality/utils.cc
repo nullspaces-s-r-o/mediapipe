@@ -19,7 +19,6 @@
 #include <algorithm>
 #include <utility>
 
-#include "absl/log/absl_log.h"
 #include "absl/memory/memory.h"
 #include "mediapipe/examples/desktop/autoflip/quality/math_utils.h"
 #include "mediapipe/framework/port/opencv_imgproc_inc.h"
@@ -90,7 +89,7 @@ void RectUnion(const Rect& rect_to_add, Rect* rect) {
   rect->set_height(y2 - y1);
 }
 
-absl::Status PackKeyFrameInfo(const int64_t frame_timestamp_ms,
+absl::Status PackKeyFrameInfo(const int64 frame_timestamp_ms,
                               const DetectionSet& detections,
                               const int original_frame_width,
                               const int original_frame_height,
@@ -122,12 +121,12 @@ absl::Status PackKeyFrameInfo(const int64_t frame_timestamp_ms,
       ScaleRect(original_detection.location(), scale_x, scale_y, &location);
     } else {
       has_valid_location = false;
-      ABSL_LOG(ERROR) << "Detection missing a bounding box, skipped.";
+      LOG(ERROR) << "Detection missing a bounding box, skipped.";
     }
     if (has_valid_location) {
       if (!ClampRect(original_frame_width, original_frame_height, &location)
                .ok()) {
-        ABSL_LOG(ERROR) << "Invalid detection bounding box, skipped.";
+        LOG(ERROR) << "Invalid detection bounding box, skipped.";
         continue;
       }
       auto* detection = processed_detections->add_detections();
@@ -379,7 +378,7 @@ absl::Status ComputeSceneStaticBordersSize(
 
 absl::Status FindSolidBackgroundColor(
     const std::vector<StaticFeatures>& static_features,
-    const std::vector<int64_t>& static_features_timestamps,
+    const std::vector<int64>& static_features_timestamps,
     const double min_fraction_solid_background_color,
     bool* has_solid_background,
     PiecewiseLinearFunction* background_color_l_function,
@@ -396,7 +395,7 @@ absl::Status FindSolidBackgroundColor(
     if (static_features[i].has_solid_background()) {
       solid_background_frames++;
       const auto& color = static_features[i].solid_background();
-      const int64_t timestamp = static_features_timestamps[i];
+      const int64 timestamp = static_features_timestamps[i];
       // BorderDetectionCalculator sets color assuming the input frame is
       // BGR, but in reality we have RGB, so we need to revert it here.
       // TODO remove this custom logic in BorderDetectionCalculator,

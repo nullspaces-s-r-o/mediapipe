@@ -20,9 +20,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "absl/log/absl_check.h"
 #include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 #include "mediapipe/framework/api2/const_str.h"
 #include "mediapipe/framework/api2/packet.h"
 #include "mediapipe/framework/calculator_context.h"
@@ -38,13 +36,6 @@ namespace api2 {
 // directly by node code.
 class PortBase {
  public:
-  constexpr PortBase(absl::string_view tag, TypeId type_id, bool optional,
-                     bool multiple)
-      : tag_(tag.size(), tag.data()),
-        optional_(optional),
-        multiple_(multiple),
-        type_id_(type_id) {}
-
   constexpr PortBase(std::size_t tag_size, const char* tag, TypeId type_id,
                      bool optional, bool multiple)
       : tag_(tag_size, tag),
@@ -82,12 +73,14 @@ class SideOutputBase : public PortBase {
 };
 
 struct NoneType {
+ private:
   NoneType() = delete;
 };
 
-template <auto& kP>
-struct SameType {
-  static constexpr const decltype(kP)& kPort = kP;
+template <auto& P>
+class SameType : public DynamicType {
+ public:
+  static constexpr const decltype(P)& kPort = P;
 };
 
 class PacketTypeAccess;
@@ -132,7 +125,7 @@ auto GetCollection(CC* cc, const SideOutputBase& port)
 }
 
 template <class Collection>
-auto GetOrNull(Collection& collection, const absl::string_view& tag, int index)
+auto GetOrNull(Collection& collection, const std::string& tag, int index)
     -> decltype(&collection.Get(std::declval<CollectionItemId>())) {
   CollectionItemId id = collection.GetId(tag, index);
   return id.IsValid() ? &collection.Get(id) : nullptr;
@@ -144,28 +137,21 @@ struct IsOneOf : std::false_type {};
 template <class... T>
 struct IsOneOf<OneOf<T...>> : std::true_type {};
 
-template <class T>
-struct IsSameType : std::false_type {};
-
-template <class P, P& kP>
-struct IsSameType<SameType<kP>> : std::true_type {};
-
-template <typename T,
-          typename std::enable_if<!std::is_same<T, AnyType>{} &&
-                                      !IsOneOf<T>{} && !IsSameType<T>{},
-                                  int>::type = 0>
+template <typename T, typename std::enable_if<
+                          !std::is_base_of<DynamicType, T>{} && !IsOneOf<T>{},
+                          int>::type = 0>
 inline void SetType(CalculatorContract* cc, PacketType& pt) {
   pt.Set<T>();
 }
 
-template <typename T, typename std::enable_if<IsSameType<T>{}, int>::type = 0>
+template <typename T, typename std::enable_if<std::is_base_of<DynamicType, T>{},
+                                              int>::type = 0>
 inline void SetType(CalculatorContract* cc, PacketType& pt) {
   pt.SetSameAs(&internal::GetCollection(cc, T::kPort).Tag(T::kPort.Tag()));
 }
 
-template <typename T,
-          typename std::enable_if<std::is_same<T, AnyType>{}, int>::type = 0>
-inline void SetType(CalculatorContract* cc, PacketType& pt) {
+template <>
+inline void SetType<AnyType>(CalculatorContract* cc, PacketType& pt) {
   pt.SetAny();
 }
 
@@ -244,8 +230,8 @@ class MultiplePortAccess {
   // container?
   int Count() { return count_; }
   AccessT operator[](int pos) {
-    ABSL_CHECK_GE(pos, 0);
-    ABSL_CHECK_LT(pos, count_);
+    CHECK_GE(pos, 0);
+    CHECK_LT(pos, count_);
     return SinglePortAccess<ValueT>(cc_, &first_[pos]);
   }
 
@@ -303,15 +289,15 @@ struct SideBase<InputBase> {
 };
 
 // TODO: maybe return a PacketBase instead of a Packet<internal::Generic>?
-template <typename T, typename = void>
+template <typename T, class = void>
 struct ActualPayloadType {
   using type = T;
 };
 
 template <typename T>
-struct ActualPayloadType<T, std::enable_if_t<IsSameType<T>{}, void>> {
-  using type = typename ActualPayloadType<
-      typename std::decay_t<decltype(T::kPort)>::value_t>::type;
+struct ActualPayloadType<
+    T, std::enable_if_t<std::is_base_of<DynamicType, T>{}, void>> {
+  using type = internal::Generic;
 };
 
 }  // namespace internal
@@ -340,9 +326,6 @@ class PortCommon : public Base {
   using Optional = PortCommon<Base, ValueT, true, IsMultipleV>;
   using Multiple = PortCommon<Base, ValueT, IsOptionalV, true>;
   using SideFallback = SideFallbackT<Base, ValueT, IsOptionalV, IsMultipleV>;
-
-  explicit constexpr PortCommon(absl::string_view tag)
-      : Base(tag, kTypeId<ValueT>, IsOptionalV, IsMultipleV) {}
 
   template <std::size_t N>
   explicit constexpr PortCommon(const char (&tag)[N])
@@ -468,11 +451,6 @@ class SideFallbackT : public Base {
 // CalculatorContext (e.g. kOut(cc)), and provides a type-safe interface to
 // OutputStreamShard. Like that class, this class will not be usually named in
 // calculator code, but used as a temporary object (e.g. kOut(cc).Send(...)).
-//
-// If not connected (!IsConnected()) SetNextTimestampBound is safe to call and
-// does nothing.
-// All the sub-classes that define Send should implement it to be safe to to
-// call if not connected and do nothing in such case.
 class OutputShardAccessBase {
  public:
   OutputShardAccessBase(const CalculatorContext& cc, OutputStreamShard* output)
@@ -574,8 +552,8 @@ class OutputSidePacketAccess {
     if (output_) output_->Set(ToOldPacket(std::move(packet)));
   }
 
-  void Set(const T& payload) { Set(api2::MakePacket<T>(payload)); }
-  void Set(T&& payload) { Set(api2::MakePacket<T>(std::move(payload))); }
+  void Set(const T& payload) { Set(MakePacket<T>(payload)); }
+  void Set(T&& payload) { Set(MakePacket<T>(std::move(payload))); }
 
  private:
   OutputSidePacketAccess(OutputSidePacket* output) : output_(output) {}

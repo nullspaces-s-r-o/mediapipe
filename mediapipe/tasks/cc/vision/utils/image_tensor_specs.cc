@@ -1,4 +1,4 @@
-/* Copyright 2022 The MediaPipe Authors.
+/* Copyright 2022 The MediaPipe Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ limitations under the License.
 #include <type_traits>
 
 #include "absl/algorithm/container.h"
-#include "absl/log/absl_log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
@@ -72,7 +71,7 @@ absl::StatusOr<const ImageProperties*> GetImagePropertiesIfAny(
 
 absl::StatusOr<absl::optional<NormalizationOptions>>
 GetNormalizationOptionsIfAny(const TensorMetadata& tensor_metadata) {
-  MP_ASSIGN_OR_RETURN(
+  ASSIGN_OR_RETURN(
       const tflite::ProcessUnit* normalization_process_unit,
       ModelMetadataExtractor::FindFirstProcessUnit(
           tensor_metadata, tflite::ProcessUnitOptions_NormalizationOptions));
@@ -145,9 +144,9 @@ absl::StatusOr<ImageTensorSpecs> BuildInputImageTensorSpecs(
   const ImageProperties* props = nullptr;
   absl::optional<NormalizationOptions> normalization_options;
   if (image_tensor_metadata != nullptr) {
-    MP_ASSIGN_OR_RETURN(props, GetImagePropertiesIfAny(*image_tensor_metadata));
-    MP_ASSIGN_OR_RETURN(normalization_options,
-                        GetNormalizationOptionsIfAny(*image_tensor_metadata));
+    ASSIGN_OR_RETURN(props, GetImagePropertiesIfAny(*image_tensor_metadata));
+    ASSIGN_OR_RETURN(normalization_options,
+                     GetNormalizationOptionsIfAny(*image_tensor_metadata));
   }
 
   // Input-related specifications.
@@ -183,18 +182,17 @@ absl::StatusOr<ImageTensorSpecs> BuildInputImageTensorSpecs(
                                    "Only RGB color space is supported for now.",
                                    MediaPipeTasksStatus::kInvalidArgumentError);
   }
-  if (batch != 1 || (depth != 3 && depth != 4)) {
+  if (batch != 1 || depth != 3) {
     return CreateStatusWithPayload(
         StatusCode::kInvalidArgument,
         absl::StrCat("The input tensor should have dimensions 1 x height x "
-                     "width x depth, where depth = 3 or 4. Got ",
+                     "width x 3. Got ",
                      batch, " x ", height, " x ", width, " x ", depth, "."),
         MediaPipeTasksStatus::kInvalidInputTensorDimensionsError);
   }
 
-  size_t byte_depth = tensor_type == tflite::TensorType_FLOAT32
-                          ? sizeof(float)
-                          : sizeof(uint8_t);
+  size_t byte_depth =
+      tensor_type == tflite::TensorType_FLOAT32 ? sizeof(float) : sizeof(uint8);
   int bytes_size = byte_depth * batch * height * width * depth;
   // Sanity checks.
   if (tensor_type == tflite::TensorType_FLOAT32) {
@@ -236,33 +234,6 @@ absl::StatusOr<ImageTensorSpecs> BuildInputImageTensorSpecs(
   result.normalization_options = normalization_options;
 
   return result;
-}
-
-// Builds an ImageTensorSpecs for configuring the preprocessing calculators.
-absl::StatusOr<ImageTensorSpecs> BuildInputImageTensorSpecs(
-    const core::ModelResources& model_resources) {
-  const tflite::Model& model = *model_resources.GetTfLiteModel();
-  // TODO: Investigate if there is any better solutions support
-  // running inference with multiple subgraphs.
-  if (model.subgraphs()->size() != 1) {
-    ABSL_LOG(WARNING)
-        << "TFLite model has more than 1 subgraphs. Use subrgaph 0 as "
-           "the primary subgraph for inference";
-  }
-  const auto* primary_subgraph = (*model.subgraphs())[0];
-  if (primary_subgraph->inputs()->size() != 1) {
-    return CreateStatusWithPayload(
-        absl::StatusCode::kInvalidArgument,
-        "Image tflite models are assumed to have a single input.",
-        MediaPipeTasksStatus::kInvalidArgumentError);
-  }
-  const auto* input_tensor =
-      (*primary_subgraph->tensors())[(*primary_subgraph->inputs())[0]];
-  MP_ASSIGN_OR_RETURN(const auto* image_tensor_metadata,
-                      vision::GetImageTensorMetadataIfAny(
-                          *model_resources.GetMetadataExtractor(), 0));
-  return vision::BuildInputImageTensorSpecs(*input_tensor,
-                                            image_tensor_metadata);
 }
 
 }  // namespace vision

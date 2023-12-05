@@ -27,17 +27,13 @@
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/port/status_matchers.h"
 #include "mediapipe/framework/tool/options_util.h"
-#include "mediapipe/util/packet_test_util.h"
 
 namespace mediapipe {
 namespace {
 
-using ::testing::ElementsAre;
-using ::testing::Eq;
-using ::testing::HasSubstr;
-using ::testing::IsEmpty;
+using testing::HasSubstr;
 
-TEST(SidePacketToStreamCalculator, WrongConfigWithMissingTick) {
+TEST(SidePacketToStreamCalculator, WrongConfig_MissingTick) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
           R"pb(
@@ -56,35 +52,10 @@ TEST(SidePacketToStreamCalculator, WrongConfigWithMissingTick) {
   EXPECT_THAT(
       status.message(),
       HasSubstr(
-          "Either both TICK input and tick (AT_TICK/AT_FIRST_TICK) output "
-          "should be used or none of them."));
+          "Either both of TICK and AT_TICK should be used or none of them."));
 }
 
-TEST(SidePacketToStreamCalculator,
-     WrongConfigWithMissingTickForFirstTickProcessing) {
-  CalculatorGraphConfig graph_config =
-      ParseTextProtoOrDie<CalculatorGraphConfig>(
-          R"pb(
-            input_stream: "tick"
-            input_side_packet: "side_packet"
-            output_stream: "packet"
-            node {
-              calculator: "SidePacketToStreamCalculator"
-              input_side_packet: "side_packet"
-              output_stream: "AT_FIRST_TICK:packet"
-            }
-          )pb");
-  CalculatorGraph graph;
-  auto status = graph.Initialize(graph_config);
-  EXPECT_FALSE(status.ok());
-  EXPECT_THAT(
-      status.message(),
-      HasSubstr(
-          "Either both TICK input and tick (AT_TICK/AT_FIRST_TICK) output "
-          "should be used or none of them."));
-}
-
-TEST(SidePacketToStreamCalculator, WrongConfigWithMissingTimestampSideInput) {
+TEST(SidePacketToStreamCalculator, WrongConfig_MissingTimestampSideInput) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
           R"pb(
@@ -105,7 +76,7 @@ TEST(SidePacketToStreamCalculator, WrongConfigWithMissingTimestampSideInput) {
                         "or none of them."));
 }
 
-TEST(SidePacketToStreamCalculator, WrongConfigWithNonExistentTag) {
+TEST(SidePacketToStreamCalculator, WrongConfig_NonExistentTag) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
           R"pb(
@@ -121,13 +92,14 @@ TEST(SidePacketToStreamCalculator, WrongConfigWithNonExistentTag) {
   CalculatorGraph graph;
   auto status = graph.Initialize(graph_config);
   EXPECT_FALSE(status.ok());
-  EXPECT_THAT(status.message(),
-              HasSubstr("Only one of AT_PRESTREAM, AT_POSTSTREAM, AT_ZERO, "
-                        "AT_TICK, AT_FIRST_TICK and AT_TIMESTAMP tags is "
-                        "allowed and required to specify output stream(s)."));
+  EXPECT_THAT(
+      status.message(),
+      HasSubstr("Only one of AT_PRESTREAM, AT_POSTSTREAM, AT_ZERO, AT_TICK and "
+                "AT_TIMESTAMP tags is allowed and required to specify output "
+                "stream(s)."));
 }
 
-TEST(SidePacketToStreamCalculator, WrongConfigWithMixedTags) {
+TEST(SidePacketToStreamCalculator, WrongConfig_MixedTags) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
           R"pb(
@@ -145,13 +117,14 @@ TEST(SidePacketToStreamCalculator, WrongConfigWithMixedTags) {
   CalculatorGraph graph;
   auto status = graph.Initialize(graph_config);
   EXPECT_FALSE(status.ok());
-  EXPECT_THAT(status.message(),
-              HasSubstr("Only one of AT_PRESTREAM, AT_POSTSTREAM, AT_ZERO, "
-                        "AT_TICK, AT_FIRST_TICK and AT_TIMESTAMP tags is "
-                        "allowed and required to specify output stream(s)."));
+  EXPECT_THAT(
+      status.message(),
+      HasSubstr("Only one of AT_PRESTREAM, AT_POSTSTREAM, AT_ZERO, AT_TICK and "
+                "AT_TIMESTAMP tags is allowed and required to specify output "
+                "stream(s)."));
 }
 
-TEST(SidePacketToStreamCalculator, WrongConfigWithNotEnoughSidePackets) {
+TEST(SidePacketToStreamCalculator, WrongConfig_NotEnoughSidePackets) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
           R"pb(
@@ -173,7 +146,7 @@ TEST(SidePacketToStreamCalculator, WrongConfigWithNotEnoughSidePackets) {
           "Same number of input side packets and output streams is required."));
 }
 
-TEST(SidePacketToStreamCalculator, WrongConfigWithNotEnoughOutputStreams) {
+TEST(SidePacketToStreamCalculator, WrongConfig_NotEnoughOutputStreams) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
           R"pb(
@@ -275,50 +248,7 @@ TEST(SidePacketToStreamCalculator, AtTick) {
   tick_and_verify(/*at_timestamp=*/1025);
 }
 
-TEST(SidePacketToStreamCalculator, AtFirstTick) {
-  CalculatorGraphConfig graph_config =
-      ParseTextProtoOrDie<CalculatorGraphConfig>(
-          R"pb(
-            input_stream: "tick"
-            input_side_packet: "side_packet"
-            output_stream: "packet"
-            node {
-              calculator: "SidePacketToStreamCalculator"
-              input_stream: "TICK:tick"
-              input_side_packet: "side_packet"
-              output_stream: "AT_FIRST_TICK:packet"
-            }
-          )pb");
-  std::vector<Packet> output_packets;
-  tool::AddVectorSink("packet", &graph_config, &output_packets);
-  CalculatorGraph graph;
-
-  MP_ASSERT_OK(graph.Initialize(graph_config));
-  const int expected_value = 20;
-  const Timestamp kTestTimestamp(1234);
-  MP_ASSERT_OK(
-      graph.StartRun({{"side_packet", MakePacket<int>(expected_value)}}));
-
-  auto insert_tick = [&graph](Timestamp at_timestamp) {
-    MP_ASSERT_OK(graph.AddPacketToInputStream(
-        "tick", MakePacket<int>(/*doesn't matter*/ 1).At(at_timestamp)));
-    MP_ASSERT_OK(graph.WaitUntilIdle());
-  };
-
-  insert_tick(kTestTimestamp);
-
-  EXPECT_THAT(output_packets,
-              ElementsAre(PacketContainsTimestampAndPayload<int>(
-                  Eq(kTestTimestamp), Eq(expected_value))));
-
-  output_packets.clear();
-
-  // Should not result in an additional output.
-  insert_tick(kTestTimestamp + 1);
-  EXPECT_THAT(output_packets, IsEmpty());
-}
-
-TEST(SidePacketToStreamCalculator, AtTickWithMultipleSidePackets) {
+TEST(SidePacketToStreamCalculator, AtTick_MultipleSidePackets) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
           R"pb(
@@ -372,62 +302,6 @@ TEST(SidePacketToStreamCalculator, AtTickWithMultipleSidePackets) {
   tick_and_verify(/*at_timestamp=*/1025);
 }
 
-TEST(SidePacketToStreamCalculator, AtFirstTickWithMultipleSidePackets) {
-  CalculatorGraphConfig graph_config =
-      ParseTextProtoOrDie<CalculatorGraphConfig>(
-          R"pb(
-            input_stream: "tick"
-            input_side_packet: "side_packet0"
-            input_side_packet: "side_packet1"
-            output_stream: "packet0"
-            output_stream: "packet1"
-            node {
-              calculator: "SidePacketToStreamCalculator"
-              input_stream: "TICK:tick"
-              input_side_packet: "side_packet0"
-              input_side_packet: "side_packet1"
-              output_stream: "AT_FIRST_TICK:0:packet0"
-              output_stream: "AT_FIRST_TICK:1:packet1"
-            }
-          )pb");
-  std::vector<Packet> output_packets0;
-  tool::AddVectorSink("packet0", &graph_config, &output_packets0);
-  std::vector<Packet> output_packets1;
-  tool::AddVectorSink("packet1", &graph_config, &output_packets1);
-  CalculatorGraph graph;
-
-  MP_ASSERT_OK(graph.Initialize(graph_config));
-  const int expected_value0 = 20;
-  const int expected_value1 = 128;
-  const Timestamp kTestTimestamp(1234);
-  MP_ASSERT_OK(
-      graph.StartRun({{"side_packet0", MakePacket<int>(expected_value0)},
-                      {"side_packet1", MakePacket<int>(expected_value1)}}));
-
-  auto insert_tick = [&graph](Timestamp at_timestamp) {
-    MP_ASSERT_OK(graph.AddPacketToInputStream(
-        "tick", MakePacket<int>(/*doesn't matter*/ 1).At(at_timestamp)));
-    MP_ASSERT_OK(graph.WaitUntilIdle());
-  };
-
-  insert_tick(kTestTimestamp);
-
-  EXPECT_THAT(output_packets0,
-              ElementsAre(PacketContainsTimestampAndPayload<int>(
-                  Eq(kTestTimestamp), Eq(expected_value0))));
-  EXPECT_THAT(output_packets1,
-              ElementsAre(PacketContainsTimestampAndPayload<int>(
-                  Eq(kTestTimestamp), Eq(expected_value1))));
-
-  output_packets0.clear();
-  output_packets1.clear();
-
-  // Should not result in an additional output.
-  insert_tick(kTestTimestamp + 1);
-  EXPECT_THAT(output_packets0, IsEmpty());
-  EXPECT_THAT(output_packets1, IsEmpty());
-}
-
 TEST(SidePacketToStreamCalculator, AtTimestamp) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
@@ -448,10 +322,10 @@ TEST(SidePacketToStreamCalculator, AtTimestamp) {
 
   MP_ASSERT_OK(graph.Initialize(graph_config));
   const int expected_value = 20;
-  const int64_t expected_timestamp = 5;
+  const int64 expected_timestamp = 5;
   MP_ASSERT_OK(
       graph.StartRun({{"side_packet", MakePacket<int>(expected_value)},
-                      {"timestamp", MakePacket<int64_t>(expected_timestamp)}}));
+                      {"timestamp", MakePacket<int64>(expected_timestamp)}}));
 
   MP_ASSERT_OK(graph.WaitUntilDone());
 
@@ -460,7 +334,7 @@ TEST(SidePacketToStreamCalculator, AtTimestamp) {
   EXPECT_EQ(expected_value, output_packets.back().Get<int>());
 }
 
-TEST(SidePacketToStreamCalculator, AtTimestampWithMultipleOutputs) {
+TEST(SidePacketToStreamCalculator, AtTimestamp_MultipleOutputs) {
   CalculatorGraphConfig graph_config =
       ParseTextProtoOrDie<CalculatorGraphConfig>(
           R"pb(
@@ -486,11 +360,11 @@ TEST(SidePacketToStreamCalculator, AtTimestampWithMultipleOutputs) {
   MP_ASSERT_OK(graph.Initialize(graph_config));
   const int expected_value0 = 20;
   const int expected_value1 = 15;
-  const int64_t expected_timestamp = 5;
+  const int64 expected_timestamp = 5;
   MP_ASSERT_OK(
       graph.StartRun({{"side_packet0", MakePacket<int>(expected_value0)},
                       {"side_packet1", MakePacket<int>(expected_value1)},
-                      {"timestamp", MakePacket<int64_t>(expected_timestamp)}}));
+                      {"timestamp", MakePacket<int64>(expected_timestamp)}}));
 
   MP_ASSERT_OK(graph.WaitUntilDone());
 

@@ -18,7 +18,6 @@
 #include <cmath>
 #include <vector>
 
-#include "absl/log/absl_check.h"
 #include "absl/memory/memory.h"
 #include "absl/time/time.h"
 #include "mediapipe/framework/port/gtest.h"
@@ -269,7 +268,7 @@ void TestTranslationInvariance(DistanceEstimationMode distance_mode) {
         ++times_largely_diverged;
       }
     } else {
-      ABSL_CHECK(distance_mode == DistanceEstimationMode::kForceCurrentScale);
+      CHECK(distance_mode == DistanceEstimationMode::kForceCurrentScale);
       EXPECT_NEAR(difference, 0.0f, kForceCurrentScaleAbsoluteError);
     }
   }

@@ -26,7 +26,7 @@
 //     DataObject d;
 //     while (ReadDataObject(fp, &d)) {
 //       if (d.IsBad()) {
-//         ABSL_LOG(ERROR) << "Bad Data";
+//         LOG(ERROR) << "Bad Data";
 //         return;
 //       }
 //       PushGoodData(d);

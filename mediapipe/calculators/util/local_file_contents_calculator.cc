@@ -86,7 +86,7 @@ class LocalFileContentsCalculator : public CalculatorBase {
          ++input_id, ++output_id) {
       std::string file_path =
           cc->InputSidePackets().Get(input_id).Get<std::string>();
-      MP_ASSIGN_OR_RETURN(file_path, PathToResourceAsFile(file_path));
+      ASSIGN_OR_RETURN(file_path, PathToResourceAsFile(file_path));
 
       std::string contents;
       MP_RETURN_IF_ERROR(GetResourceContents(
