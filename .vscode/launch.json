@@ -94,7 +94,7 @@
 			"cwd": "${workspaceFolder}/bazel-bin/mediapipe/examples/coral",
 			"args": [],
 			"externalConsole": false,
-			"stopAtEntry": true,
+			"stopAtEntry": false,
 			"MIMode": "gdb",
 			"preLaunchTask": "cross_compile_hand_tracking_tflite",
 			"sourceFileMap": {
