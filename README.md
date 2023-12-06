@@ -11,6 +11,12 @@ Then go to [Hello world](https://developers.google.com/mediapipe/framework/getti
 # Sync our fork with upstream
 Follow [this](https://youtu.be/-zvHQXnBO6c?si=_hi0Fsysg7Nx5KaH) tutorial.
 
+# Run GUI app from ssh
+install xauth on $TARGET
+ssh -Y $TARGET
+./hand_tracking_tpu --calculator_graph_config_file hand_tracking_tpu.pbtxt
+
+
 ---
 Known issuse
 
