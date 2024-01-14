@@ -66,7 +66,7 @@ constexpr float kNumScoreDecimalDigitsMultipler = 100;
 //
 // Example config:
 // node {
-//   calculator: "DetectionsToRenderDataCalculator"
+//   calculator: "DetectionsToTrainDataCalculatorv1"
 //   input_stream: "DETECTION:detection"
 //   input_stream: "DETECTIONS:detections"
 //   input_stream: "DETECTION_LIST:detection_list"
@@ -77,14 +77,14 @@ constexpr float kNumScoreDecimalDigitsMultipler = 100;
 //     }
 //   }
 // }
-class DetectionsToRenderDataCalculator : public CalculatorBase {
+class DetectionsToTrainDataCalculatorv1 : public CalculatorBase {
  public:
-  DetectionsToRenderDataCalculator() {}
-  ~DetectionsToRenderDataCalculator() override {}
-  DetectionsToRenderDataCalculator(const DetectionsToRenderDataCalculator&) =
+  DetectionsToTrainDataCalculatorv1() {}
+  ~DetectionsToTrainDataCalculatorv1() override {}
+  DetectionsToTrainDataCalculatorv1(const DetectionsToTrainDataCalculatorv1&) =
       delete;
-  DetectionsToRenderDataCalculator& operator=(
-      const DetectionsToRenderDataCalculator&) = delete;
+  DetectionsToTrainDataCalculatorv1& operator=(
+      const DetectionsToTrainDataCalculatorv1&) = delete;
 
   static absl::Status GetContract(CalculatorContract* cc);
 
@@ -124,9 +124,9 @@ class DetectionsToRenderDataCalculator : public CalculatorBase {
       const DetectionsToRenderDataCalculatorOptions& options,
       RenderData* render_data);
 };
-REGISTER_CALCULATOR(DetectionsToRenderDataCalculator);
+REGISTER_CALCULATOR(DetectionsToTrainDataCalculatorv1);
 
-absl::Status DetectionsToRenderDataCalculator::GetContract(
+absl::Status DetectionsToTrainDataCalculatorv1::GetContract(
     CalculatorContract* cc) {
   RET_CHECK(cc->Inputs().HasTag(kDetectionListTag) ||
             cc->Inputs().HasTag(kDetectionsTag) ||
@@ -153,13 +153,13 @@ absl::Status DetectionsToRenderDataCalculator::GetContract(
   return absl::OkStatus();
 }
 
-absl::Status DetectionsToRenderDataCalculator::Open(CalculatorContext* cc) {
+absl::Status DetectionsToTrainDataCalculatorv1::Open(CalculatorContext* cc) {
   cc->SetOffset(TimestampDiff(0));
 
   return absl::OkStatus();
 }
 
-absl::Status DetectionsToRenderDataCalculator::Process(CalculatorContext* cc) {
+absl::Status DetectionsToTrainDataCalculatorv1::Process(CalculatorContext* cc) {
   const auto& options = cc->Options<DetectionsToRenderDataCalculatorOptions>();
 
   const bool has_detection_from_list =
@@ -215,7 +215,7 @@ absl::Status DetectionsToRenderDataCalculator::Process(CalculatorContext* cc) {
   return absl::OkStatus();
 }
 
-void DetectionsToRenderDataCalculator::SetRenderAnnotationColorThickness(
+void DetectionsToTrainDataCalculatorv1::SetRenderAnnotationColorThickness(
     const DetectionsToRenderDataCalculatorOptions& options,
     RenderAnnotation* render_annotation) {
   render_annotation->mutable_color()->set_r(options.color().r());
@@ -224,7 +224,7 @@ void DetectionsToRenderDataCalculator::SetRenderAnnotationColorThickness(
   render_annotation->set_thickness(options.thickness());
 }
 
-void DetectionsToRenderDataCalculator::SetTextCoordinate(
+void DetectionsToTrainDataCalculatorv1::SetTextCoordinate(
     bool normalized, double left, double baseline,
     RenderAnnotation::Text* text) {
   text->set_normalized(normalized);
@@ -233,7 +233,7 @@ void DetectionsToRenderDataCalculator::SetTextCoordinate(
   text->set_baseline(normalized ? std::min(baseline, 1.0) : baseline);
 }
 
-void DetectionsToRenderDataCalculator::SetRectCoordinate(
+void DetectionsToTrainDataCalculatorv1::SetRectCoordinate(
     bool normalized, double xmin, double ymin, double width, double height,
     RenderAnnotation::Rectangle* rect) {
   if (xmin + width < 0.0 || ymin + height < 0.0) return;
@@ -254,7 +254,7 @@ void DetectionsToRenderDataCalculator::SetRectCoordinate(
   std::cout << "bbox: " << xmin << " " << ymin << " " << width << " " << height <<  std::endl;
 }
 
-void DetectionsToRenderDataCalculator::AddLabels(
+void DetectionsToTrainDataCalculatorv1::AddLabels(
     const Detection& detection,
     const DetectionsToRenderDataCalculatorOptions& options,
     float text_line_height, RenderData* render_data) {
@@ -321,7 +321,7 @@ void DetectionsToRenderDataCalculator::AddLabels(
   }
 }
 
-void DetectionsToRenderDataCalculator::AddFeatureTag(
+void DetectionsToTrainDataCalculatorv1::AddFeatureTag(
     const Detection& detection,
     const DetectionsToRenderDataCalculatorOptions& options,
     float text_line_height, RenderData* render_data) {
@@ -345,7 +345,7 @@ void DetectionsToRenderDataCalculator::AddFeatureTag(
   }
 }
 
-void DetectionsToRenderDataCalculator::AddLocationData(
+void DetectionsToTrainDataCalculatorv1::AddLocationData(
     const Detection& detection,
     const DetectionsToRenderDataCalculatorOptions& options,
     RenderData* render_data) {
@@ -386,7 +386,7 @@ void DetectionsToRenderDataCalculator::AddLocationData(
   }
 }
 
-void DetectionsToRenderDataCalculator::AddDetectionToRenderData(
+void DetectionsToTrainDataCalculatorv1::AddDetectionToRenderData(
     const Detection& detection,
     const DetectionsToRenderDataCalculatorOptions& options,
     RenderData* render_data) {
