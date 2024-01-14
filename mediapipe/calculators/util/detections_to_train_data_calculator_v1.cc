@@ -144,7 +144,6 @@ absl::Status DetectionsToTrainDataCalculatorv1::GetContract(
     cc->Inputs().Tag(kDetectionsTag).Set<std::vector<Detection>>();
   }
   if (cc->Inputs().HasTag(kImageFrameTag)) {
-    std::cout << "has image frame" << std::endl;
     cc->Inputs().Tag(kImageFrameTag).Set<ImageFrame>();
   } else {
     std::cout << "doesnt have image frame" << std::endl;
@@ -180,6 +179,7 @@ absl::Status DetectionsToTrainDataCalculatorv1::Process(CalculatorContext* cc) {
       !has_detection_from_vector && !has_single_detection) {
     return absl::OkStatus();
   }
+   std::cout << "labels:" << std::endl;
 
   // TODO: Add score threshold to
   // DetectionsToRenderDataCalculatorOptions.
@@ -195,8 +195,8 @@ absl::Status DetectionsToTrainDataCalculatorv1::Process(CalculatorContext* cc) {
   if (has_detection_from_vector) {
     for (const auto& detection :
          cc->Inputs().Tag(kDetectionsTag).Get<std::vector<Detection>>()) {
-      AddDetectionToRenderData(detection, options, render_data.get());
-    }
+            AddDetectionToRenderData(detection, options, render_data.get());
+        }
   }
   if (has_single_detection) {
     AddDetectionToRenderData(cc->Inputs().Tag(kDetectionTag).Get<Detection>(),
@@ -204,7 +204,6 @@ absl::Status DetectionsToTrainDataCalculatorv1::Process(CalculatorContext* cc) {
   }
 
 
-  std::cout << "labels:" << std::endl;
 //  const auto& input_frame = cc->Inputs().Tag(kImageFrameTag).Get<ImageFrame>();
 //  auto input_mat = mediapipe::formats::MatView(&input_frame);
 //  cv::imwrite("tmp.jpg", input_mat);
