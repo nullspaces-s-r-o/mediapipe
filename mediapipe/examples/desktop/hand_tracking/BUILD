@@ -41,15 +41,14 @@ cc_binary(
 )
 
 cc_binary(
-    name = "hand_tracking_net",
+    name = "hand_tracking_cpu_export_v1",
     data = [
         "//mediapipe/modules/hand_landmark:hand_landmark_full.tflite",
         "//mediapipe/modules/palm_detection:palm_detection_full.tflite",
     ],
     deps = [
-        "//mediapipe/examples/desktop:demo_run_graph_main_network",
+        "//mediapipe/examples/desktop:demo_run_graph_dataset_v1",
         "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators",
-        "//mediapipe/graphs/hand_tracking/subgraphs:hand_data_exporter",
     ],
 )
 

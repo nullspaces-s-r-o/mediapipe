@@ -45,6 +45,7 @@ cc_library(
         "//mediapipe/calculators/core:constant_side_packet_calculator",
         "//mediapipe/calculators/core:merge_calculator",
         "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_cpu",
+        "//mediapipe/graphs/hand_tracking/subgraphs:hand_exporter_cpu_v1",
         "//mediapipe/modules/hand_landmark:hand_landmark_tracking_cpu",
         "//mediapipe/modules/hand_landmark:hand_landmark_tracking_tpu",
     ],
@@ -65,6 +66,13 @@ mediapipe_binary_graph(
     name = "hand_tracking_desktop_live_binary_graph",
     graph = "hand_tracking_desktop_live.pbtxt",
     output_name = "hand_tracking_desktop_live.binarypb",
+    deps = [":desktop_tflite_calculators"],
+)
+
+mediapipe_binary_graph(
+    name = "hand_tracking_desktop_live_dataset_binary_graph",
+    graph = "hand_tracking_desktop_live_dataset.pbtxt",
+    output_name = "hand_tracking_desktop_live_dataset.binarypb",
     deps = [":desktop_tflite_calculators"],
 )
 
