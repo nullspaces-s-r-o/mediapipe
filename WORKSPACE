@@ -250,24 +250,24 @@ new_local_repository(
 new_local_repository(
     name = "linux_opencv_aarch64",
     build_file = "@//third_party:opencv_linux_aarch64.BUILD",
-    path = "/home/jiri/coral/stage",
+    path = "/home/shared/coral/stage",
 )
 
 new_local_repository(
     name = "linux_realsense",
-    path = "/home/jiri/coral/stage",
+    path = "/home/shared/coral/stage",
     build_file = "@//third_party:linux_realsense.BUILD",
 )
 
 new_local_repository(
     name = "network_camera",
-    path = "/home/jiri/DigitalAssistant/headless-calibration/ImageProviders",
+    path = "/home/shared/DigitalAssistant/headless-calibration/ImageProviders",
     build_file = "@//third_party:network_camera.BUILD",
 )
 
 new_local_repository(
     name = "imagestreamer_project",
-    path = "/home/jiri/DigitalAssistant/",
+    path = "/home/shared/DigitalAssistant/",
     build_file = "@//third_party:imagestreamer.BUILD",
 )
 

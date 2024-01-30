@@ -17,19 +17,19 @@ def _impl(ctx):
     tool_paths = [ 
         tool_path(
             name = "gcc",
-            path = "/home/jiri/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc",
+            path = "/home/shared/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc",
         ),
         tool_path(
             name = "ld",
-            path = "/home/jiri/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-ld",
+            path = "/home/shared/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-ld",
         ),
         tool_path(
             name = "ar",
-            path = "/home/jiri/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-ar",
+            path = "/home/shared/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-ar",
         ),
         tool_path(
             name = "cpp",
-            path = "/home/jiri/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-cpp",
+            path = "/home/shared/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-cpp",
         ),
         tool_path(
             name = "gcov",
@@ -37,7 +37,7 @@ def _impl(ctx):
         ),
         tool_path(
             name = "nm",
-            path = "/home/jiri/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-nm",
+            path = "/home/shared/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-nm",
         ),
         tool_path(
             name = "objdump",
@@ -45,7 +45,7 @@ def _impl(ctx):
         ),
         tool_path(
             name = "strip",
-            path = "/home/jiri/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-strip",
+            path = "/home/shared/coral/x-tools/aarch64-linux-gnu/bin/aarch64-linux-gnu-strip",
         ),
     ]
 
@@ -74,14 +74,14 @@ def _impl(ctx):
         ctx = ctx,
         features = features,
         cxx_builtin_include_directories = [ # NEW
-            "/home/jiri/coral/rootfs/usr/include",
-            "/home/jiri/coral/rootfs/usr/local/include",
-            "/home/jiri/coral/stage/include",
-            "/home/jiri/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include",
-            "/home/jiri/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/include",
-            "/home/jiri/coral/x-tools/aarch64-linux-gnu/include",
-            "/home/jiri/coral/x-tools/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/8.5.0/include",
-            "/home/jiri/coral/x-tools/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/8.5.0/include-fixed",
+            "/home/shared/coral/rootfs/usr/include",
+            "/home/shared/coral/rootfs/usr/local/include",
+            "/home/shared/coral/stage/include",
+            "/home/shared/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include",
+            "/home/shared/coral/x-tools/aarch64-linux-gnu/aarch64-linux-gnu/include",
+            "/home/shared/coral/x-tools/aarch64-linux-gnu/include",
+            "/home/shared/coral/x-tools/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/8.5.0/include",
+            "/home/shared/coral/x-tools/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/8.5.0/include-fixed",
         ],
         toolchain_identifier = "aarch64-toolchain",
         host_system_name = "local",
@@ -92,7 +92,7 @@ def _impl(ctx):
         abi_version = "unknown",
         abi_libc_version = "unknown",
         tool_paths = tool_paths,
-        builtin_sysroot="/home/jiri/coral/rootfs"
+        builtin_sysroot="/home/shared/coral/rootfs"
     )
 
     return ci
@@ -104,4 +104,4 @@ cc_toolchain_config = rule(
 
 )
 
-# cc_toolchain_config.builtin_sysroot="/home/jiri/coral/sysroot"
+# cc_toolchain_config.builtin_sysroot="/home/shared/coral/sysroot"
