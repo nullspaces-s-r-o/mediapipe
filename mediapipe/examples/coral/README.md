@@ -2,7 +2,7 @@
 
 Pro kompilaci pro Coral
 * export BAZEL_CPU=aarch64  
-* v souboru /home/jiri/fork/mediapipe/bazel-mediapipe/external/com_google_absl/absl/copts/configure_copts.bzl zakomentuj
+* v souboru /home/shared/fork/mediapipe/bazel-mediapipe/external/com_google_absl/absl/copts/configure_copts.bzl zakomentuj
 
 `
 ABSL_DEFAULT_COPTS = select({
