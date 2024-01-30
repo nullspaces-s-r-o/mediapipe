@@ -1,5 +1,24 @@
 # Coral Support
 
+# sync cross compiler tools to GCP
+rsync -az --info=progress2 x-tools 34.116.218.106:/home/shared/coral
+
+# sync staging folder to the GCP
+rsync -az --info=progress2 stage 34.116.218.106:/home/shared/coral
+
+# sync target Coral sysroot to the GCP
+rsync -az --info=progress2 enterprise-eagle-20211117215217/raw_rootfs_arm64.img 34.116.218.106:/home/shared/coral
+
+# mount target root file system
+mkdir -p home/shared/coral/rootfs
+sudo mount -v -t ext4 /home/shared/coral/raw_rootfs_arm64.img /home/shared/coral/rootfs/
+
+# read docs in
+mediapipe/examples/coral/README.md
+
+# Known issues
+aarch64-linux-gnu-gcc: error: unrecognized command line option '-Wfloat-overflow-conversion'; did you mean '-Wfloat-conversion'?
+
 Pro kompilaci pro Coral
 * export BAZEL_CPU=aarch64  
 * v souboru /home/shared/fork/mediapipe/bazel-mediapipe/external/com_google_absl/absl/copts/configure_copts.bzl zakomentuj
