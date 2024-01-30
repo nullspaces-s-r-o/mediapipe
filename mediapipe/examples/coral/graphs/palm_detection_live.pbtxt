@@ -1,0 +1,157 @@
+# Images on TPU coming into and out of the graph.
+input_stream: "input_video"
+output_stream: "output_video"
+
+node {
+  calculator: "FlowLimiterCalculator"
+  input_stream: "input_video"
+  input_stream: "FINISHED:detections"
+  input_stream_info: {
+    tag_index: "FINISHED"
+    back_edge: true
+  }
+  output_stream: "throttled_input_video"
+}
+
+node {
+  calculator: "ImageToTensorCalculator"
+  input_stream: "IMAGE:throttled_input_video"
+  output_stream: "TENSORS:transformed_input_video"
+  output_stream: "LETTERBOX_PADDING:letterbox_padding"
+  options: {
+    [mediapipe.ImageToTensorCalculatorOptions.ext] {
+      output_tensor_width: 256
+      output_tensor_height: 256
+      keep_aspect_ratio: true
+      output_tensor_float_range {
+        min: -1.0
+        max: 1.0
+      }
+      border_mode: BORDER_ZERO
+    }
+  }
+}
+
+# Converts the transformed input image on CPU into an image tensor stored as a
+# TfLiteTensor.
+node {
+  calculator: "TfLiteConverterCalculator"
+  input_stream: "IMAGE:transformed_input_video"
+  output_stream: "TENSORS:image_tensor"
+  options: {
+    [mediapipe.TfLiteConverterCalculatorOptions.ext] {
+      use_quantized_tensors: true
+    }
+  }
+}
+
+# Runs a TensorFlow Lite model on TPU that takes an image tensor and outputs a
+# vector of tensors representing, for instance, detection boxes/keypoints and
+# scores.
+node {
+  calculator: "TfLiteInferenceCalculator"
+  input_stream: "TENSORS:image_tensor"
+  output_stream: "TENSORS:detection_tensors"
+  options: {
+    [mediapipe.TfLiteInferenceCalculatorOptions.ext] {
+      model_path: "mediapipe/examples/coral/models/palm-int8_edgetpu.tflite"
+    }
+  }
+}
+
+# Generates a single side packet containing a vector of SSD anchors based on
+# the specification in the options.
+node {
+  calculator: "SsdAnchorsCalculator"
+  output_side_packet: "anchors"
+  options: {
+    [mediapipe.SsdAnchorsCalculatorOptions.ext] {
+      num_layers: 5
+      min_scale: 0.1171775
+      max_scale: 0.75
+      input_size_width: 256
+      input_size_height: 256
+      anchor_offset_x: 0.5
+      anchor_offset_y: 0.5
+      strides: 8
+      strides: 16
+      strides: 32
+      strides: 32
+      strides: 32
+      aspect_ratios: 1.0
+      fixed_anchor_size: false
+    }
+  }
+}
+
+
+node {
+  calculator: "TensorsToDetectionsCalculator"
+  input_stream: "TENSORS:detection_tensors"
+  input_side_packet: "ANCHORS:anchors"
+  output_stream: "DETECTIONS:unfiltered_detections"
+  options: {
+    [mediapipe.TensorsToDetectionsCalculatorOptions.ext] {
+      num_classes: 1
+      num_boxes: 2944
+      num_coords: 18
+      box_coord_offset: 0
+      keypoint_coord_offset: 4
+      num_keypoints: 7
+      num_values_per_keypoint: 2
+      sigmoid_score: true
+      score_clipping_thresh: 100.0
+      reverse_output_order: true
+
+      x_scale: 256.0
+      y_scale: 256.0
+      w_scale: 256.0
+      h_scale: 256.0
+      min_score_thresh: 0.95
+    }
+  }
+}
+
+# Performs non-max suppression to remove excessive detections.
+node {
+  calculator: "NonMaxSuppressionCalculator"
+  input_stream: "unfiltered_detections"
+  output_stream: "filtered_detections"
+  options: {
+    [mediapipe.NonMaxSuppressionCalculatorOptions.ext] {
+      min_suppression_threshold: 0.4
+      max_num_detections: 3
+      overlap_type: INTERSECTION_OVER_UNION
+      return_empty_detections: true
+    }
+  }
+}
+
+node {
+  calculator: "DetectionLetterboxRemovalCalculator"
+  input_stream: "DETECTIONS:filtered_detections"
+  input_stream: "LETTERBOX_PADDING:letterbox_padding"
+  output_stream: "DETECTIONS:detections"
+}
+
+
+# Converts the detections to drawing primitives for annotation overlay.
+node {
+  calculator: "DetectionsToRenderDataCalculator"
+  input_stream: "DETECTIONS:output_detections"
+  output_stream: "RENDER_DATA:render_data"
+  options: {
+    [mediapipe.DetectionsToRenderDataCalculatorOptions.ext] {
+      thickness: 4.0
+      color { r: 255 g: 0 b: 0 }
+    }
+  }
+}
+
+node {
+  calculator: "AnnotationOverlayCalculator"
+  input_stream: "IMAGE:input_video"
+  input_stream: "render_data"
+  output_stream: "IMAGE:output_video"
+}
+

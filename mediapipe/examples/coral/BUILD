@@ -51,6 +51,15 @@ cc_binary(
 )
 
 cc_binary(
+    name = "palm_detection_tpu",
+    deps = [
+        "//mediapipe/calculators/image:image_transformation_calculator",
+        "//mediapipe/examples/coral:demo_run_graph_main",
+        "//mediapipe/graphs/hand_tracking:detection_tpu_calculators",
+    ],
+)
+
+cc_binary(
     name = "face_detection_tpu",
     deps = [
         "//mediapipe/calculators/tflite:tflite_converter_calculator",
