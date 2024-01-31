@@ -19,9 +19,9 @@ mediapipe/examples/coral/README.md
 # Known issues
 aarch64-linux-gnu-gcc: error: unrecognized command line option '-Wfloat-overflow-conversion'; did you mean '-Wfloat-conversion'?
 
-Pro kompilaci pro Coral
+To compile on Coral, you might need to:
 * export BAZEL_CPU=aarch64  
-* v souboru /home/shared/fork/mediapipe/bazel-mediapipe/external/com_google_absl/absl/copts/configure_copts.bzl zakomentuj
+* comment out following lines in ~/mediapipe/bazel-mediapipe/external/com_google_absl/absl/copts/configure_copts.bzl
 
 `
 ABSL_DEFAULT_COPTS = select({
@@ -34,6 +34,8 @@ ABSL_DEFAULT_COPTS = select({
 
 * ERROR: Encountered unresolved custom op: edgetpu-custom-op. Znamená že nesedí verze (na úrovni commitu) Tensorflow aplikace vůči libedgetpu.
 
+# Some important files with respect to palm detection
+mediapipe/calculators/tensor/inference_calculator_cpu.cc
 
 
 ## Bazel Setup
