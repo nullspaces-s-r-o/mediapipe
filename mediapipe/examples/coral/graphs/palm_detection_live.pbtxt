@@ -14,23 +14,38 @@ node {
 }
 
 node {
-  calculator: "ImageToTensorCalculator"
+  calculator: "ImageTransformationCalculator"
   input_stream: "IMAGE:throttled_input_video"
-  output_stream: "TENSORS:transformed_input_video"
+  output_stream: "IMAGE:transformed_input_video"
   output_stream: "LETTERBOX_PADDING:letterbox_padding"
   options: {
-    [mediapipe.ImageToTensorCalculatorOptions.ext] {
-      output_tensor_width: 256
-      output_tensor_height: 256
-      keep_aspect_ratio: true
-      output_tensor_float_range {
-        min: -1.0
-        max: 1.0
-      }
-      border_mode: BORDER_ZERO
-    }
-  }
-}
+    [mediapipe.ImageTransformationCalculatorOptions.ext] {
+      output_width: 256
+      output_height: 256
+      scale_mode: FIT
+     }
+   }
+ }
+       
+#
+#node {
+#  calculator: "ImageToTensorCalculator"
+#  input_stream: "IMAGE:throttled_input_video"
+#  output_stream: "TENSORS:transformed_input_video"
+#  output_stream: "LETTERBOX_PADDING:letterbox_padding"
+#  options: {
+#    [mediapipe.ImageToTensorCalculatorOptions.ext] {
+#      output_tensor_width: 256
+#      output_tensor_height: 256
+#      keep_aspect_ratio: true
+#      output_tensor_float_range {
+#        min: -1.0
+#        max: 1.0
+#      }
+#      border_mode: BORDER_ZERO
+#    }
+#  }
+#}
 
 # Converts the transformed input image on CPU into an image tensor stored as a
 # TfLiteTensor.
@@ -40,7 +55,7 @@ node {
   output_stream: "TENSORS:image_tensor"
   options: {
     [mediapipe.TfLiteConverterCalculatorOptions.ext] {
-      use_quantized_tensors: true
+      use_quantized_tensors: false 
     }
   }
 }
@@ -54,7 +69,7 @@ node {
   output_stream: "TENSORS:detection_tensors"
   options: {
     [mediapipe.TfLiteInferenceCalculatorOptions.ext] {
-      model_path: "mediapipe/examples/coral/models/palm-int8_edgetpu.tflite"
+      model_path: "palm-int8-dev_edgetpu.tflite"
     }
   }
 }
@@ -86,12 +101,12 @@ node {
 
 
 node {
-  calculator: "TensorsToDetectionsCalculator"
+  calculator: "TfLiteTensorsToDetectionsCalculator"
   input_stream: "TENSORS:detection_tensors"
   input_side_packet: "ANCHORS:anchors"
   output_stream: "DETECTIONS:unfiltered_detections"
   options: {
-    [mediapipe.TensorsToDetectionsCalculatorOptions.ext] {
+    [mediapipe.TfLiteTensorsToDetectionsCalculatorOptions.ext] {
       num_classes: 1
       num_boxes: 2944
       num_coords: 18
@@ -102,6 +117,7 @@ node {
       sigmoid_score: true
       score_clipping_thresh: 100.0
       reverse_output_order: true
+
 
       x_scale: 256.0
       y_scale: 256.0
@@ -138,7 +154,7 @@ node {
 # Converts the detections to drawing primitives for annotation overlay.
 node {
   calculator: "DetectionsToRenderDataCalculator"
-  input_stream: "DETECTIONS:output_detections"
+  input_stream: "DETECTIONS:detections"
   output_stream: "RENDER_DATA:render_data"
   options: {
     [mediapipe.DetectionsToRenderDataCalculatorOptions.ext] {

@@ -39,6 +39,25 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "demo_run_graph_main_original",
+    srcs = ["demo_run_graph_main_original.cc"],
+    deps = [
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:file_helpers",
+        "//mediapipe/framework/port:opencv_highgui",
+        "//mediapipe/framework/port:opencv_imgproc",
+        "//mediapipe/framework/port:opencv_video",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/port:status",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/log:absl_log",
+    ],
+)
+
 # Demos
 
 cc_binary(
@@ -54,8 +73,9 @@ cc_binary(
     name = "palm_detection_tpu",
     deps = [
         "//mediapipe/calculators/image:image_transformation_calculator",
-        "//mediapipe/examples/coral:demo_run_graph_main",
+        "//mediapipe/examples/coral:demo_run_graph_main_original",
         "//mediapipe/graphs/hand_tracking:detection_tpu_calculators",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_detections_calculator",
     ],
 )
 
