@@ -99,6 +99,7 @@ cc_binary(
         "//mediapipe/examples/coral:demo_run_graph_main",
         "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators_tpu",
         "//mediapipe/calculators/image:image_transformation_calculator",
+	"//mediapipe/modules/palm_detection:palm_detection_tpu"
     ],
 )
 

@@ -60,6 +60,21 @@ mediapipe_simple_subgraph(
 )
 
 mediapipe_simple_subgraph(
+    name = "palm_detection_tpu",
+    graph = "palm_detection_tpu.pbtxt",
+    register_as = "PalmDetectionTpu",
+    deps = [
+	"//mediapipe/calculators/image:image_transformation_calculator",
+	"//mediapipe/calculators/tflite:tflite_converter_calculator",
+	"//mediapipe/calculators/tflite:tflite_inference_calculator",
+	"//mediapipe/calculators/tflite:ssd_anchors_calculator",
+	"//mediapipe/calculators/util:non_max_suppression_calculator",
+	"//mediapipe/calculators/tflite:tflite_tensors_to_detections_calculator",
+	"//mediapipe/calculators/util:detection_letterbox_removal_calculator",
+    ],
+)
+
+mediapipe_simple_subgraph(
     name = "palm_detection_gpu",
     graph = "palm_detection_gpu.pbtxt",
     register_as = "PalmDetectionGpu",

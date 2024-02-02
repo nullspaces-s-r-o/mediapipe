@@ -102,7 +102,7 @@ node {
 
 # Detects palms.
 node {
-  calculator: "PalmDetectionCpu"
+  calculator: "PalmDetectionTpu"
   input_side_packet: "MODEL_COMPLEXITY:model_complexity"
   input_stream: "IMAGE:palm_detection_image"
   output_stream: "DETECTIONS:all_palm_detections"

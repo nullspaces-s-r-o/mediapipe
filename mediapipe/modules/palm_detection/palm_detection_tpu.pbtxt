@@ -1,0 +1,116 @@
+
+type: "PalmDetectionTpu"
+
+input_stream: "IMAGE:image"
+output_stream: "DETECTIONS:detections"
+
+node {
+  calculator: "ImageTransformationCalculator"
+  input_stream: "IMAGE:image"
+  output_stream: "IMAGE:transformed_image"
+  output_stream: "LETTERBOX_PADDING:letterbox_padding"
+  options: {
+    [mediapipe.ImageTransformationCalculatorOptions.ext] {
+      output_width: 256
+      output_height: 256
+      scale_mode: FIT
+    }
+  }
+}
+
+
+node {
+  calculator: "TfLiteConverterCalculator"
+  input_stream: "IMAGE:transformed_image"
+  output_stream: "TENSORS:image_tensor"
+  options: {
+    [mediapipe.TfLiteConverterCalculatorOptions.ext] {
+      use_quantized_tensors: false
+    }
+  }
+}
+
+node {
+  calculator: "TfLiteInferenceCalculator"
+  input_stream: "TENSORS:image_tensor"
+  output_stream: "TENSORS:detection_tensors"
+  options: {
+    [mediapipe.TfLiteInferenceCalculatorOptions.ext] {
+      model_path: "palm-int8-dev_edgetpu.tflite"
+   }
+ }
+}
+
+node {
+  calculator: "SsdAnchorsCalculator"
+  output_side_packet: "anchors"
+  options: {
+    [mediapipe.SsdAnchorsCalculatorOptions.ext] {
+      num_layers: 5
+      min_scale: 0.1171775
+      max_scale: 0.75
+      input_size_width: 256
+      input_size_height: 256
+      anchor_offset_x: 0.5
+      anchor_offset_y: 0.5
+      strides: 8
+      strides: 16
+      strides: 32
+      strides: 32
+      strides: 32
+      aspect_ratios: 1.0
+      fixed_anchor_size: false
+    }
+  }
+}
+
+node {
+  calculator: "TfLiteTensorsToDetectionsCalculator"
+  input_stream: "TENSORS:detection_tensors"
+  input_side_packet: "ANCHORS:anchors"
+  output_stream: "DETECTIONS:unfiltered_detections"
+  options: {
+    [mediapipe.TfLiteTensorsToDetectionsCalculatorOptions.ext] {
+      num_classes: 1
+      num_boxes: 2944
+      num_coords: 18
+      box_coord_offset: 0
+      keypoint_coord_offset: 4
+      num_keypoints: 7
+      num_values_per_keypoint: 2
+      sigmoid_score: true
+      score_clipping_thresh: 100.0
+      reverse_output_order: true
+
+      x_scale: 256.0
+      y_scale: 256.0
+      w_scale: 256.0
+      h_scale: 256.0
+      min_score_thresh: 0.95
+    }
+  }
+}
+
+node {
+  calculator: "NonMaxSuppressionCalculator"
+  input_stream: "unfiltered_detections"
+  output_stream: "filtered_detections"
+  options: {
+    [mediapipe.NonMaxSuppressionCalculatorOptions.ext] {
+      min_suppression_threshold: 0.4
+      max_num_detections: 6
+      overlap_type: INTERSECTION_OVER_UNION
+#      return_empty_detections: true
+    }
+  }
+}
+
+
+node {
+  calculator: "DetectionLetterboxRemovalCalculator"
+  input_stream: "DETECTIONS:filtered_detections"
+  input_stream: "LETTERBOX_PADDING:letterbox_padding"
+  output_stream: "DETECTIONS:detections"
+}
+
+
