@@ -14,6 +14,7 @@
 //
 // An example of sending OpenCV webcam frames into a MediaPipe graph.
 #include <cstdlib>
+#include <chrono> 
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -179,6 +180,9 @@ absl::Status RunMPPGraph() {
     // }
 
     // Wrap Mat into an ImageFrame.
+//    camera_frame = cv::imread("hands.jpg", cv::IMREAD_COLOR);
+    const auto& start_time = std::chrono::steady_clock::now();
+
     auto input_frame = absl::make_unique<mediapipe::ImageFrame>(
         mediapipe::ImageFormat::SRGB, camera_frame.cols, camera_frame.rows,
         mediapipe::ImageFrame::kDefaultAlignmentBoundary);
@@ -199,6 +203,10 @@ absl::Status RunMPPGraph() {
 
     // Convert back to opencv for display or saving.
     cv::Mat output_frame_mat = mediapipe::formats::MatView(&output_frame);
+
+    std::chrono::duration<double> seconds = std::chrono::steady_clock::now() - start_time;
+    std::cout << " one frame elaplsed time " << seconds.count() * 1000 << " ms" << std::endl;
+
     static cv::Mat preview;
     cv::cvtColor(output_frame_mat, preview, cv::COLOR_RGB2BGR);
     if (save_video) {
