@@ -26,7 +26,6 @@
 #include "mediapipe/framework/port/opencv_video_inc.h"
 #include "mediapipe/framework/port/parse_text_proto.h"
 #include "mediapipe/framework/port/status.h"
-
 #include "rs.hpp"
 
 #define WITH_UI
@@ -44,8 +43,9 @@ ABSL_FLAG(std::string, output_video_path, "",
           "Full path of where to save result (.mp4 only). "
           "If not provided, show result in a window.");
 
-cv::Mat GetMat(rs2::video_frame color){
-  return cv::Mat(color.get_height(), color.get_width(), CV_8UC3, (void*)color.get_data() );
+cv::Mat GetMat(rs2::video_frame color) {
+  return cv::Mat(color.get_height(), color.get_width(), CV_8UC3,
+                 (void*)color.get_data());
 }
 
 absl::Status RunMPPGraph() {
@@ -68,7 +68,7 @@ absl::Status RunMPPGraph() {
   rs2::config rs_config;
   rs_config.disable_all_streams();
   rs_config.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1920, 1080,
-                      rs2_format::RS2_FORMAT_RGB8);
+                          rs2_format::RS2_FORMAT_RGB8);
 
   rs2::pipeline pipe;
   pipe.start(rs_config);
@@ -135,7 +135,7 @@ absl::Status RunMPPGraph() {
 
   cv::Mat tmp = GetMat(pipe.wait_for_frames().get_color_frame());
   LOG(INFO) << "Image size is " << tmp.cols << "x" << tmp.rows;
-  
+
   LOG(INFO) << "Start running the calculator graph.";
   ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller,
                    graph.AddOutputStreamPoller(kOutputStream));
@@ -149,15 +149,14 @@ absl::Status RunMPPGraph() {
   src_roi.y = 0;
   src_roi.x = (tmp.cols - src_roi.width) / 2;
 
-  LOG(INFO) << "src_roi: " << src_roi.x << ", " << src_roi.y << " - " << src_roi.width << "x" << src_roi.height;
+  LOG(INFO) << "src_roi: " << src_roi.x << ", " << src_roi.y << " - "
+            << src_roi.width << "x" << src_roi.height;
 
   double s = 640 / (double)src_roi.width;
   double t = src_roi.x;
   cv::Mat S = s * cv::Mat_<double>::eye(3, 3);
-  cv::Mat T = (cv::Mat_<double>(3, 3) <<
-    1.0, 0.0, -t,
-    0.0, 1.0, 0.0,
-    0.0, 0.0, 1.0);
+  cv::Mat T =
+      (cv::Mat_<double>(3, 3) << 1.0, 0.0, -t, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
 
   cv::Mat A = cv::Mat(S * T).rowRange(0, 2);
 
@@ -168,10 +167,11 @@ absl::Status RunMPPGraph() {
     cv::Mat camera_frame_raw = GetMat(color);
     // capture >> camera_frame_raw;
     // if (camera_frame_raw.empty()) break;  // End of video.
-    static cv::Mat camera_frame; // = camera_frame_raw;
+    static cv::Mat camera_frame;  // = camera_frame_raw;
     // cv::resize(camera_frame_raw(src_roi), camera_frame, { 640, 480});
     // static cv::Mat crop;
-    cv::warpAffine(camera_frame_raw, camera_frame, A, { 640, 480}, cv::INTER_NEAREST);
+    cv::warpAffine(camera_frame_raw, camera_frame, A, {640, 480},
+                   cv::INTER_NEAREST);
     // camera_frame = camera_frame_raw;
     // cv::cvtColor(crop, camera_frame, cv::COLOR_YUV2BGR_YUYV);
     // if (!load_video) {

@@ -1,3 +1,49 @@
+# Libraries
+OpenCV 4.5.5 (4.5.3 is acceptable for now 01/2024)
+    
+
+
+wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-amd64
+chmod +x bazelisk-linux-amd64
+sudo mv bazelisk-linux-amd64 /usr/local/bin/bazel
+~/mediapipe$ ./mediapipe/examples/coral/cross_compile_hand_tracking_tflite.sh
+read `mediapipe/mediapipe/examples/coral/README.md`
+
+Start using mediapipe [by installation](https://developers.google.com/mediapipe/framework/getting_started/install.md).
+Then go to [Hello world](https://developers.google.com/mediapipe/framework/getting_started/hello_world_cpp.md)
+
+# Sync our fork with upstream
+Follow [this](https://youtu.be/-zvHQXnBO6c?si=_hi0Fsysg7Nx5KaH) tutorial.
+
+# Run GUI app from ssh
+install xauth on $TARGET
+ssh -Y $TARGET
+./hand_tracking_tpu --calculator_graph_config_file hand_tracking_tpu.pbtxt
+
+
+---
+Known issuse
+
+- Issue "this rule is missing dependency declarations for the following files included by ..."
+
+- Reason
+Missing builtin_include_directories
+
+- Solution
+
+What if my C++ compilation fails with missing dependency declarations errors?¶
+This error:
+
+Text Only
+
+ERROR: /home/foo/stuff/bazel/third_party/zlib/BUILD:25:19: undeclared inclusion(s) in rule '//third_party/zlib:zlib_checked_in': this rule is missing dependency declarations for the following files included by 'third_party/zlib/trees.c':
+  '/usr/lib/gcc/x86_64-linux-gnu/8/include-fixed/limits.h'
+  '/usr/lib/gcc/x86_64-linux-gnu/8/include-fixed/syslimits.h'
+The culprit is that the selected C++ toolchain's cc_toolchain_config.cxx_builtin_include_directories is missing that directory. Add /usr/lib/gcc/x86_64-linux-gnu/8/include-fixed/ to that list.
+
+
+
+
 ---
 layout: default
 title: Home

@@ -39,11 +39,8 @@ cc_library(
         "-l:libopencv_video.so",
         "-l:libopencv_videoio.so",
         "-l:libz.so",
-        # "-l:libgtk-3.so.0",
-        "-L/home/jiri/coral/sysroot/lib",
-        "-L/home/jiri/coral/sysroot/lib/aarch64-linux-gnu",
-        # "-L/home/jiri/coral/sysroot/usr/lib/",
-        "-L/home/jiri/coral/sysroot/usr/local/lib/",
+        "-L/home/shared/coral/stage/lib",
+        "-L/home/shared/coral/stage/lib/aarch64-linux-gnu",
     ],
     visibility = ["//visibility:public"],
 )

@@ -1,8 +1,27 @@
 # Coral Support
 
-Pro kompilaci pro Coral
+# sync cross compiler tools to GCP
+rsync -az --info=progress2 x-tools 34.116.218.106:/home/shared/coral
+
+# sync staging folder to the GCP
+rsync -az --info=progress2 stage 34.116.218.106:/home/shared/coral
+
+# sync target Coral sysroot to the GCP
+rsync -az --info=progress2 enterprise-eagle-20211117215217/raw_rootfs_arm64.img 34.116.218.106:/home/shared/coral
+
+# mount target root file system
+mkdir -p home/shared/coral/rootfs
+sudo mount -v -t ext4 /home/shared/coral/raw_rootfs_arm64.img /home/shared/coral/rootfs/
+
+# read docs in
+mediapipe/examples/coral/README.md
+
+# Known issues
+aarch64-linux-gnu-gcc: error: unrecognized command line option '-Wfloat-overflow-conversion'; did you mean '-Wfloat-conversion'?
+
+To compile on Coral, you might need to:
 * export BAZEL_CPU=aarch64  
-* v souboru /home/jiri/fork/mediapipe/bazel-mediapipe/external/com_google_absl/absl/copts/configure_copts.bzl zakomentuj
+* comment out following lines in ~/mediapipe/bazel-mediapipe/external/com_google_absl/absl/copts/configure_copts.bzl
 
 `
 ABSL_DEFAULT_COPTS = select({
@@ -15,6 +34,8 @@ ABSL_DEFAULT_COPTS = select({
 
 * ERROR: Encountered unresolved custom op: edgetpu-custom-op. Znamená že nesedí verze (na úrovni commitu) Tensorflow aplikace vůči libedgetpu.
 
+# Some important files with respect to palm detection
+mediapipe/calculators/tensor/inference_calculator_cpu.cc
 
 
 ## Bazel Setup

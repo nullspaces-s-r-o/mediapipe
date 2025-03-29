@@ -12,7 +12,7 @@
 		{
 			"label": "cross_compile_hand_tracking_tflite",
 			"type": "shell",
-			"command": "${env:HOME}/fork/mediapipe/mediapipe/examples/coral/cross_compile_hand_tracking_tflite.sh",
+			"command": "${env:HOME}/mediapipe/mediapipe/examples/coral/cross_compile_hand_tracking_tflite.sh",
 			"problemMatcher": []
 		},
 		{

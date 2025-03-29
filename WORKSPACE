@@ -26,17 +26,17 @@ versions.check(minimum_bazel_version = "3.7.2")
 http_archive(
     name = "com_google_absl",
     urls = [
-        "https://github.com/abseil/abseil-cpp/archive/refs/tags/20210324.2.tar.gz",
+        "https://github.com/abseil/abseil-cpp/archive/refs/tags/20230802.1.tar.gz",
     ],
     # Remove after https://github.com/abseil/abseil-cpp/issues/326 is solved.
-    patches = [
-        "@//third_party:com_google_absl_f863b622fe13612433fdf43f76547d5edda0c93001.diff"
-    ],
-    patch_args = [
-        "-p1",
-    ],
-    strip_prefix = "abseil-cpp-20210324.2",
-    sha256 = "59b862f50e710277f8ede96f083a5bb8d7c9595376146838b9580be90374ee1f"
+    # patches = [
+    #     "@//third_party:com_google_absl_f863b622fe13612433fdf43f76547d5edda0c93001.diff"
+    # ],
+    # patch_args = [
+    #     "-p1",
+    # ],
+    strip_prefix = "abseil-cpp-20230802.1",
+    # sha256 = "59b862f50e710277f8ede96f083a5bb8d7c9595376146838b9580be90374ee1f"
 )
 
 http_archive(
@@ -244,30 +244,30 @@ http_archive(
 new_local_repository(
     name = "linux_opencv",
     build_file = "@//third_party:opencv_linux.BUILD",
-    path = "/usr/local",
+    path = "/usr",
 )
 
 new_local_repository(
     name = "linux_opencv_aarch64",
     build_file = "@//third_party:opencv_linux_aarch64.BUILD",
-    path = "/home/jiri/coral/sysroot/usr/local",
+    path = "/home/shared/coral/stage",
 )
 
 new_local_repository(
     name = "linux_realsense",
-    path = "/home/jiri/coral/sysroot/usr/local",
+    path = "/home/shared/coral/stage",
     build_file = "@//third_party:linux_realsense.BUILD",
 )
 
 new_local_repository(
     name = "network_camera",
-    path = "/home/jiri/DigitalAssistant/headless-calibration/ImageProviders",
+    path = "/home/shared/DigitalAssistant/headless-calibration/ImageProviders",
     build_file = "@//third_party:network_camera.BUILD",
 )
 
 new_local_repository(
     name = "imagestreamer_project",
-    path = "/home/jiri/DigitalAssistant/",
+    path = "/home/shared/DigitalAssistant/",
     build_file = "@//third_party:imagestreamer.BUILD",
 )
 
