@@ -131,7 +131,8 @@
 			"program": "${workspaceFolder}/bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_net",
 			"cwd": "${workspaceFolder}",
 			"args": [
-				"--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_dataset.pbtxt"
+				"--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_dataset.pbtxt",
+				"--server_address=10.101.201.121:50052"
 			],
 			"externalConsole": false,
 			"stopAtEntry": false,
@@ -145,10 +146,11 @@
 					"description": "Enable pretty-printing for gdb",
 					"text": "-enable-pretty-printing",
 					"ignoreFailures": true
-				},
-				{
-					"text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
 				}
+				// ,
+				// {
+				// 	"text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
+				// }
 			]
 		}
 	]
