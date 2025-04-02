@@ -8,12 +8,12 @@ bazel build \
 	--define darwinn_portable=1 \
 	--define MEDIAPIPE_DISABLE_GPU=1 \
 	--define MEDIAPIPE_EDGE_TPU=pci \
-	--compilation_mode dbg \
-	--copt=-g \
 	--cpu=aarch64 \
 	--verbose_failures \
 	--jobs 10 \
 	mediapipe/examples/coral:hand_tracking_$VER
+	# --compilation_mode dbg \
+	# --copt=-g \
 	# --sandbox_debug \
 	# --define tflite_with_xnnpack=false \
 	# --cxxopt='-std=c++17' \
@@ -33,7 +33,7 @@ rsync -az --info=progress2 \
 # copy mediapipe execution graph to the target
 rsync -az --info=progress2 \
 	$HOME/mediapipe/mediapipe/graphs/hand_tracking/hand_tracking_tpu.pbtxt \
-	$TARGET:/home/mendel
+	$RHOME/mediapipe
 
 # Run executable on target
 ssh -n -f $TARGET \

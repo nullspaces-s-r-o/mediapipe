@@ -250,12 +250,12 @@ new_local_repository(
 new_local_repository(
     name = "linux_opencv_aarch64",
     build_file = "@//third_party:opencv_linux_aarch64.BUILD",
-    path = "/home/jiri/coral/stage",
+    path = "/home/jiri/rock/stage",
 )
 
 new_local_repository(
     name = "linux_realsense",
-    path = "/home/jiri/coral/stage",
+    path = "/home/jiri/rock/stage",
     build_file = "@//third_party:linux_realsense.BUILD",
 )
 

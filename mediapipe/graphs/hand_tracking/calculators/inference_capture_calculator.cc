@@ -75,10 +75,10 @@ class InferenceCaptureCalculator : public CalculatorBase {
 
   virtual absl::Status Process(CalculatorContext* cc) override {
     const auto& options = cc->Options<InferenceCaptureCalculatorOptions>();
-    std::string filePath = options.export_path() + "/" + timestamp();
+    // std::string filePath = options.export_path() + "/" + timestamp();
 
-    saveNetInput(cc, filePath);
-    saveNetOutput(cc, filePath);
+    // saveNetInput(cc, filePath);
+    // saveNetOutput(cc, filePath);
 
     return absl::OkStatus();
   }

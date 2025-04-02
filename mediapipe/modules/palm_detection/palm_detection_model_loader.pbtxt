@@ -34,7 +34,7 @@ node {
         options: {
           [mediapipe.ConstantSidePacketCalculatorOptions.ext]: {
             packet {
-              string_value: "mediapipe/modules/palm_detection/palm_detection_full.tflite"
+              string_value: "mediapipe/modules/palm_detection/model_full_integer_quant_edgetpu.tflite"
             }
           }
         }

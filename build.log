@@ -1,0 +1,56 @@
+Starting local Bazel server and connecting to it...
+Loading: 
+Loading: 0 packages loaded
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'com_google_absl' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'com_google_benchmark' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'flatbuffers' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'pybind11_bazel' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'com_googlesource_code_re2' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'com_google_protobuf' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'com_google_googletest' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'com_github_gflags_gflags' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'zlib' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'build_bazel_rules_apple' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'build_bazel_rules_swift' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'build_bazel_apple_support' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'xctestrunner' because it already exists.
+DEBUG: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/third_party/repo.bzl:132:14: 
+Warning: skipping import of repository 'pybind11' because it already exists.
+Loading: 0 packages loaded
+Analyzing: target //mediapipe/examples/coral:hand_tracking_tpu (1 packages loaded, 0 targets configured)
+Analyzing: target //mediapipe/examples/coral:hand_tracking_tpu (87 packages loaded, 592 targets configured)
+Analyzing: target //mediapipe/examples/coral:hand_tracking_tpu (163 packages loaded, 4973 targets configured)
+WARNING: /home/jiri/mediapipe/mediapipe/framework/tool/BUILD:185:24: in cc_library rule //mediapipe/framework/tool:field_data_cc_proto: target '//mediapipe/framework/tool:field_data_cc_proto' depends on deprecated target '@com_google_protobuf//:cc_wkt_protos': Only for backward compatibility. Do not use.
+WARNING: /home/jiri/mediapipe/mediapipe/framework/BUILD:54:24: in cc_library rule //mediapipe/framework:calculator_cc_proto: target '//mediapipe/framework:calculator_cc_proto' depends on deprecated target '@com_google_protobuf//:cc_wkt_protos': Only for backward compatibility. Do not use.
+WARNING: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/tensorflow/core/lib/gtl/BUILD:134:11: in linkstatic attribute of cc_library rule @org_tensorflow//tensorflow/core/lib/gtl:map_util: setting 'linkstatic=1' is recommended if there are no object files
+Analyzing: target //mediapipe/examples/coral:hand_tracking_tpu (206 packages loaded, 8904 targets configured)
+WARNING: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/tensorflow/core/BUILD:1304:11: in linkstatic attribute of cc_library rule @org_tensorflow//tensorflow/core:lib_internal: setting 'linkstatic=1' is recommended if there are no object files
+WARNING: /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/external/org_tensorflow/tensorflow/core/BUILD:1627:16: in linkstatic attribute of cc_library rule @org_tensorflow//tensorflow/core:framework_internal: setting 'linkstatic=1' is recommended if there are no object files. Since this rule was created by the macro 'tf_cuda_library', the error might have been caused by the macro implementation
+INFO: Analyzed target //mediapipe/examples/coral:hand_tracking_tpu (215 packages loaded, 10118 targets configured).
+
+INFO: Found 1 target...
+INFO: Deleting stale sandbox base /home/jiri/.cache/bazel/_bazel_jiri/6770ff771a6313e7bd1aea3ccb56e00c/sandbox
+[0 / 640] [Prepa] BazelWorkspaceStatusAction stable-status.txt
+[2,348 / 3,279] checking cached actions
+
+Bazel caught interrupt signal; shutting down.
+
+Target //mediapipe/examples/coral:hand_tracking_tpu failed to build
+ERROR: build interrupted
+INFO: Elapsed time: 11.540s, Critical Path: 0.52s
+INFO: 1 process: 1 internal.
+FAILED: Build did NOT complete successfully
+FAILED: Build did NOT complete successfully

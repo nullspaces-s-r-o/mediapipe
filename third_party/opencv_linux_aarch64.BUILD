@@ -39,8 +39,8 @@ cc_library(
         "-l:libopencv_video.so",
         "-l:libopencv_videoio.so",
         "-l:libz.so",
-        "-L/home/jiri/coral/stage/lib",
-        "-L/home/jiri/coral/stage/lib/aarch64-linux-gnu",
+        "-L/home/jiri/rock/stage/lib",
+        "-L/home/jiri/rock/stage/lib/aarch64-linux-gnu",
     ],
     visibility = ["//visibility:public"],
 )

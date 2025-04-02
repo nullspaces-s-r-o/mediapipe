@@ -17,7 +17,7 @@ ssh -Y $TARGET
 ./hand_tracking_tpu --calculator_graph_config_file hand_tracking_tpu.pbtxt
 
 
----
+# Known issues
 Known issuse
 
 - Issue "this rule is missing dependency declarations for the following files included by ..."

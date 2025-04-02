@@ -67,11 +67,16 @@ absl::Status RunMPPGraph() {
 
   rs2::config rs_config;
   rs_config.disable_all_streams();
-  rs_config.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1920, 1080,
+  rs_config.enable_stream(rs2_stream::RS2_STREAM_COLOR, 1280, 720,
                           rs2_format::RS2_FORMAT_RGB8);
 
   rs2::pipeline pipe;
-  pipe.start(rs_config);
+  try {
+    pipe.start(rs_config);
+  } catch (const rs2::error& e) {
+    LOG(ERROR) << e.what();
+  }
+
   auto color_sensor =
       pipe.get_active_profile().get_device().first<rs2::color_sensor>();
   color_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);

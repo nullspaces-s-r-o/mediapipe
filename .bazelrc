@@ -104,6 +104,7 @@ build:darwin_arm64 --cpu=darwin_arm64
 build:coral_config --crosstool_top=//toolchain:coral_suite
 build:coral_config --cpu=aarch64
 build:coral_config --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
+build:coral_config --copt=-Wno-float-overflow-conversion
 
 # build:coral_config --compilation_mode dbg
 
@@ -115,3 +116,16 @@ try-import %workspace%/.configure.bazelrc
 
 # This bazelrc file can be used for user-specific custom build settings.
 try-import %workspace%/.user.bazelrc
+
+#####################################################################
+# ROCK configs																											#
+#		- see nullspaces/bazel-examples/cpp-tutorial/stage4							#
+#		- https://bazel.build/tutorials/ccp-toolchain-config						#
+#####################################################################
+
+build:rock_config --crosstool_top=//toolchain:rock_suite
+build:rock_config --cpu=aarch64
+build:rock_config --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
+build:rock_config --copt=-Wno-float-overflow-conversion
+
+# Coral configs END

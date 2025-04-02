@@ -6,7 +6,7 @@ Pro kompilaci pro Coral
 
 `
 ABSL_DEFAULT_COPTS = select({
-    "//absl:msvc_compiler": ABSL_MSVC_FLAGS,
+    # "//absl:msvc_compiler": ABSL_MSVC_FLAGS,
     # "//absl:clang-cl_compiler": ABSL_CLANG_CL_FLAGS,
     # "//absl:clang_compiler": ABSL_LLVM_FLAGS,
     "//conditions:default": ABSL_GCC_FLAGS,

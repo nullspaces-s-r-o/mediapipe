@@ -120,7 +120,7 @@
 				//     "text": "source ${env:HOME}/buildsys/install/OpenImageDebugger/oid.py"
 				// }
 			],
-			"miDebuggerPath": "/usr/bin/gdb-multiarch",
+			"miDebuggerPath": "${env:HOME}/buildsys/install/gdb/bin/aarch64-linux-gnu-gdb",
 			"miDebuggerServerAddress": "${env:TARGETIP}:3000"
 		},
 		{

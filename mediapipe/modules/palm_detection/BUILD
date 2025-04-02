@@ -49,6 +49,7 @@ mediapipe_simple_subgraph(
     deps = [
         ":palm_detection_model_loader",
         "//mediapipe/calculators/tensor:image_to_tensor_calculator",
+        "//mediapipe/calculators/tensor:image_to_tflitetensor_calculator",
         "//mediapipe/calculators/tensor:inference_calculator",
         "//mediapipe/calculators/tensor:tensors_to_detections_calculator",
         "//mediapipe/calculators/tflite:ssd_anchors_calculator",
@@ -56,6 +57,12 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
         "//mediapipe/calculators/util:non_max_suppression_calculator",
         "//mediapipe/graphs/hand_tracking/calculators:inference_capture_calculator",
+        "//mediapipe/calculators/tflite:tflite_converter_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_classification_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_floats_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_landmarks_calculator",
+        "//mediapipe/calculators/tensorflow:tensor_to_image_frame_calculator",
+
     ],
 )
 

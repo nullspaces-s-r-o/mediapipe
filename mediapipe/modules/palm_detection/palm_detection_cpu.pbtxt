@@ -22,7 +22,7 @@ output_stream: "DETECTIONS:detections"
 node {
   calculator: "ImageToTensorCalculator"
   input_stream: "IMAGE:image"
-  output_stream: "TENSORS:input_tensor"
+  output_stream: "TENSORS:transformed_image"
   output_stream: "LETTERBOX_PADDING:letterbox_padding"
   options: {
     [mediapipe.ImageToTensorCalculatorOptions.ext] {
@@ -37,6 +37,32 @@ node {
     }
   }
 }
+
+node {
+  calculator: "TensorToImageFrameCalculator"
+  input_stream: "TENSORS:transformed_image"
+  output_stream: "IMAGE:image_frame"
+  options {
+    [mediapipe.TensorToImageFrameCalculatorOptions.ext] {
+      scale_factor: 1.0  # set to 255.0 for [0,1] -> [0,255] scaling
+    }
+  }
+}
+
+# Converts the transformed input image on CPU into an image tensor stored as a
+# TfLiteTensor.
+node {
+  calculator: "TfLiteConverterCalculator"
+  input_stream: "IMAGE:image_frame"
+  output_stream: "TENSORS:input_tensor"
+  options: {
+    [mediapipe.TfLiteConverterCalculatorOptions.ext] {
+      zero_center: false
+      use_quantized_tensors: true
+    }
+  }
+}
+
 # Generates a single side packet containing a TensorFlow Lite op resolver that
 # supports custom ops needed by the model used in this graph.
 node {
@@ -55,10 +81,10 @@ node {
 # vector of tensors representing, for instance, detection boxes/keypoints and
 # scores.
 node {
-  calculator: "InferenceCalculator"
+  calculator: "TfLiteInferenceCalculator"
   input_stream: "TENSORS:input_tensor"
   output_stream: "TENSORS:detection_tensors"
-  input_side_packet: "OP_RESOLVER:opresolver"
+  # input_side_packet: "OP_RESOLVER:opresolver"
   input_side_packet: "MODEL:model"
   options: {
     [mediapipe.InferenceCalculatorOptions.ext] {
