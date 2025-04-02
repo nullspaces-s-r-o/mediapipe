@@ -5,11 +5,11 @@ cc_library(
         "ImageProvider.h"
     ],
     includes = [
-        "/home/jiri/DigitalAssistant/headless-calibration/ImageProviders"
+        "/home/shared/DigitalAssistant/headless-calibration/ImageProviders"
     ],
     linkopts = [
         "-l:libimage_providers_lib.a",
-        "-L/home/jiri/DigitalAssistant/build/image-providers",
+        "-L/home/shared/DigitalAssistant/build/image-providers",
     ],
     visibility = ["//visibility:public"],
 )

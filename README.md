@@ -1,3 +1,7 @@
+# Libraries
+OpenCV 4.5.5 (4.5.3 is acceptable for now 01/2024)
+    
+
 
 wget https://github.com/bazelbuild/bazelisk/releases/download/v1.19.0/bazelisk-linux-amd64
 chmod +x bazelisk-linux-amd64
