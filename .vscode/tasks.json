@@ -6,19 +6,19 @@
     {
       "type": "shell",
       "label": "build hand_tracker",
-      "command": "bazel  --output_user_root=/home/radxa/ssd/bazel_cache build --compilation_mode=dbg --jobs=2  --action_env=PATH --define MEDIAPIPE_DISABLE_GPU=1 nullspaces:hand_runner",
+      "command": "bazel build --action_env=LD_LIBRARY_PATH=$HOME/gcc/install/lib64 --copt=-Wno-incompatible-pointer-types --compilation_mode=dbg --jobs=2  --define MEDIAPIPE_DISABLE_GPU=1 nullspaces:hand_runner",
       "problemMatcher": []
     },
     {
       "type": "shell",
       "label": "build hand_tracker explained",
-      "command": "bazel  --output_user_root=/home/radxa/ssd/bazel_cache build --compilation_mode=dbg --jobs=2  --action_env=PATH --define MEDIAPIPE_DISABLE_GPU=1 nullspaces:hand_runner --verbose_explanations --explain=explain.txt",
+      "command": "bazel  build --compilation_mode=dbg --jobs=8  --define MEDIAPIPE_DISABLE_GPU=1 nullspaces:hand_runner --verbose_explanations --explain=explain.txt",
       "problemMatcher": []
     },
     {
       "type": "shell",
       "label": "build hello world",
-      "command": "bazel --output_user_root=/home/radxa/ssd/bazel_cache  run --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/hello_world:hello_world",
+      "command": "bazel run --jobs=2 --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/hello_world:hello_world",
       "problemMatcher": []
     }
   ]
