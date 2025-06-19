@@ -1,0 +1,25 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "build hand_tracker",
+      "command": "bazel  --output_user_root=/home/radxa/ssd/bazel_cache build --compilation_mode=dbg --jobs=2  --action_env=PATH --define MEDIAPIPE_DISABLE_GPU=1 nullspaces:hand_runner",
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "build hand_tracker explained",
+      "command": "bazel  --output_user_root=/home/radxa/ssd/bazel_cache build --compilation_mode=dbg --jobs=2  --action_env=PATH --define MEDIAPIPE_DISABLE_GPU=1 nullspaces:hand_runner --verbose_explanations --explain=explain.txt",
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "build hello world",
+      "command": "bazel --output_user_root=/home/radxa/ssd/bazel_cache  run --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/hello_world:hello_world",
+      "problemMatcher": []
+    }
+  ]
+}

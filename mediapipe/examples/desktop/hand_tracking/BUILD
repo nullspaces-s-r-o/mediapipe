@@ -17,7 +17,8 @@ licenses(["notice"])
 package(default_visibility = ["//mediapipe/examples:__subpackages__"])
 
 # BUILD:
-# bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 \
+# bazel --output_user_root=/home/radxa/ssd/bazel_cache \
+#   build -c opt --jobs=4 --define MEDIAPIPE_DISABLE_GPU=1 \
 #   //mediapipe/examples/desktop/hand_tracking:hand_tracking_tflite
 # RUN:
 # bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_tflite \

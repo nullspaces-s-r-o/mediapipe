@@ -1,0 +1,18 @@
+# Custom BUILD file for MediaPipe Hand Landmarker
+## compile gcc-14, see contrib/download_prerequisits
+## compile binutils
+
+# Issue 1
+# bazel-out/k8-opt-exec-50AE0418/bin/external/com_google_protobuf/protoc: /lib/x86_64-linux-gnu/libstdc++.so.6: version `CXXABI_1.3.15' not found (required by bazel-out/k8-opt-exec-50AE0418/bin/external/com_google_protobuf/protoc)
+
+# Solution 1
+# add ~/buildsys/install/gcc-14/lib64/ to LD_LIBRARY_PATH
+
+cc_binary(
+    name = "hand_runner",
+    srcs = ["hand_runner.cc"],
+    deps = [
+        "//mediapipe/tasks/cc/vision/hand_landmarker",
+        # Add other dependencies as needed, e.g., absl, OpenCV, etc.
+    ],
+)

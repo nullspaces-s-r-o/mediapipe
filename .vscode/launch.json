@@ -1,0 +1,49 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+{
+      "name": "(gdb) Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bazel-bin/nullspaces/hand_runner",
+      "args": [],
+      // "preLaunchTask": "build hand_tracker",
+      "stopAtEntry": true,
+      "cwd": "${fileDirname}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        },
+        {
+          "description": "substition path",
+          "text": "set substitute-path /proc/self/cwd ${workspaceFolder}",
+        },
+        // {
+        //   "description": "pretty",
+        //   "text": "python import sys; sys.path.insert(0, '/home/jiri/buildsys/install/gcc/share/gcc-14.1.10/python')"
+        // },
+        // {
+        //   "description": "pretty",
+        //   "text": "source /home/jiri/buildsys/install/gcc-14/share/gcc-14.1.0/python/libstdcxx/v6/printers.py"
+        // },
+        // {
+        //   "text": "add-auto-load-safe-path /home/jiri/buildsys/install/gcc-14/lib64/libstdc++.so.6.0.33-gdb.py"
+        // }
+      ]
+    }
+    ]
+}
