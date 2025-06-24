@@ -44,6 +44,95 @@
           "text": "add-auto-load-safe-path /home/radxa/gcc/install/lib64/libstdc++.so.6.0.34-gdb.py"
         }
       ]
+    },
+    {
+      "name": "hand_tracking_tflite",
+      "type": "cppdbg",
+      "request": "launch",
+      "targetArchitecture": "arm64",
+      "program": "${workspaceFolder}/bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_cpu",
+      "args": [
+        "--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop_live.pbtxt",
+        "--input_video_path=/home/radxa/WIN_20250623_22_25_18_Pro.mp4",
+      ],
+      "preLaunchTask": "build hand_tracking_tflite",
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        },
+        {
+          "description": "substition path",
+          "text": "set substitute-path /proc/self/cwd ${workspaceFolder}",
+        },
+        {
+          "description": "pretty",
+          "text": "python import sys; sys.path.insert(0, '/home/radxa/gcc/install/share/gcc-15.1.0/python')"
+        },
+        {
+          "description": "pretty",
+          "text": "source /home/radxa/gcc/install/share/gcc-15.1.0/python/libstdcxx/v6/printers.py"
+        },
+        {
+          "text": "add-auto-load-safe-path /home/radxa/gcc/install/lib64/libstdc++.so.6.0.34-gdb.py"
+        }
+      ]
+    },
+    {
+      "name": "hand_tracking_cpu",
+      "type": "cppdbg",
+      "request": "launch",
+      "targetArchitecture": "arm64",
+      "program": "${workspaceFolder}/bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_cpu",
+      "args": [
+        "--calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_tracking_desktop.pbtxt",
+        "--input_video_path=/home/radxa/WIN_20250623_22_25_18_Pro.mp4",
+      ],
+      "preLaunchTask": "build hand_tracking_cpu",
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        },
+        {
+          "description": "substition path",
+          "text": "set substitute-path /proc/self/cwd ${workspaceFolder}",
+        },
+        {
+          "description": "pretty",
+          "text": "python import sys; sys.path.insert(0, '/home/radxa/gcc/install/share/gcc-15.1.0/python')"
+        },
+        {
+          "description": "pretty",
+          "text": "source /home/radxa/gcc/install/share/gcc-15.1.0/python/libstdcxx/v6/printers.py"
+        },
+        {
+          "text": "add-auto-load-safe-path /home/radxa/gcc/install/lib64/libstdc++.so.6.0.34-gdb.py"
+        }
+      ]
     }
+ 
   ]
 }

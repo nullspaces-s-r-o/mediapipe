@@ -6,7 +6,7 @@
     {
       "type": "shell",
       "label": "build hand_tracker",
-      "command": "bazel build --action_env=LD_LIBRARY_PATH=$HOME/gcc/install/lib64 --copt=-Wno-incompatible-pointer-types --compilation_mode=dbg --jobs=2  --define MEDIAPIPE_DISABLE_GPU=1 nullspaces:hand_runner",
+      "command": "bazel build --action_env=LD_LIBRARY_PATH=$HOME/gcc/install/lib64 --incompatible_strict_action_env --copt=-Wno-incompatible-pointer-types --compilation_mode=dbg --jobs=2  --define MEDIAPIPE_DISABLE_GPU=1 nullspaces:hand_runner",
       "problemMatcher": []
     },
     {
@@ -20,6 +20,38 @@
       "label": "build hello world",
       "command": "bazel run --jobs=2 --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/hello_world:hello_world",
       "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "build hand_tracking_tflite",
+      "command": "env -i TERM=xterm-256color SHELL=/bin/bash LANG=en_US.UTF-8 HOME=/home/radxa LD_LIBRARY_PATH=/home/radxa/gcc/install/lib64 PATH=/usr/local/bin:/usr/bin bazel build --compilation_mode=dbg --jobs=2  --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/hand_tracking:hand_tracking_cpu",
+      "problemMatcher": [],
+      "options": {
+        "env": {
+          "LD_LIBRARY_PATH": "$HOME/gcc/install/lib64",
+          "LANG": "en_US.UTF-8",
+          "PATH": "/usr/local/bin:/usr/bin:/bin"
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "label": "build hello_world with env",
+      "command": "env -i TERM=xterm-256color SHELL=/bin/bash LANG=en_US.UTF-8 HOME=/home/radxa LD_LIBRARY_PATH=/home/radxa/gcc/install/lib64 PATH=/usr/local/bin:/usr/bin:/bin:/home/radxa/gcc/install/bin bazel build --compilation_mode=dbg --jobs=6  --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/hello_world:hello_world",
+      "problemMatcher": [],
+      "options": {
+        "env": {
+          "LD_LIBRARY_PATH": "$HOME/gcc/install/lib64",
+          "LANG": "en_US.UTF-8",
+          "PATH": "/usr/local/bin:/usr/bin:/bin"
+        }
+      }
+    },
+    {
+      "type": "shell",
+      "label": "build hand_tracking_cpu",
+      "command": "bazel build --compilation_mode=dbg --jobs=1  --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/hand_tracking:hand_tracking_cpu",
+      "problemMatcher": [],
     }
   ]
 }
