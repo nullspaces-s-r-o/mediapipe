@@ -286,8 +286,8 @@ absl::Status TfLiteTensorsToDetectionsCalculator::ProcessCPU(
       input_tensors.size() == kNumInputTensorsWithAnchors) {
     // Postprocessing on CPU for model without postprocessing op. E.g. output
     // raw score tensor and box tensor. Anchor decoding will be handled below.
-    const TfLiteTensor* raw_box_tensor = &input_tensors[0];
-    const TfLiteTensor* raw_score_tensor = &input_tensors[1];
+    const TfLiteTensor* raw_box_tensor = &input_tensors[1];
+    const TfLiteTensor* raw_score_tensor = &input_tensors[0];
 
     // TODO: Add flexible input tensor size handling.
     ABSL_CHECK_EQ(raw_box_tensor->dims->size, 3);

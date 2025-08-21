@@ -20,9 +20,9 @@ output_stream: "DETECTIONS:detections"
 # Transforms an image into a 128x128 tensor while keeping the aspect ratio, and
 # therefore may result in potential letterboxing.
 node {
-  calculator: "ImageToTensorCalculator"
+  calculator: "ImageToImageCalculator"
   input_stream: "IMAGE:image"
-  output_stream: "TENSORS:input_tensor"
+  output_stream: "IMAGE:image_frame"
   output_stream: "LETTERBOX_PADDING:letterbox_padding"
   options: {
     [mediapipe.ImageToTensorCalculatorOptions.ext] {
@@ -39,30 +39,55 @@ node {
 }
 # Generates a single side packet containing a TensorFlow Lite op resolver that
 # supports custom ops needed by the model used in this graph.
-node {
-  calculator: "TfLiteCustomOpResolverCalculator"
-  output_side_packet: "OP_RESOLVER:opresolver"
-}
+# node {
+#   calculator: "TfLiteCustomOpResolverCalculator"
+#   output_side_packet: "OP_RESOLVER:opresolver"
+# }
 
 # Loads the palm detection TF Lite model.
-node {
-  calculator: "PalmDetectionModelLoader"
-  input_side_packet: "MODEL_COMPLEXITY:model_complexity"
-  output_side_packet: "MODEL:model"
-}
+# node {
+#   calculator: "PalmDetectionModelLoader"
+#   input_side_packet: "MODEL_COMPLEXITY:model_complexity"
+#   output_side_packet: "MODEL:model"
+# }
 
 # Runs a TensorFlow Lite model on CPU that takes an image tensor and outputs a
 # vector of tensors representing, for instance, detection boxes/keypoints and
 # scores.
+# node {
+#   calculator: "InferenceCalculator"
+#   input_stream: "TENSORS:input_tensor"
+#   output_stream: "TENSORS:detection_tensors"
+#   input_side_packet: "OP_RESOLVER:opresolver"
+#   input_side_packet: "MODEL:model"
+#   options: {
+#     [mediapipe.InferenceCalculatorOptions.ext] {
+#       delegate { xnnpack {} }
+#     }
+#   }
+# }
+
+# Converts the transformed input image on CPU into an image tensor stored as a
+# TfLiteTensor.
 node {
-  calculator: "InferenceCalculator"
-  input_stream: "TENSORS:input_tensor"
-  output_stream: "TENSORS:detection_tensors"
-  input_side_packet: "OP_RESOLVER:opresolver"
-  input_side_packet: "MODEL:model"
+  calculator: "TfLiteConverterCalculator"
+  input_stream: "IMAGE:image_frame"
+  output_stream: "TENSORS:image_tensor"
   options: {
-    [mediapipe.InferenceCalculatorOptions.ext] {
-      delegate { xnnpack {} }
+    [mediapipe.TfLiteConverterCalculatorOptions.ext] {
+      use_quantized_tensors: true # false when using non Edge TPU models
+    }
+  }
+}
+
+node {
+  calculator: "TfLiteInferenceCalculator"
+  input_stream: "TENSORS:image_tensor"
+  output_stream: "TENSORS:detection_tensors"
+  options: {
+    [mediapipe.TfLiteInferenceCalculatorOptions.ext] {
+      # model_path: "/home/radxa/hand_landmark_full.tflite"
+      model_path: "/home/radxa/palm_model_full_integer_quant_edgetpu.tflite"
     }
   }
 }
@@ -95,12 +120,12 @@ node {
 # the SSD anchors and the specification in the options, into a vector of
 # detections. Each detection describes a detected object.
 node {
-  calculator: "TensorsToDetectionsCalculator"
+  calculator: "TfLiteTensorsToDetectionsCalculator"
   input_stream: "TENSORS:detection_tensors"
   input_side_packet: "ANCHORS:anchors"
   output_stream: "DETECTIONS:unfiltered_detections"
   options: {
-    [mediapipe.TensorsToDetectionsCalculatorOptions.ext] {
+    [mediapipe.TfLiteTensorsToDetectionsCalculatorOptions.ext] {
       num_classes: 1
       num_boxes: 2016
       num_coords: 18

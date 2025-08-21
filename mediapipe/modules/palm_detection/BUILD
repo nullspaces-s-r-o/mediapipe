@@ -55,6 +55,12 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/tflite:tflite_custom_op_resolver_calculator",
         "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
         "//mediapipe/calculators/util:non_max_suppression_calculator",
+                "//mediapipe/calculators/tflite:tflite_converter_calculator",
+        "//mediapipe/calculators/tflite:tflite_inference_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_floats_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_classification_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_landmarks_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_detections_calculator"
     ],
 )
 
