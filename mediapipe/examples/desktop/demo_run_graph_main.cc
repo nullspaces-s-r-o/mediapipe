@@ -63,19 +63,25 @@ absl::Status RunMPPGraph() {
   if (load_video) {
     capture.open(absl::GetFlag(FLAGS_input_video_path));
   } else {
-    capture.open(0);
+    for(int i = 0; i < 7; i++){
+      capture.open(i+25); // /dev/video25 is Realsense D415 color on rock5b+ with Raspberr HQ camera DTOverlay enabled
+      if(capture.isOpened()){
+        LOG(INFO) << "Opened camera with index: " << i;
+        break;
+      }
+    } 
   }
   RET_CHECK(capture.isOpened());
 
   cv::VideoWriter writer;
   const bool save_video = !absl::GetFlag(FLAGS_output_video_path).empty();
   if (!save_video) {
-    cv::namedWindow(kWindowName, /*flags=WINDOW_AUTOSIZE*/ 1);
-#if (CV_MAJOR_VERSION >= 3) && (CV_MINOR_VERSION >= 2)
-    capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-    capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-    capture.set(cv::CAP_PROP_FPS, 30);
-#endif
+    // cv::namedWindow(kWindowName, /*flags=WINDOW_AUTOSIZE*/ 1);
+// #if (CV_MAJOR_VERSION >= 3) && (CV_MINOR_VERSION >= 2)
+//     capture.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+//     capture.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+//     capture.set(cv::CAP_PROP_FPS, 30);
+// #endif
   }
 
   ABSL_LOG(INFO) << "Start running the calculator graph.";

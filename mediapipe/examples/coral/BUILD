@@ -63,3 +63,22 @@ cc_binary(
         "//mediapipe/graphs/face_detection:desktop_live_calculators",
     ],
 )
+
+cc_binary(
+    name = "hand_tracking_tpu",
+    deps = [
+        "//mediapipe/calculators/tensor:image_to_image_calculator",
+        "//mediapipe/calculators/tflite:tflite_converter_calculator",
+        "//mediapipe/calculators/tflite:tflite_inference_calculator",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_detections_calculator",
+        "//mediapipe/calculators/util:detection_label_id_to_text_calculator",
+        "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
+        "//mediapipe/examples/coral:demo_run_graph_main",
+        "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators",
+        "//mediapipe/calculators/tflite:tflite_tensors_to_landmarks_calculator",  # ADD THIS
+        "//mediapipe/calculators/tflite:tflite_tensors_to_classification_calculator",  # ADD THIS
+        "//mediapipe/calculators/util:landmark_letterbox_removal_calculator",  # ADD THIS
+        "//mediapipe/calculators/util:landmarks_to_render_data_calculator",    # ADD THIS
+        "//mediapipe/calculators/util:rect_transformation_calculator",         # ADD THIS
+    ],
+)

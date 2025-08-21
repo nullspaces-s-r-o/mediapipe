@@ -1550,6 +1550,46 @@ cc_library(
 )
 
 cc_library(
+    name = "image_to_image_calculator",
+    srcs = ["image_to_image_calculator.cc"],
+    copts = select({
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
+    features = ["-layering_check"],  # allow depending on image_to_tensor_calculator_gpu_deps
+    deps = [
+        ":image_to_tensor_calculator",
+        ":image_to_tensor_calculator_cc_proto",
+        ":image_to_image_converter",
+        ":image_to_tensor_utils",
+        ":loose_headers",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework:memory_manager_service",
+        "//mediapipe/framework:port",
+        "//mediapipe/framework/api2:node",
+        "//mediapipe/framework/formats:image",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:rect_cc_proto",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:ret_check",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/framework/port:statusor",
+        "//mediapipe/gpu:gpu_origin_cc_proto",
+        "//mediapipe/gpu:gpu_origin_utils",
+        "//mediapipe/gpu/webgpu:webgpu_check",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/log:absl_log",
+    ] + select({
+        "//mediapipe/framework/port:disable_opencv": [],
+        "//conditions:default": [":image_to_image_converter_opencv"],
+    }),
+    alwayslink = 1,
+)
+
+cc_library(
     name = "image_to_tensor_calculator_gpu_deps",
     visibility = ["//visibility:private"],
     deps = selects.with_or({
@@ -1830,6 +1870,52 @@ cc_library(
         ],
         "//conditions:default": [],
     }),
+)
+
+cc_library(
+    name = "image_to_image_converter",
+    hdrs = ["image_to_image_converter.h"],
+    copts = select({
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":image_to_tensor_utils",
+        "//mediapipe/framework/formats:image",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:statusor",
+    ],
+)
+
+cc_library(
+    name = "image_to_image_converter_opencv",
+    srcs = ["image_to_image_converter_opencv.cc"],
+    hdrs = ["image_to_image_converter_opencv.h"],
+    copts = select({
+        "//mediapipe:apple": [
+            "-x objective-c++",
+            "-fobjc-arc",  # enable reference-counting
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":image_to_image_converter",
+        ":image_to_tensor_utils",
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:image",
+        "//mediapipe/framework/formats:image_format_cc_proto",
+        "//mediapipe/framework/formats:image_opencv",
+        "//mediapipe/framework/formats:tensor",
+        "//mediapipe/framework/port:opencv_core",
+        "//mediapipe/framework/port:opencv_imgproc",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/framework/port:statusor",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+    ],
 )
 
 cc_library(
