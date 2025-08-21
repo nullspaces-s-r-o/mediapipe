@@ -67,6 +67,7 @@ cc_binary(
 cc_binary(
     name = "hand_tracking_tpu",
     deps = [
+        "//mediapipe/calculators/tensor:tensors_dequantization_calculator",
         "//mediapipe/calculators/tensor:image_to_image_calculator",
         "//mediapipe/calculators/tflite:tflite_converter_calculator",
         "//mediapipe/calculators/tflite:tflite_inference_calculator",
