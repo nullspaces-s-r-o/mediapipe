@@ -141,6 +141,16 @@ struct GPUData {
 }  // namespace
 #endif  // MEDIAPIPE_TFLITE_GPU_SUPPORTED
 
+struct TfLiteTensorDeleter {
+  void operator()(TfLiteTensor* tensor) const {
+    if (tensor) {
+      TfLiteIntArrayFree(tensor->dims);
+      free(tensor->data.raw);
+      delete tensor;
+    }
+  }
+};
+
 namespace {
 
 int GetXnnpackDefaultNumThreads() {
@@ -167,6 +177,8 @@ int GetXnnpackNumThreads(
   }
   return GetXnnpackDefaultNumThreads();
 }
+
+
 
 }  // namespace
 
@@ -277,6 +289,10 @@ class TfLiteInferenceCalculator : public CalculatorBase {
   Packet model_packet_;
   TfLiteDelegatePtr delegate_;
   std::unique_ptr<tflite::Interpreter> interpreter_;
+
+
+
+  std::vector<std::unique_ptr<TfLiteTensor, TfLiteTensorDeleter>> dequantized_output_tensors_;
 
 #if MEDIAPIPE_TFLITE_GL_INFERENCE
   mediapipe::GlCalculatorHelper gpu_helper_;
@@ -652,12 +668,12 @@ static absl::StatusOr<int> GetSizeOfType(TfLiteType type) {
 static auto CreateTfLiteTensor(TfLiteType type,
                                const std::vector<int>& dimensions, float scale,
                                float zero_point) {
-  auto dealloc = [](TfLiteTensor* tensor) {
-    TfLiteIntArrayFree(tensor->dims);
-    delete (tensor);
-  };
-  std::unique_ptr<TfLiteTensor, decltype(dealloc)> tflite_tensor(
-      new TfLiteTensor, dealloc);
+  // auto dealloc = [](TfLiteTensor* tensor) {
+  //   TfLiteIntArrayFree(tensor->dims);
+  //   delete (tensor);
+  // };
+  std::unique_ptr<TfLiteTensor, TfLiteTensorDeleter> tflite_tensor(
+      new TfLiteTensor);
   tflite_tensor->type = type;
   tflite_tensor->allocation_type = kTfLiteDynamic;
   tflite_tensor->quantization.type = kTfLiteNoQuantization;
@@ -684,19 +700,27 @@ absl::Status TfLiteInferenceCalculator::ProcessOutputsCpu(
     std::unique_ptr<std::vector<TfLiteTensor>> output_tensors_cpu) {
   // Output result tensors (CPU).
   const auto& tensor_indexes = interpreter_->outputs();
+
   for (int i = 0; i < tensor_indexes.size(); ++i) {
     TfLiteTensor* tensor = interpreter_->tensor(tensor_indexes[i]);
 
     if(tensor->quantization.type == kTfLiteAffineQuantization){
 
-      std::vector<int> dims;
-      for (int d = 0; d < tensor->dims->size; ++d) {
-        dims.push_back(tensor->dims->data[d]);
+      if(dequantized_output_tensors_.size() <= i){
+        std::vector<int> dims;
+        for (int d = 0; d < tensor->dims->size; ++d) {
+          dims.push_back(tensor->dims->data[d]);
+        }
+        
+        auto tflite_tensor =
+        CreateTfLiteTensor(TfLiteType::kTfLiteInt32, dims, /*scale=*/1.0f,
+          /*zero_point=*/0.0f);
+
+        dequantized_output_tensors_.emplace_back(std::move(tflite_tensor));
       }
 
-      auto tflite_tensor =
-        CreateTfLiteTensor(TfLiteType::kTfLiteInt32, dims, /*scale=*/1.0f,
-                          /*zero_point=*/0.0f);
+      auto& tflite_tensor = dequantized_output_tensors_[i];
+
       TfLiteAffineQuantization* quant_params = (TfLiteAffineQuantization*)tensor->quantization.params;
 
       unsigned char* src = tensor->data.uint8;
@@ -710,7 +734,7 @@ absl::Status TfLiteInferenceCalculator::ProcessOutputsCpu(
       for (int i = 0; i < num_elements; ++i) {
           dst[i] = scale * (static_cast<int>(src[i]) - zero_point);
       }
-      output_tensors_cpu->emplace_back(*tflite_tensor.release());
+      output_tensors_cpu->emplace_back(*tflite_tensor.get());
     }else{
       output_tensors_cpu->emplace_back(*tensor);
     }
