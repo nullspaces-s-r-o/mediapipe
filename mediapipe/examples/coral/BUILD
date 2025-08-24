@@ -64,22 +64,89 @@ cc_binary(
     ],
 )
 
+# Build the shared library
+cc_binary(
+    name = "libhand_tracking_tpu_lib.so",
+    srcs = [
+        "hand_tracking_tpu_lib.cc", 
+        "hand_tracking_tpu_lib.h"
+    ],
+    deps = [
+        "//mediapipe/calculators/core:constant_side_packet_calculator",
+        "//mediapipe/calculators/core:constant_side_packet_calculator_cc_proto",
+        "//mediapipe/modules/hand_landmark:hand_landmark_tracking_cpu",
+        "//mediapipe/calculators/tensor:image_to_image_calculator",
+        # run_graph_main
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:file_helpers",
+        "//mediapipe/framework/port:opencv_highgui",
+        "//mediapipe/framework/port:opencv_imgproc",
+        "//mediapipe/framework/port:opencv_video",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/port:status",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/log:absl_log",
+
+        # hand renderer
+        "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_cpu",
+
+    ],
+    linkshared = True, # Build as .so, important
+    linkstatic = True, # Statically link dependencies
+)
+
+# Import the shared library
+cc_import(
+    name = "imported_hand_tracking_tpu_lib",
+    hdrs = ["hand_tracking_tpu_lib.h"],
+    shared_library = "libhand_tracking_tpu_lib.so",
+)
+
+# cc_binary(
+#     name = "hand_tracking_tpu_lib.so",
+#     srcs = [
+#         "hand_tracking_tpu_lib.cc",
+#     ],
+#     deps = [":hand_tracking_tpu_lib"],
+#     linkshared = True,
+#     linkstatic = True,  # <-- Statically link all deps into the .so
+#     visibility = ["//visibility:public"],
+#     copts = [
+#         "-DCOMPILING_HAND_TRACKING_TPU_LIB"
+#     ]
+# )
+
+cc_binary(
+    name = "hand_tracking_tpu_client",
+    srcs = ["hand_tracking_tpu_client.cc"],
+    deps = [
+        ":imported_hand_tracking_tpu_lib",
+        "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:opencv_highgui",
+        "//mediapipe/framework/port:opencv_imgproc",
+        "//mediapipe/framework/port:opencv_video",
+    ],
+    linkstatic = True
+)
+
 cc_binary(
     name = "hand_tracking_tpu",
     deps = [
-        "//mediapipe/calculators/tensor:tensors_dequantization_calculator",
-        "//mediapipe/calculators/tensor:image_to_image_calculator",
-        "//mediapipe/calculators/tflite:tflite_converter_calculator",
-        "//mediapipe/calculators/tflite:tflite_inference_calculator",
-        "//mediapipe/calculators/tflite:tflite_tensors_to_detections_calculator",
-        "//mediapipe/calculators/util:detection_label_id_to_text_calculator",
-        "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
+        ":hand_tracking_tpu_lib",
+        # "//mediapipe/calculators/core:constant_side_packet_calculator",
+        # "//mediapipe/calculators/core:constant_side_packet_calculator_cc_proto",
+        # "//mediapipe/modules/hand_landmark:hand_landmark_tracking_cpu",
+        # "//mediapipe/calculators/tensor:image_to_image_calculator",
+        
+        # app
+        "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_cpu",
         "//mediapipe/examples/coral:demo_run_graph_main",
-        "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators",
-        "//mediapipe/calculators/tflite:tflite_tensors_to_landmarks_calculator",  # ADD THIS
-        "//mediapipe/calculators/tflite:tflite_tensors_to_classification_calculator",  # ADD THIS
-        "//mediapipe/calculators/util:landmark_letterbox_removal_calculator",  # ADD THIS
-        "//mediapipe/calculators/util:landmarks_to_render_data_calculator",    # ADD THIS
-        "//mediapipe/calculators/util:rect_transformation_calculator",         # ADD THIS
+
+
+
     ],
+    # linkstatic = True # Dynamically link to hand_tracking_tpu_lib.so
 )

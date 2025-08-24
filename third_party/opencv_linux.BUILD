@@ -28,6 +28,7 @@ cc_library(
         "include/opencv4/",
     ],
     linkopts = [
+         "-L/home/radxa/buildsys/install/opencv/lib/",
         "-l:libopencv_core.so",
         "-l:libopencv_calib3d.so",
         "-l:libopencv_features2d.so",

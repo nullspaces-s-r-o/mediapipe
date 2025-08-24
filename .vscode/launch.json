@@ -160,6 +160,54 @@
         {
           "description": "substition path",
           "text": "set substitute-path /proc/self/cwd ${workspaceFolder}",
+        }
+        // ,
+        // {
+        //   "description": "Open Image Debugger",
+        //   "text": "source /home/radxa/buildsys/install/OpenImageDebugger/OpenImageDebugger/oid.py"
+        // }
+        // {
+        //   "description": "pretty",
+        //   "text": "python import sys; sys.path.insert(0, '/home/radxa/gcc/install/share/gcc-15.1.0/python')"
+        // },
+        // {
+        //   "description": "pretty",
+        //   "text": "source /home/radxa/gcc/install/share/gcc-15.1.0/python/libstdcxx/v6/printers.py"
+        // },
+        {
+          "text": "add-auto-load-safe-path /home/radxa/gcc/install/lib64/libstdc++.so.6.0.34-gdb.py"
+        }
+      ]
+    },
+    {
+      "name": "hand_tracking_tpu_client",
+      "type": "cppdbg",
+      "request": "launch",
+      "targetArchitecture": "arm64",
+      "program": "${workspaceFolder}/bazel-bin/mediapipe/examples/coral/hand_tracking_tpu_client",
+      "args": [
+        "mediapipe/examples/coral/graphs/hand_tracking_tpu.pbtxt",
+      ],
+      "preLaunchTask": "build hand_tracking_tpu_client",
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        },
+        {
+          "description": "substition path",
+          "text": "set substitute-path /proc/self/cwd ${workspaceFolder}",
         },
         {
           "description": "Open Image Debugger",
@@ -224,6 +272,5 @@
         // }
       ]
     }
- 
   ]
 }

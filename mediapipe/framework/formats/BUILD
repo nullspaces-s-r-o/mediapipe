@@ -259,6 +259,7 @@ cc_library(
         ":image_frame",
         "//mediapipe/framework/port:opencv_core",
     ],
+    linkstatic = True
 )
 
 config_setting(

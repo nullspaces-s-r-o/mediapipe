@@ -571,7 +571,7 @@ http_archive(
 new_local_repository(
     name = "linux_opencv",
     build_file = "@//third_party:opencv_linux.BUILD",
-    path = "/usr",
+    path = "/home/radxa/buildsys/install/opencv",
 )
 
 new_local_repository(
