@@ -87,9 +87,9 @@ extern "C"
         return 0;
     }
 
-    const cv::Mat &GetOutputFrame()
+    const cv::Mat GetOutputFrame()
     {
-        static cv::Mat output_frame_mat;
+        cv::Mat output_frame_mat;
 
         // Get the graph result packet, or stop if that fails.
         mediapipe::Packet packet;

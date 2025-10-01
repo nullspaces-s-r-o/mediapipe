@@ -46,5 +46,5 @@ extern "C"
     MY_LIB_PUBLIC int GraphInit(const char *config_file);
     MY_LIB_PUBLIC int GraphDestroy();
     MY_LIB_PUBLIC int GraphAcceptCameraFrame(const cv::Mat &camera_frame);
-    MY_LIB_PUBLIC const cv::Mat &GetOutputFrame();
+    MY_LIB_PUBLIC const cv::Mat GetOutputFrame();
 }
