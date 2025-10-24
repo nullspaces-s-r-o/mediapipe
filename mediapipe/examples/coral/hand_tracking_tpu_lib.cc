@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <glog/logging.h>
 
@@ -16,6 +15,7 @@
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/graph_output_stream.h" // poller
 #include "mediapipe/framework/output_stream_poller.h"
+#include <memory>
 
 #include "hand_tracking_tpu_lib.h"
 constexpr char kInputStream[] = "input_video";
@@ -31,45 +31,83 @@ ABSL_FLAG(std::string, output_video_path, "",
           "Full path of where to save result (.mp4 only). "
           "If not provided, show result in a window.");
 
-mediapipe::CalculatorGraph graph;
-mediapipe::OutputStreamPoller *ppoller = nullptr;
+mediapipe::CalculatorGraph *graph = nullptr;
+std::unique_ptr<mediapipe::OutputStreamPoller> ppoller;
+std::unique_ptr<mediapipe::OutputStreamPoller> landmarks_poller;
 
 extern "C"
 {
 
     int GraphInit(const char *config_file)
     {
+        if (graph != nullptr)
+        {
+            return -1;
+        }
+
         std::string calculator_graph_config_contents;
-        /*MP_RETURN_IF_ERROR*/ (mediapipe::file::GetContents(
-            config_file,
-            &calculator_graph_config_contents));
-        ABSL_LOG(INFO) << "Get calculator graph config contents: "
-                       << calculator_graph_config_contents;
+        (mediapipe::file::GetContents(config_file, &calculator_graph_config_contents));
         mediapipe::CalculatorGraphConfig config =
             mediapipe::ParseTextProtoOrDie<mediapipe::CalculatorGraphConfig>(
                 calculator_graph_config_contents);
 
-        ABSL_LOG(INFO) << "Initialize the calculator graph.";
-        absl::Status status = graph.Initialize(config);
+        graph = new mediapipe::CalculatorGraph();
+        absl::Status status = graph->Initialize(config);
         ABSL_LOG(INFO) << "Graph initialization status: " << status;
+        if (!status.ok())
+        {
+            delete graph;
+            graph = nullptr;
+            return -1;
+        }
 
-        graph.AddOutputStreamPoller(kOutputStream);
-        auto status_or_poller =
-            graph.AddOutputStreamPoller(kOutputStream);
-        // OutputStreamPoller poller = std::move(status_or_poller.value());
-        ppoller = new mediapipe::OutputStreamPoller(std::move(status_or_poller.value()));
+        // Require the output_video poller to exist — otherwise return error so you
+        // don't keep pushing frames into a graph with no consumer.
+        auto status_or_poller = graph->AddOutputStreamPoller(kOutputStream);
+        if (!status_or_poller.ok())
+        {
+            ABSL_LOG(ERROR) << "No output stream '" << kOutputStream << "' in graph: "
+                            << status_or_poller.status();
+            delete graph;
+            graph = nullptr;
+            return -1;
+        }
+        ppoller = std::make_unique<mediapipe::OutputStreamPoller>(std::move(status_or_poller.value()));
 
-        return graph.StartRun({}) == absl::OkStatus() ? 0 : -1;
+        // Also create a poller for the landmarks stream so those packets are consumed
+        // (prevents calculators from buffering results internally).
+        auto land_or_poller = graph->AddOutputStreamPoller("landmarks");
+        if (land_or_poller.ok())
+        {
+            landmarks_poller = std::make_unique<mediapipe::OutputStreamPoller>(std::move(land_or_poller.value()));
+        }
+        else
+        {
+            ABSL_LOG(INFO) << "No 'landmarks' output stream available: " << land_or_poller.status();
+            // not fatal — but if your graph produces landmarks you should poll them
+        }
+
+        return graph->StartRun({}) == absl::OkStatus() ? 0 : -1;
     }
 
     int GraphDestroy()
     {
-        graph.CloseInputStream(kInputStream);
-        return graph.WaitUntilDone() == absl::OkStatus() ? 0 : -1;
+        if (!graph)
+            return -1;
+        graph->CloseInputStream(kInputStream);
+        absl::Status status = graph->WaitUntilDone();
+        // Free resources
+        ppoller.reset();
+        delete graph;
+        graph = nullptr;
+        return status == absl::OkStatus() ? 0 : -1;
     }
 
     int GraphAcceptCameraFrame(const cv::Mat &camera_frame)
     {
+        if (!graph)
+            return -1;
+
         // Wrap Mat into an ImageFrame.
         auto input_frame = absl::make_unique<mediapipe::ImageFrame>(
             mediapipe::ImageFormat::SRGB, camera_frame.cols, camera_frame.rows,
@@ -80,9 +118,17 @@ extern "C"
         // Send image packet into the graph.
         size_t frame_timestamp_us =
             (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
-        /*MP_RETURN_IF_ERROR*/ (graph.AddPacketToInputStream(
-            kInputStream, mediapipe::Adopt(input_frame.release())
-                              .At(mediapipe::Timestamp(frame_timestamp_us))));
+
+        // Create a Packet that owns the released ImageFrame pointer. If AddPacketToInputStream
+        // fails, 'packet' will be destroyed and will free the ImageFrame — avoiding leaks.
+        mediapipe::Packet packet = mediapipe::Adopt(input_frame.release())
+                                       .At(mediapipe::Timestamp(frame_timestamp_us));
+        absl::Status add_status = graph->AddPacketToInputStream(kInputStream, std::move(packet));
+        if (!add_status.ok())
+        {
+            ABSL_LOG(WARNING) << "Failed to add packet to input stream: " << add_status;
+            return -1;
+        }
 
         return 0;
     }
@@ -98,8 +144,9 @@ extern "C"
             if (ppoller->Next(&packet))
             {
                 auto &output_frame = packet.Get<mediapipe::ImageFrame>();
-                output_frame_mat = mediapipe::formats::MatView(&output_frame);
-                cv::cvtColor(output_frame_mat, output_frame_mat, cv::COLOR_RGB2BGR);
+                // Clone so cv::Mat owns its memory independently of the packet/ImageFrame.
+                output_frame_mat = mediapipe::formats::MatView(&output_frame).clone();
+                // cv::cvtColor(output_frame_mat, output_frame_mat, cv::COLOR_RGB2BGR);
             }
         }
 

@@ -129,6 +129,9 @@ cc_binary(
         "//mediapipe/framework/port:opencv_imgproc",
         "//mediapipe/framework/port:opencv_video",
     ],
+    # linkopts = [
+    # "-L/home/radxa/buildsys/build/gperftools",  
+    # "-ltcmalloc"],
     linkstatic = True
 )
 

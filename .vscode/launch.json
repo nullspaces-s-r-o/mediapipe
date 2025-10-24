@@ -191,7 +191,20 @@
       "preLaunchTask": "build hand_tracking_tpu_client",
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "environment": [],
+      "environment": [
+        {
+          "name": "LD_LIBRARY_PATH",
+          "value": "/home/radxa/buildsys/build/gperftools:${env:LD_LIBRARY_PATH}"
+        },
+        // {
+        //   "name": "HEAPPROFILE",
+        //   "value": "/tmp/heapprof"
+        // },
+        // {
+        //   "name": "LD_PRELOAD",
+        //   "value": "/home/radxa/buildsys/build/gperftools/libtcmalloc.so"
+        // }
+      ],
       "externalConsole": false,
       "MIMode": "gdb",
       "setupCommands": [
@@ -209,10 +222,11 @@
           "description": "substition path",
           "text": "set substitute-path /proc/self/cwd ${workspaceFolder}",
         },
-        {
-          "description": "Open Image Debugger",
-          "text": "source /home/radxa/buildsys/install/OpenImageDebugger/OpenImageDebugger/oid.py"
-        }
+        // ,
+        // {
+        //   "description": "Open Image Debugger",
+        //   "text": "source /home/radxa/buildsys/install/OpenImageDebugger/OpenImageDebugger/oid.py"
+        // }
         // {
         //   "description": "pretty",
         //   "text": "python import sys; sys.path.insert(0, '/home/radxa/gcc/install/share/gcc-15.1.0/python')"

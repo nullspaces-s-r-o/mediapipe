@@ -79,6 +79,30 @@
 
 #include "hand_tracking_tpu_lib.h"
 
+#include <fstream>
+#include <string>
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
+
+size_t getCurrentRSS()
+{
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line))
+    {
+        if (line.substr(0, 6) == "VmRSS:")
+        {
+            std::istringstream iss(line);
+            std::string key, value, unit;
+            iss >> key >> value >> unit;
+            return std::stoul(value); // in kB
+        }
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     // google::InitGoogleLogging(argv[0]);
@@ -89,25 +113,31 @@ int main(int argc, char **argv)
 
     cv::Mat camera_frame(640, 480, CV_8UC3);
 
-    while (true)
+    int lastRSS = getCurrentRSS();
+    // for (int i = 0; i < 100; i++)
+    while (1)
     {
+        // cout << "Frame " << i << endl;
+
+        int currentRSS = getCurrentRSS();
+        cout << "Current RSS: " << currentRSS << " kB, Delta: " << currentRSS - lastRSS << " kB" << endl;
+        lastRSS = currentRSS;
         cap >> camera_frame;
-
-        cv::imshow("input_frame", camera_frame);
-        cv::waitKey(1);
-
         cv::cvtColor(camera_frame, camera_frame, cv::COLOR_BGR2RGB);
 
         GraphAcceptCameraFrame(camera_frame);
-        const cv::Mat &output_frame = GetOutputFrame();
+        const cv::Mat output_frame = GetOutputFrame();
 
+        cv::cvtColor(output_frame, output_frame, cv::COLOR_RGB2BGR);
+        cv::imshow("MediaPipe", output_frame);
+        // stringstream ss;
+        // ss << "/tmp/frame_" << std::setfill('0') << std::setw(4) << i << ".jpg";
+        // cv::imwrite(ss.str(), output_frame);
         if (output_frame.empty())
         {
             std::cout << "Output frame is empty." << std::endl;
             continue;
         }
-
-        cv::imshow("MediaPipe", output_frame);
         if (cv::waitKey(5) >= 0)
             break;
     }
