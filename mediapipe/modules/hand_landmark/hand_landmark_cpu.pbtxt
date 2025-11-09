@@ -202,7 +202,7 @@ node {
   options: {
     [mediapipe.TfLiteTensorsToClassificationCalculatorOptions.ext] {
       top_k: 1
-      label_map_path: "mediapipe/modules/hand_landmark/handedness.txt"
+      label_map_path: "handedness.txt"
       binary_classification: true
     }
   }
