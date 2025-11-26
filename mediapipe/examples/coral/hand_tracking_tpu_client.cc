@@ -107,9 +107,26 @@ int main(int argc, char **argv)
 {
     // google::InitGoogleLogging(argv[0]);
 
-    GraphInit(argv[1]);
+    // sudo apt install -y librga-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+    // /home/radxa/DigitalAssistant/dad_v2/third-party/compile_opencv.sh
+    cv::VideoCapture cap;
+    for (int i = 25; i <= 25; i++)
+    {
+        cap.open(i);
+        if (cap.isOpened())
+        {
+            cout << "Opened camera index " << i << endl;
+            break;
+        }
+    }
 
-    cv::VideoCapture cap(25);
+    if (!cap.isOpened())
+    {
+        cout << "Error opening video stream or file" << endl;
+        return -1;
+    }
+
+    GraphInit(argv[1]);
 
     cv::Mat camera_frame(640, 480, CV_8UC3);
 
@@ -128,8 +145,8 @@ int main(int argc, char **argv)
         GraphAcceptCameraFrame(camera_frame);
         const cv::Mat output_frame = GetOutputFrame();
 
-        cv::cvtColor(output_frame, output_frame, cv::COLOR_RGB2BGR);
-        cv::imshow("MediaPipe", output_frame);
+        // cv::cvtColor(output_frame, output_frame, cv::COLOR_RGB2BGR);
+        // cv::imshow("MediaPipe", output_frame);
         // stringstream ss;
         // ss << "/tmp/frame_" << std::setfill('0') << std::setw(4) << i << ".jpg";
         // cv::imwrite(ss.str(), output_frame);
@@ -138,8 +155,12 @@ int main(int argc, char **argv)
             std::cout << "Output frame is empty." << std::endl;
             continue;
         }
-        if (cv::waitKey(5) >= 0)
-            break;
+
+        std::vector<NormalizedLandmarkList> out_landmarks;
+        auto num_landmarks = GetLandmarks(out_landmarks);
+
+        // if (cv::waitKey(5) >= 0)
+        //     break;
     }
 
     GraphDestroy();

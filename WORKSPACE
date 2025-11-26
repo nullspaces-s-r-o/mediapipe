@@ -568,10 +568,18 @@ http_archive(
     urls = ["https://github.com/opencv/opencv/archive/3.4.11.tar.gz"],
 )
 
+# custom build of opencv
 new_local_repository(
     name = "linux_opencv",
     build_file = "@//third_party:opencv_linux.BUILD",
     path = "/home/radxa/buildsys/install/opencv",
+)
+
+# custom build of glog
+new_local_repository(
+    name = "linux_glog",
+    build_file = "@//third_party:glog_linux.BUILD",
+    path = "/home/radxa/buildsys/install/glog",
 )
 
 new_local_repository(

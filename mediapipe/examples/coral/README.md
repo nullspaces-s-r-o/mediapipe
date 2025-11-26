@@ -171,3 +171,7 @@ GLOG_logtostderr=1 ./face_detection_tpu --calculator_graph_config_file \
 GLOG_logtostderr=1 ./object_detection_tpu --calculator_graph_config_file \
     mediapipe/examples/coral/graphs/object_detection_desktop_live.pbtxt
 ```
+
+# Known issues
+## Failed to retrieve TPU context
+Check that compile options contain `--define MEDIAPIPE_EDGE_TPU=pci` for M.2 Coral and `--define MEDIAPIPE_EDGE_TPU=usb` for the Coral USB Accelerator

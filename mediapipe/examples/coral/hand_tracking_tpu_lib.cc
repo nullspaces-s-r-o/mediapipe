@@ -15,6 +15,7 @@
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/graph_output_stream.h" // poller
 #include "mediapipe/framework/output_stream_poller.h"
+#include "mediapipe/framework/formats/landmark.pb.h"
 #include <memory>
 
 #include "hand_tracking_tpu_lib.h"
@@ -42,6 +43,7 @@ extern "C"
     {
         if (graph != nullptr)
         {
+            LOG(ERROR) << "Graph already initialized";
             return -1;
         }
 
@@ -87,7 +89,11 @@ extern "C"
             // not fatal — but if your graph produces landmarks you should poll them
         }
 
-        return graph->StartRun({}) == absl::OkStatus() ? 0 : -1;
+        auto run_status = graph->StartRun({});
+
+        LOG(INFO) << "Graph run status: " << run_status;
+
+        return run_status == absl::OkStatus() ? 0 : -1;
     }
 
     int GraphDestroy()
@@ -152,6 +158,46 @@ extern "C"
 
         // Convert back to opencv for display or saving.
         return output_frame_mat;
+    }
+
+    // Example: Get landmarks as a vector of floats
+    int GetLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks)
+    {
+        out_landmarks.clear();
+
+        if (!landmarks_poller)
+            return -1;
+
+        // Only try to get a packet if one is available
+        if (landmarks_poller->QueueSize() > 0)
+        {
+            mediapipe::Packet packet;
+            if (landmarks_poller->Next(&packet))
+            {
+                // Adjust the type below to match your graph's output type.
+                auto out_landmarks_mp = packet.Get<std::vector<mediapipe::NormalizedLandmarkList>>();
+
+                for (const auto &landmark_list_mp : out_landmarks_mp)
+                {
+                    NormalizedLandmarkList landmark_list;
+                    for (int i = 0; i < landmark_list_mp.landmark_size(); ++i)
+                    {
+                        const auto &landmark_mp = landmark_list_mp.landmark(i);
+                        Landmark2 landmark;
+                        landmark.x = landmark_mp.x();
+                        landmark.y = landmark_mp.y();
+                        landmark.z = landmark_mp.z();
+                        landmark.visibility = landmark_mp.visibility();
+                        landmark.presence = landmark_mp.presence();
+                        landmark_list.landmark.push_back(landmark);
+                    }
+                    out_landmarks.push_back(landmark_list);
+                }
+
+                return out_landmarks_mp.size();
+            }
+        }
+        return -1;
     }
 
 } // extern "C"

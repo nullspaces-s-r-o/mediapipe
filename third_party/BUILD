@@ -36,6 +36,13 @@ mediapipe_files(srcs = [
     "libc++_shared.so",
 ])
 
+# # the library for rockp are build by nullspaces and stored in prebuilts
+# cc_library(
+#     name = "glog",
+#     visibility = ["//visibility:public"],
+#     deps = ["@linux_glog//:glog"],
+# )
+
 cc_library(
     name = "glog",
     visibility = ["//visibility:public"],

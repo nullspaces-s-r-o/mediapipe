@@ -196,6 +196,10 @@
           "name": "LD_LIBRARY_PATH",
           "value": "/home/radxa/buildsys/build/gperftools:${env:LD_LIBRARY_PATH}"
         },
+        {
+          "name": "OPENCV_VIDEOIO_DEBUG",
+          "value": "true"
+        }
         // {
         //   "name": "HEAPPROFILE",
         //   "value": "/tmp/heapprof"

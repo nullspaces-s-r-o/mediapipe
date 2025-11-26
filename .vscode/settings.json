@@ -83,6 +83,10 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "variant": "cpp",
-        "*.txx": "cpp"
+        "*.txx": "cpp",
+        "charconv": "cpp",
+        "coroutine": "cpp",
+        "source_location": "cpp",
+        "ranges": "cpp"
     }
 }

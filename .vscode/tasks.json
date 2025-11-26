@@ -71,7 +71,8 @@
           "LANG": "en_US.UTF-8",
           "PATH": "/usr/local/bin:/usr/bin:/bin"
         }
-      }
+      },
+      "runOptions": {}
     },
     {
       "type": "shell",
@@ -91,6 +92,42 @@
       "label": "build hand_tracking_cpu",
       "command": "bazel build --compilation_mode=dbg  --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/hand_tracking:hand_tracking_cpu",
       "problemMatcher": [],
+    },
+    {
+      "type": "shell",
+      "label": "build hand_tracking_tpu (select mode)",
+      // "command": "env -i CC=/usr/bin/gcc-11 CXX=/usr/bin/g++-11 TERM=xterm-256color SHELL=/bin/bash LANG=en_US.UTF-8 HOME=/home/radxa LD_LIBRARY_PATH=/home/radxa/gcc/install/lib64 PATH=/usr/local/bin:/usr/bin bazel build --compilation_mode=${input:buildMode} --jobs=8 --copt=-DLIBYUV_DISABLE_NEON --define MEDIAPIPE_DISABLE_GPU=1 --define MEDIAPIPE_EDGE_TPU=pci --linkopt=-l:libusb-1.0.so --define darwinn_portable=1 mediapipe/examples/coral:libhand_tracking_tpu_lib.so",
+      "command": "env -i TERM=xterm-256color SHELL=/bin/bash LANG=en_US.UTF-8 HOME=/home/radxa LD_LIBRARY_PATH=/home/radxa/buildsys/install/glog/lib PATH=/usr/local/bin:/usr/bin bazel build --compilation_mode=${input:buildMode} --jobs=6 --copt=-DLIBYUV_DISABLE_NEON --define MEDIAPIPE_DISABLE_GPU=1 --define MEDIAPIPE_EDGE_TPU=pci --linkopt=-l:libusb-1.0.so --define darwinn_portable=1 mediapipe/examples/coral:libhand_tracking_tpu_lib.so",
+      "problemMatcher": [],
+      "options": {
+        "env": {
+          "LD_LIBRARY_PATH": "$HOME/buildsys/install/glog/lib",
+          "LANG": "en_US.UTF-8",
+          "PATH": "/usr/local/bin:/usr/bin:/bin"
+        }
+      },
+      "runOptions": {
+        "reevaluateOnRerun": true
+      }
+    },
+    {
+      "type": "shell",
+      "label": "deploy:libhand_tracking_tpu_lib",
+      "command": "cp /home/radxa/mediapipe/bazel-out/aarch64-${input:buildMode}/bin/mediapipe/examples/coral/libhand_tracking_tpu_lib.so /home/radxa/stage/lib",
+      "dependsOn": "build hand_tracking_tpu (select mode)",
+      "problemMatcher": [],
+    }
+  ],
+  "inputs": [
+    {
+      "id": "buildMode",
+      "type": "pickString",
+      "description": "Select Bazel compilation_mode",
+      "options": [
+        "dbg",
+        "opt"
+      ],
+      "default": "dbg"
     }
   ]
 }
