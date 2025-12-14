@@ -20,6 +20,13 @@ input_side_packet: "MODEL_COMPLEXITY:model_complexity"
 # the absence of this packet so that they don't wait for it unnecessarily.
 output_stream: "LANDMARKS:hand_landmarks"
 
+# Extracts image size.
+node {
+  calculator: "ImagePropertiesCalculator"
+  input_stream: "IMAGE:image"
+  output_stream: "SIZE:image_size"
+}
+
 # Hand world landmarks within the given ROI. (LandmarkList)
 # World landmarks are real-world 3D coordinates in meters with the origin in the
 # center of the given ROI.
@@ -251,6 +258,7 @@ node {
   calculator: "LandmarkProjectionCalculator"
   input_stream: "NORM_LANDMARKS:scaled_landmarks"
   input_stream: "NORM_RECT:hand_rect"
+  input_stream: "IMAGE_DIMENSIONS:image_size"
   output_stream: "NORM_LANDMARKS:hand_landmarks"
 }
 
