@@ -49,6 +49,8 @@ extern "C"
     MY_LIB_PUBLIC int GraphAcceptCameraFrame(const cv::Mat &camera_frame);
     MY_LIB_PUBLIC const cv::Mat GetOutputFrame();
     MY_LIB_PUBLIC int GetLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks);
+    MY_LIB_PUBLIC int GetWorldLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks);
+    MY_LIB_PUBLIC int GetImageAndWorldLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks);
 }
 
 #endif // MEDIAPIPE_EXAMPLES_CORAL_HAND_TRACKING_TPU_LIB_H_

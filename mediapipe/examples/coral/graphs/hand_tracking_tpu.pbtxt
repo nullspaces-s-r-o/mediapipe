@@ -23,6 +23,7 @@ node {
   input_stream: "IMAGE:input_video"
   input_side_packet: "NUM_HANDS:num_hands"
   output_stream: "LANDMARKS:landmarks"
+  output_stream: "WORLD_LANDMARKS:hand_world_landmarks"
   output_stream: "HANDEDNESS:handedness"
   output_stream: "PALM_DETECTIONS:multi_palm_detections"
   output_stream: "HAND_ROIS_FROM_LANDMARKS:multi_hand_rects"

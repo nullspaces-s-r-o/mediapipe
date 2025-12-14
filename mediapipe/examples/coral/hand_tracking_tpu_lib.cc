@@ -35,6 +35,7 @@ ABSL_FLAG(std::string, output_video_path, "",
 mediapipe::CalculatorGraph *graph = nullptr;
 std::unique_ptr<mediapipe::OutputStreamPoller> ppoller;
 std::unique_ptr<mediapipe::OutputStreamPoller> landmarks_poller;
+std::unique_ptr<mediapipe::OutputStreamPoller> wlandmarks_poller;
 
 extern "C"
 {
@@ -89,6 +90,17 @@ extern "C"
             // not fatal — but if your graph produces landmarks you should poll them
         }
 
+        // World landmarks
+        auto wland_or_poller = graph->AddOutputStreamPoller("hand_world_landmarks");
+        if (wland_or_poller.ok())
+        {
+            wlandmarks_poller = std::make_unique<mediapipe::OutputStreamPoller>(std::move(wland_or_poller.value()));
+        }
+        else
+        {
+            ABSL_LOG(INFO) << "No 'world landmarks' output stream available: " << wland_or_poller.status();
+            // not fatal — but if your graph produces landmarks you should poll them
+        }
         auto run_status = graph->StartRun({});
 
         LOG(INFO) << "Graph run status: " << run_status;
@@ -161,7 +173,7 @@ extern "C"
     }
 
     // Example: Get landmarks as a vector of floats
-    int GetLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks)
+    MY_LIB_PUBLIC int GetLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks)
     {
         out_landmarks.clear();
 
@@ -198,6 +210,77 @@ extern "C"
             }
         }
         return -1;
+    }
+
+    MY_LIB_PUBLIC int GetWorldLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks)
+    {
+        out_landmarks.clear();
+
+        if (!wlandmarks_poller)
+            return -1;
+
+        // Only try to get a packet if one is available
+        if (wlandmarks_poller->QueueSize() > 0)
+        {
+            mediapipe::Packet packet;
+            if (wlandmarks_poller->Next(&packet))
+            {
+                // Adjust the type below to match your graph's output type.
+                auto out_landmarks_mp = packet.Get<std::vector<mediapipe::LandmarkList>>();
+
+                for (const auto &landmark_list_mp : out_landmarks_mp)
+                {
+                    NormalizedLandmarkList landmark_list;
+                    for (int i = 0; i < landmark_list_mp.landmark_size(); ++i)
+                    {
+                        const auto &landmark_mp = landmark_list_mp.landmark(i);
+                        Landmark2 landmark;
+                        landmark.x = landmark_mp.x();
+                        landmark.y = landmark_mp.y();
+                        landmark.z = landmark_mp.z();
+                        // landmark.visibility = landmark_mp.visibility();
+                        // landmark.presence = landmark_mp.presence();
+                        landmark_list.landmark.push_back(landmark);
+                    }
+                    out_landmarks.push_back(landmark_list);
+                }
+
+                return out_landmarks_mp.size();
+            }
+        }
+        return -1;
+    }
+
+    MY_LIB_PUBLIC int GetImageAndWorldLandmarks(std::vector<NormalizedLandmarkList> &landmarks)
+    {
+        int num_hands = GetLandmarks(landmarks);
+
+        std::vector<NormalizedLandmarkList> world_landmarks;
+        int num_world_landmarks = GetWorldLandmarks(world_landmarks);
+
+        // we get normalized 'landmarks' and 'world_landmarks' (in metres) from
+        // mediapipe separately here we merge them into a single structure for ease
+        // of use on the client side
+        for (int n_hand = 0; n_hand < num_hands; n_hand++)
+        {
+            landmarks[n_hand].world_landmark = world_landmarks[n_hand].landmark;
+            // landmarks[n_hand].world_landmark.resize(
+            //     world_landmarks[n_hand].landmark.size());
+            // for (int n_landmark = 0; n_landmark < landmarks[n_hand].landmark.size();
+            //      n_landmark++)
+            // {
+            //     Landmark2 &image_lm = landmarks[n_hand].landmark[n_landmark];
+            //     Landmark2 &world_lm = landmarks[n_hand].world_landmark[n_landmark];
+            //     Landmark2 &source_world_lm =
+            //         world_landmarks[n_hand].landmark[n_landmark];
+
+            //     world_lm.x = source_world_lm.x;
+            //     world_lm.y = source_world_lm.y;
+            //     world_lm.z = source_world_lm.z;
+            // }
+        }
+
+        return num_hands;
     }
 
 } // extern "C"
