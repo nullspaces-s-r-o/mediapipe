@@ -142,7 +142,7 @@ node {
   options: {
     [mediapipe.TfLiteInferenceCalculatorOptions.ext] {
       # model_path: "/home/radxa/hand_landmark_full.tflite"
-      model_path: "/home/radxa/model_full_integer_quant_edgetpu.tflite"
+      model_path: "/opt/landmark_model_full_integer_quant_edgetpu.tflite"
     }
   }
 }
