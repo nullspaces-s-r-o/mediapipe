@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Where X is configured in ~/.ssh/config as the Coral device
+# Host X
+#     HostName 192.168.0.249
+#     User mendel
+
 # Run this script from the mediapipe root directory
 bazel build \
     --config=dad_config \
@@ -61,3 +66,19 @@ rsync -azL \
     --info=progress2 \
     $HOME/coral2/x-tool-build/aarch64-linux-gnu/aarch64-linux-gnu/lib64/*.so* \
     X:/home/mendel/mediapipe
+
+# Installation package as zip file
+zip -j \
+    mediapipe_coral_hand_tracking_tpu_client_package.zip \
+    bazel-bin/mediapipe/examples/coral/hand_tracking_tpu_client \
+    bazel-bin/mediapipe/examples/coral/libhand_tracking_tpu_lib.so \
+    mediapipe/examples/coral/graphs/hand_tracking_tpu.pbtxt \
+    mediapipe/modules/hand_landmark/handedness.txt \
+    $HOME/coral/buildsys/install/opencv/lib/*.so* \
+    $HOME/coral2/x-tool-build/aarch64-linux-gnu/aarch64-linux-gnu/lib64/*.so* \
+    mediapipe/examples/coral/landmark_model_full_integer_quant_edgetpu.tflite \
+    mediapipe/examples/coral/palm_model_full_integer_quant_edgetpu.tflite
+
+scp mediapipe_coral_hand_tracking_tpu_client_package.zip X:/home/mendel/mediapipe/
+
+

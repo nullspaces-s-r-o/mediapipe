@@ -135,12 +135,26 @@ void InitVideoFile(cv::VideoCapture &cap, const string &video_file)
     }
 }
 
+void print_help()
+{
+    cout << "Usage: " << endl;
+    cout << "  hand_tracking_tpu_client <graph_config_file> [video_file]" << endl;
+    cout << "If video_file is not provided, the camera will be used." << endl;
+}
+
 int main(int argc, char **argv)
 {
     // google::InitGoogleLogging(argv[0]);
 
     // sudo apt install -y librga-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
     // /home/radxa/DigitalAssistant/dad_v2/third-party/compile_opencv.sh
+
+    // When run without arguments, or -h or --help, print usage
+    if (argc < 2 || std::string(argv[1]) == "-h" || std::string(argv[1]) == "--help")
+    {
+        print_help();
+        return -1;
+    }
 
     cv::VideoCapture cap;
     if (argc < 3)
