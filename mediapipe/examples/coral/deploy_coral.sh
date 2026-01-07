@@ -26,8 +26,8 @@ chmod a+w bazel-bin/mediapipe/examples/coral/libhand_tracking_tpu_lib.so
 #     mediapipe/modules/hand_landmark/handedness.txt \
 #     X:/home/mendel/mediapipe
 scp \
-    bazel-out/aarch64-dbg/bin/mediapipe/examples/coral/hand_tracking_tpu_client \
-    bazel-out/aarch64-dbg/bin/mediapipe/examples/coral/libhand_tracking_tpu_lib.so \
+    bazel-bin/mediapipe/examples/coral/hand_tracking_tpu_client \
+    bazel-bin/mediapipe/examples/coral/libhand_tracking_tpu_lib.so \
     mediapipe/examples/coral/graphs/hand_tracking_tpu.pbtxt \
     mediapipe/modules/hand_landmark/handedness.txt \
     X:/home/mendel/mediapipe
