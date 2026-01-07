@@ -97,7 +97,7 @@
       "type": "shell",
       "label": "build hand_tracking_tpu (select mode)",
       // "command": "env -i CC=/usr/bin/gcc-11 CXX=/usr/bin/g++-11 TERM=xterm-256color SHELL=/bin/bash LANG=en_US.UTF-8 HOME=/home/radxa LD_LIBRARY_PATH=/home/radxa/gcc/install/lib64 PATH=/usr/local/bin:/usr/bin bazel build --compilation_mode=${input:buildMode} --jobs=8 --copt=-DLIBYUV_DISABLE_NEON --define MEDIAPIPE_DISABLE_GPU=1 --define MEDIAPIPE_EDGE_TPU=pci --linkopt=-l:libusb-1.0.so --define darwinn_portable=1 mediapipe/examples/coral:libhand_tracking_tpu_lib.so",
-      "command": "env -i TERM=xterm-256color SHELL=/bin/bash LANG=en_US.UTF-8 HOME=/home/radxa LD_LIBRARY_PATH=/home/radxa/buildsys/install/glog/lib PATH=/usr/local/bin:/usr/bin bazel build --compilation_mode=${input:buildMode} --jobs=6 --copt=-DLIBYUV_DISABLE_NEON --define MEDIAPIPE_DISABLE_GPU=1 --define MEDIAPIPE_EDGE_TPU=pci --linkopt=-l:libusb-1.0.so --define darwinn_portable=1 mediapipe/examples/coral:libhand_tracking_tpu_lib.so",
+      "command": "env -i TERM=xterm-256color SHELL=/bin/bash LANG=en_US.UTF-8 HOME=/home/radxa LD_LIBRARY_PATH=/home/jiri/coral/buildsys/install/glog/lib PATH=/usr/local/bin:/usr/bin bazel build --compilation_mode=${input:buildMode} --jobs=6 --copt=-DLIBYUV_DISABLE_NEON --define MEDIAPIPE_DISABLE_GPU=1 --define MEDIAPIPE_EDGE_TPU=pci --linkopt=-l:libusb-1.0.so --define darwinn_portable=1 mediapipe/examples/coral:libhand_tracking_tpu_lib.so",
       "problemMatcher": [],
       "options": {
         "env": {

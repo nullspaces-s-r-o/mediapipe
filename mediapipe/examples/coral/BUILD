@@ -130,7 +130,7 @@ cc_binary(
         "//mediapipe/framework/port:opencv_video",
     ],
     # linkopts = [
-    # "-L/home/radxa/buildsys/build/gperftools",  
+    # "-L/home/jiri/coral/buildsys/build/gperftools",  
     # "-ltcmalloc"],
     linkstatic = True
 )
@@ -138,7 +138,7 @@ cc_binary(
 cc_binary(
     name = "hand_tracking_tpu",
     deps = [
-        ":hand_tracking_tpu_lib",
+        ":imported_hand_tracking_tpu_lib",
         # "//mediapipe/calculators/core:constant_side_packet_calculator",
         # "//mediapipe/calculators/core:constant_side_packet_calculator_cc_proto",
         # "//mediapipe/modules/hand_landmark:hand_landmark_tracking_cpu",
@@ -153,3 +153,14 @@ cc_binary(
     ],
     # linkstatic = True # Dynamically link to hand_tracking_tpu_lib.so
 )
+
+# bazel build 
+#     --config=dad_config 
+#     --cpu=aarch64 
+#     --compiler=coral-gcc 
+#     --copt=-DLIBYUV_DISABLE_NEON 
+#     --define MEDIAPIPE_DISABLE_GPU=1 
+#     --define MEDIAPIPE_EDGE_TPU=pci 
+#     --linkopt=-l:libusb-1.0.so 
+#     --define darwinn_portable=1 
+#     mediapipe/examples/coral:hand_tracking_tpu

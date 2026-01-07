@@ -83,6 +83,7 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <opencv2/core/utils/logger.hpp>
 
 using namespace std;
 
@@ -103,14 +104,9 @@ size_t getCurrentRSS()
     return 0;
 }
 
-int main(int argc, char **argv)
+void InitCamera(cv::VideoCapture &cap)
 {
-    // google::InitGoogleLogging(argv[0]);
-
-    // sudo apt install -y librga-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-    // /home/radxa/DigitalAssistant/dad_v2/third-party/compile_opencv.sh
-    cv::VideoCapture cap;
-    for (int i = 25; i <= 25; i++)
+    for (int i = 0; i <= 25; i++)
     {
         cap.open(i);
         if (cap.isOpened())
@@ -123,7 +119,38 @@ int main(int argc, char **argv)
     if (!cap.isOpened())
     {
         cout << "Error opening video stream or file" << endl;
-        return -1;
+        exit(-1);
+    }
+}
+
+void InitVideoFile(cv::VideoCapture &cap, const string &video_file)
+{
+    // cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_DEBUG);
+
+    cap.open(video_file);
+    if (!cap.isOpened())
+    {
+        cout << "Error opening video file: " << video_file << endl;
+        exit(-1);
+    }
+}
+
+int main(int argc, char **argv)
+{
+    // google::InitGoogleLogging(argv[0]);
+
+    // sudo apt install -y librga-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+    // /home/radxa/DigitalAssistant/dad_v2/third-party/compile_opencv.sh
+
+    cv::VideoCapture cap;
+    if (argc < 3)
+    {
+        InitCamera(cap);
+    }
+    else
+    {
+        cout << "Opening video file: " << argv[2] << endl;
+        InitVideoFile(cap, argv[2]);
     }
 
     GraphInit(argv[1]);
@@ -140,6 +167,14 @@ int main(int argc, char **argv)
         cout << "Current RSS: " << currentRSS << " kB, Delta: " << currentRSS - lastRSS << " kB" << endl;
         lastRSS = currentRSS;
         cap >> camera_frame;
+
+        if (camera_frame.empty())
+        {
+            cout << "End of video stream" << endl;
+            break;
+        }
+
+        cv::resize(camera_frame, camera_frame, cv::Size(640, 480));
         cv::cvtColor(camera_frame, camera_frame, cv::COLOR_BGR2RGB);
 
         GraphAcceptCameraFrame(camera_frame);
@@ -152,12 +187,15 @@ int main(int argc, char **argv)
         // cv::imwrite(ss.str(), output_frame);
         if (output_frame.empty())
         {
-            std::cout << "Output frame is empty." << std::endl;
+            std::cout << "Output frame is empty. Press any key to continue." << std::endl;
+            cv::waitKey(0);
             continue;
         }
 
         std::vector<NormalizedLandmarkList> out_landmarks;
         auto num_landmarks = GetLandmarks(out_landmarks);
+
+        cout << "Number of hands: " << num_landmarks << endl;
 
         // if (cv::waitKey(5) >= 0)
         //     break;

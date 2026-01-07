@@ -14,7 +14,7 @@ exports_files(["LICENSE"])
 cc_library(
     name = "opencv",
     copts = [
-        "-I/home/radxa/buildsys/stage/include/opencv4",
+        "-I/home/jiri/coral/buildsys/stage/include/opencv4",
     ],
     linkopts = [
         "-L/home/radxa/stage/lib/",

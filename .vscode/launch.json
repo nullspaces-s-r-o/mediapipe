@@ -164,7 +164,7 @@
         // ,
         // {
         //   "description": "Open Image Debugger",
-        //   "text": "source /home/radxa/buildsys/install/OpenImageDebugger/OpenImageDebugger/oid.py"
+        //   "text": "source /home/jiri/coral/buildsys/install/OpenImageDebugger/OpenImageDebugger/oid.py"
         // }
         // {
         //   "description": "pretty",
@@ -194,7 +194,7 @@
       "environment": [
         {
           "name": "LD_LIBRARY_PATH",
-          "value": "/home/radxa/buildsys/build/gperftools:${env:LD_LIBRARY_PATH}"
+          "value": "/home/jiri/coral/buildsys/build/gperftools:${env:LD_LIBRARY_PATH}"
         },
         {
           "name": "OPENCV_VIDEOIO_DEBUG",
@@ -206,7 +206,7 @@
         // },
         // {
         //   "name": "LD_PRELOAD",
-        //   "value": "/home/radxa/buildsys/build/gperftools/libtcmalloc.so"
+        //   "value": "/home/jiri/coral/buildsys/build/gperftools/libtcmalloc.so"
         // }
       ],
       "externalConsole": false,
@@ -229,7 +229,7 @@
         // ,
         // {
         //   "description": "Open Image Debugger",
-        //   "text": "source /home/radxa/buildsys/install/OpenImageDebugger/OpenImageDebugger/oid.py"
+        //   "text": "source /home/jiri/coral/buildsys/install/OpenImageDebugger/OpenImageDebugger/oid.py"
         // }
         // {
         //   "description": "pretty",
@@ -287,6 +287,44 @@
         // },
         // {
         //   "text": "add-auto-load-safe-path /home/radxa/gcc/install/lib64/libstdc++.so.6.0.34-gdb.py"
+        // }
+      ]
+    },
+    {
+      "name": "remote:hand_tracking_tpu_client",
+      "type": "cppdbg",
+      "request": "launch",
+      "targetArchitecture": "arm64",
+      "program": "${env:HOME}/mediapipe/bazel-bin/mediapipe/examples/coral/hand_tracking_tpu_client",
+      "stopAtEntry": true,
+      "cwd": "${env:HOME}/mediapipe",
+      "logging": {
+        "trace": true,
+        "engineLogging": true,
+        "moduleLoad": true,
+        "programOutput": true
+      },
+      "MIMode": "gdb",
+      "miDebuggerPath": "${env:HOME}/coral2/x-tools/build/aarch64-linux-gnu/build/build-gdb-cross/gdb/gdb",
+      "miDebuggerServerAddress": "192.168.0.249:3000",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "sharedlibrary symbols search path",
+          "text": "set solib-search-path /home/jiri/mediapipe/bazel-bin/mediapipe/examples/coral:/home/jiri/coral/buildsys/install/opencv/lib",
+        },
+        {
+          "description": "sysroot",
+          "text": "set sysroot /"
+        }
+        // ,
+        // {
+        //   "description": "Open Image Debugger",
+        //   "text": "source /home/jiri/buildsys/install/OpenImageDebugger/OpenImageDebugger/oid.py"
         // }
       ]
     }

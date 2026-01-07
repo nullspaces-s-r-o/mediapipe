@@ -89,7 +89,7 @@ install --user six`.
     new_local_repository(
       name = "linux_opencv",
       build_file = "@//third_party:opencv_linux.BUILD",
-      path = "/home/radxa/buildsys/install/opencv",
+      path = "/home/jiri/coral/buildsys/install/opencv",
     )
 
     # opencv_linux.BUILD for OpenCV 2/3 installed from Debian package

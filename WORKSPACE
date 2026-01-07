@@ -572,14 +572,14 @@ http_archive(
 new_local_repository(
     name = "linux_opencv",
     build_file = "@//third_party:opencv_linux.BUILD",
-    path = "/home/radxa/buildsys/install/opencv",
+    path = "/home/jiri/coral/buildsys/install/opencv",
 )
 
 # custom build of glog
 new_local_repository(
     name = "linux_glog",
     build_file = "@//third_party:glog_linux.BUILD",
-    path = "/home/radxa/buildsys/install/glog",
+    path = "/home/jiri/coral/buildsys/install/glog",
 )
 
 new_local_repository(
