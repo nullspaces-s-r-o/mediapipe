@@ -113,3 +113,28 @@ try-import %workspace%/.configure.bazelrc
 
 # This bazelrc file can be used for user-specific custom build settings.
 try-import %workspace%/.user.bazelrc
+
+###############
+## nullspaces # BEGIN
+############### 
+# Use our custom-configured c++ toolchain.
+build:dad_config --crosstool_top=//nullspaces/toolchain:dad_suite
+
+# Use --cpu as a differentiator.
+build:dad_config --cpu=aarch64
+build:dad_config --define=xnn_enable_avx512amx=false
+build:dad_config --define=xnn_enable_arm_bf16=false
+build:dad_config --define=xnn_enable_arm_sve2=false
+build:dad_config --define=xnn_enable_arm_i8mm=false
+build:dad_config --define=xnn_enable_arm_fp16_vector=false
+build:dad_config --define=xnn_enable_arm_dotprod=false
+build:dad_config --copt="-march=armv8-a"
+build:dad_config --copt="-mtune=cortex-a53"
+build:dad_config --copt=-fPIC
+build:dad_config --define=tflite_with_xnnpack=false
+
+
+# Use the default Bazel C++ toolchain to build the tools used during the
+# build.
+build:dad_config --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
+############### END
