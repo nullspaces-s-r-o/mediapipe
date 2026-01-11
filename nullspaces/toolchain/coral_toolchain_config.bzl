@@ -65,7 +65,7 @@ def _impl(ctx):
                     flag_groups = ([
                         flag_group(
                             flags = [
-                                "--sysroot=/home/jiri/coral/rootfs",
+                                "--sysroot=/home/jiri/coral2/target-sysroot",
                             ],
                         ),
                     ]),
@@ -82,7 +82,7 @@ def _impl(ctx):
                         flag_group(
                             flags = [
                                 "-lstdc++",
-                                "--sysroot=/home/jiri/coral/rootfs",
+                                "--sysroot=/home/jiri/coral2/target-sysroot",
                             ],
                         ),
                     ]),
@@ -101,7 +101,7 @@ def _impl(ctx):
             "/home/jiri/coral2/x-tool-build/aarch64-linux-gnu/aarch64-linux-gnu/sysroot/usr/include",
             "/home/jiri/coral2/x-tool-build/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/12.5.0/include",
             "/home/jiri/coral2/x-tool-build/aarch64-linux-gnu/lib/gcc/aarch64-linux-gnu/12.5.0/include-fixed",
-            "/home/jiri/coral/rootfs/usr/include",
+            "/home/jiri/coral2/target-sysroot/usr/include",
         ],
         toolchain_identifier = "rock-toolchain",
         host_system_name = "local",

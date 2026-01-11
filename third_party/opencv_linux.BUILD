@@ -28,10 +28,11 @@ cc_library(
         "include/opencv4/",
     ],
     linkopts = [
-        "-L/home/jiri/coral/buildsys/install/opencv/lib",
+        "-L/home/jiri/coral2/stage/lib",
         "-l:libopencv_core.so",
         "-l:libopencv_calib3d.so",
         "-l:libopencv_features2d.so",
+        "-l:libopencv_flann.so",
         "-l:libopencv_highgui.so",
         "-l:libopencv_imgcodecs.so",
         "-l:libopencv_imgproc.so",
