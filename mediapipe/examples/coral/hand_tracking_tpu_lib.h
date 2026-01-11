@@ -1,6 +1,8 @@
 #ifndef MEDIAPIPE_EXAMPLES_CORAL_HAND_TRACKING_TPU_LIB_H_
 #define MEDIAPIPE_EXAMPLES_CORAL_HAND_TRACKING_TPU_LIB_H_
 
+#include <vector>
+
 namespace cv
 {
     class Mat;
@@ -34,6 +36,7 @@ struct Landmark2
     float z;
     float visibility;
     float presence;
+    int index;
 };
 
 struct NormalizedLandmarkList
