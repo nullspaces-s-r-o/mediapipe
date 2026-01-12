@@ -7,8 +7,9 @@
 
 set -e
 
-compilation_mode="dbg"
-copt="--copt=-g --copt=-O0"
+compilation_mode="opt"
+# copt="--copt=-g --copt=-O0"
+copt="--copt=-O2"
 
 # Run this script from the mediapipe root directory
 bazel build \
@@ -23,6 +24,19 @@ bazel build \
     --linkopt=-l:libusb-1.0.so \
     --define darwinn_portable=1 \
     mediapipe/examples/coral:libhand_tracking_tpu_lib.so
+
+bazel build \
+    --config=dad_config \
+    --cpu=aarch64 \
+    --compiler=coral-gcc \
+    --copt=-DLIBYUV_DISABLE_NEON \
+    --compilation_mode=$compilation_mode \
+    $copt \
+    --define MEDIAPIPE_DISABLE_GPU=1 \
+    --define MEDIAPIPE_EDGE_TPU=pci \
+    --linkopt=-l:libusb-1.0.so \
+    --define darwinn_portable=1 \
+    mediapipe/examples/coral:hand_tracking_tpu_client    
 
 bazel build \
     --config=dad_config \

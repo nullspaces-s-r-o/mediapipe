@@ -132,6 +132,7 @@ build:dad_config --copt="-march=armv8-a"
 build:dad_config --copt="-mtune=cortex-a53"
 build:dad_config --copt=-fPIC
 build:dad_config --define=tflite_with_xnnpack=false
+build:dad_config --force_pic
 
 
 # Use the default Bazel C++ toolchain to build the tools used during the

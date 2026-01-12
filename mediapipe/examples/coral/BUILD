@@ -71,6 +71,14 @@ cc_binary(
         "hand_tracking_tpu_lib.cc", 
         "hand_tracking_tpu_lib.h"
     ],
+    copts = [ 
+        "-DCOMPILING_HAND_TRACKING_TPU_LIB",
+        "-fvisibility=hidden", 
+        "-fvisibility-inlines-hidden", 
+        ], 
+    linkopts = [ 
+        "-Wl,--exclude-libs,ALL",
+    ],
     deps = [
         "//mediapipe/calculators/core:constant_side_packet_calculator",
         "//mediapipe/calculators/core:constant_side_packet_calculator_cc_proto",

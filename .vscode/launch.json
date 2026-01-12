@@ -315,7 +315,7 @@
         },
         {
           "description": "sharedlibrary symbols search path",
-          "text": "set solib-search-path /home/jiri/mediapipe/bazel-bin/mediapipe/examples/coral:/home/jiri/coral/buildsys/install/opencv/lib",
+          "text": "set solib-search-path /home/jiri/mediapipe/bazel-bin/mediapipe/examples/coral:/home/jiri/coral2/stage/lib",
         },
         {
           "description": "sysroot",

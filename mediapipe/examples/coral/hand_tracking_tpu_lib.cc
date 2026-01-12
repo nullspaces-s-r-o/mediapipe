@@ -40,7 +40,7 @@ std::unique_ptr<mediapipe::OutputStreamPoller> wlandmarks_poller;
 extern "C"
 {
 
-    int GraphInit(const char *config_file)
+    MY_LIB_PUBLIC int GraphInit(const char *config_file)
     {
         if (graph != nullptr)
         {
@@ -108,7 +108,7 @@ extern "C"
         return run_status == absl::OkStatus() ? 0 : -1;
     }
 
-    int GraphDestroy()
+    MY_LIB_PUBLIC int GraphDestroy()
     {
         if (!graph)
             return -1;
@@ -121,7 +121,7 @@ extern "C"
         return status == absl::OkStatus() ? 0 : -1;
     }
 
-    int GraphAcceptCameraFrame(const cv::Mat &camera_frame)
+    MY_LIB_PUBLIC int GraphAcceptCameraFrame(const cv::Mat &camera_frame)
     {
         if (!graph)
             return -1;
@@ -151,7 +151,7 @@ extern "C"
         return 0;
     }
 
-    const cv::Mat GetOutputFrame()
+    MY_LIB_PUBLIC const cv::Mat GetOutputFrame()
     {
         cv::Mat output_frame_mat;
 
