@@ -100,10 +100,11 @@ cc_binary(
 
         # hand renderer
         "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_cpu",
+        "@libedgetpu//tflite/public:libedgetpu_direct_pci.so",
 
     ],
     linkshared = True, # Build as .so, important
-    linkstatic = True, # Statically link dependencies
+    linkstatic = False, # Statically link dependencies
 )
 
 # Import the shared library
@@ -111,6 +112,11 @@ cc_import(
     name = "imported_hand_tracking_tpu_lib",
     hdrs = ["hand_tracking_tpu_lib.h"],
     shared_library = "libhand_tracking_tpu_lib.so",
+)
+
+cc_import(
+    name = "imported_libedgetpu_direct_pci",
+    shared_library = "@libedgetpu//tflite/public:libedgetpu_direct_pci.so",
 )
 
 # cc_binary(
@@ -131,7 +137,9 @@ cc_binary(
     name = "hand_tracking_tpu_client",
     srcs = ["hand_tracking_tpu_client.cc"],
     deps = [
+        ":imported_libedgetpu_direct_pci",
         ":imported_hand_tracking_tpu_lib",
+        # "libhand_tracking_tpu_lib.so",
         "//mediapipe/framework/formats:image_frame_opencv",
         "//mediapipe/framework/port:opencv_highgui",
         "//mediapipe/framework/port:opencv_imgproc",
@@ -140,7 +148,7 @@ cc_binary(
     # linkopts = [
     # "-L/home/jiri/coral/buildsys/build/gperftools",  
     # "-ltcmalloc"],
-    linkstatic = True
+    linkstatic = False
 )
 
 cc_binary(

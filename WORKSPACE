@@ -702,6 +702,7 @@ load(
 cuda_configure(name = "local_config_cuda")
 
 # Edge TPU
+# Path where bazel downloads and unpacks libedgetpu: ~/mediapipe$ bazel info output_base
 http_archive(
     name = "libedgetpu",
     sha256 = "14d5527a943a25bc648c28a9961f954f70ba4d79c0a9ca5ae226e1831d72fe80",

@@ -252,7 +252,7 @@ cc_library(
         ],
         ":edge_tpu_pci": [
             "@libedgetpu//tflite/public:edgetpu",
-            "@libedgetpu//tflite/public:oss_edgetpu_direct_pci",
+            "@libedgetpu//tflite/public:libedgetpu_direct_pci.so",
         ],
         ":edge_tpu_all": [
             "@libedgetpu//tflite/public:edgetpu",

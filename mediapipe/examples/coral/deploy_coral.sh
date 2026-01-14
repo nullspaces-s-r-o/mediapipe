@@ -8,8 +8,8 @@
 set -e
 
 compilation_mode="opt"
-# copt="--copt=-g --copt=-O0"
-copt="--copt=-O2"
+# copt="--copt=-g"
+# copt="--copt=-O2"
 
 # Run this script from the mediapipe root directory
 bazel build \
@@ -18,7 +18,6 @@ bazel build \
     --compiler=coral-gcc \
     --copt=-DLIBYUV_DISABLE_NEON \
     --compilation_mode=$compilation_mode \
-    $copt \
     --define MEDIAPIPE_DISABLE_GPU=1 \
     --define MEDIAPIPE_EDGE_TPU=pci \
     --linkopt=-l:libusb-1.0.so \
@@ -31,12 +30,13 @@ bazel build \
     --compiler=coral-gcc \
     --copt=-DLIBYUV_DISABLE_NEON \
     --compilation_mode=$compilation_mode \
-    $copt \
     --define MEDIAPIPE_DISABLE_GPU=1 \
     --define MEDIAPIPE_EDGE_TPU=pci \
     --linkopt=-l:libusb-1.0.so \
     --define darwinn_portable=1 \
-    mediapipe/examples/coral:hand_tracking_tpu_client    
+    mediapipe/examples/coral:hand_tracking_tpu_client   
+
+# exit 0 
 
 bazel build \
     --config=dad_config \
@@ -44,7 +44,6 @@ bazel build \
     --compiler=coral-gcc \
     --copt=-DLIBYUV_DISABLE_NEON \
     --compilation_mode=$compilation_mode \
-    $copt \
     --define MEDIAPIPE_DISABLE_GPU=1 \
     --define MEDIAPIPE_EDGE_TPU=pci \
     --linkopt=-l:libusb-1.0.so \
@@ -107,7 +106,6 @@ bazel build \
     --compiler=coral-gcc \
     --copt=-DLIBYUV_DISABLE_NEON \
     --compilation_mode=$compilation_mode \
-    $copt \
     --define MEDIAPIPE_DISABLE_GPU=1 \
     --define MEDIAPIPE_EDGE_TPU=pci \
     --linkopt=-l:libusb-1.0.so \
@@ -148,7 +146,6 @@ bazel build \
     --compiler=coral-gcc \
     --copt=-DLIBYUV_DISABLE_NEON \
     --compilation_mode=$compilation_mode \
-    $copt \
     --define MEDIAPIPE_DISABLE_GPU=1 \
     --define MEDIAPIPE_EDGE_TPU=pci \
     --linkopt=-l:libusb-1.0.so \
@@ -169,7 +166,7 @@ cp \
 mkdir -p $STAGE/include/flatbuffers
 rsync -av --include='*/' --include='*.h' --exclude='*' \
   bazel-mediapipe/external/flatbuffers/include/flatbuffers/ \
-  "$STAGE/include/flatbuffers"
+  $STAGE/include/flatbuffers
 
 # Copy tensorflow lite shared library to stage directory (lib)
 chmod a+w bazel-bin/external/flatbuffers/src/libflatbuffers.a
@@ -277,3 +274,20 @@ cp bazel-bin/mediapipe/examples/coral/libhand_tracking_tpu_lib.so $STAGE/lib/
 #     X:/home/mendel/mediapipe/libhand_tracking_tpu/
 
 
+# Print summary table of modules that has been build by this script.
+# The first columnt shows module name. The second column shows sha256 of that module.
+echo "Build summary:"
+printf "%-40s %-64s\n" "Module" "SHA256"
+printf "%-40s %-64s\n" "------------------------" "----------------------------------------------------------------"
+for file in \
+    bazel-bin/mediapipe/examples/coral/hand_tracking_tpu_client \
+    bazel-bin/mediapipe/examples/coral/libhand_tracking_tpu_lib.so \
+    bazel-bin/external/libedgetpu/tflite/public/libedgetpu_direct_pci.so \
+    bazel-bin/external/flatbuffers/src/libflatbuffers.a \
+    bazel-bin/external/org_tensorflow/tensorflow/compiler/mlir/lite/schema/libschema_conversion_utils.a \
+    bazel-bin/external/org_tensorflow/tensorflow/lite/libtensorflowlite.so \
+; do
+    module_name=$(basename "$file")
+    sha256_sum=$(sha256sum "$file" | awk '{print $1}')
+    printf "%-40s %-64s\n" "$module_name" "$sha256_sum"
+done

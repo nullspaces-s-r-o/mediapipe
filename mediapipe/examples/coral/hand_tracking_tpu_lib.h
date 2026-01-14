@@ -29,6 +29,8 @@ namespace cv
 #define MY_LIB_PUBLIC IMPORT
 #endif
 
+#define MEDIAPIPE_WITH_OUTPUT_FRAME // weird graph performance without it
+
 struct Landmark2
 {
     float x;
@@ -50,7 +52,9 @@ extern "C"
     MY_LIB_PUBLIC int GraphInit(const char *config_file);
     MY_LIB_PUBLIC int GraphDestroy();
     MY_LIB_PUBLIC int GraphAcceptCameraFrame(const cv::Mat &camera_frame);
+#if defined(MEDIAPIPE_WITH_OUTPUT_FRAME)
     MY_LIB_PUBLIC const cv::Mat GetOutputFrame();
+#endif
     MY_LIB_PUBLIC int GetLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks);
     MY_LIB_PUBLIC int GetWorldLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks);
     MY_LIB_PUBLIC int GetImageAndWorldLandmarks(std::vector<NormalizedLandmarkList> &out_landmarks);
